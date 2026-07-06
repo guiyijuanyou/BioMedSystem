@@ -2,6 +2,7 @@ package com.cqutcm.biomed.controller;
 
 import com.cqutcm.biomed.service.GenericRecordService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -46,5 +47,10 @@ public class ResourceController {
     public Map<String, Object> update(@PathVariable String resourceType, @RequestBody Map<String, Object> payload) {
         return service.update(resourceType, payload);
     }
-}
 
+    @DeleteMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}/{id}")
+    public Map<String, Object> delete(@PathVariable String resourceType, @PathVariable String id) {
+        service.delete(resourceType, id);
+        return Map.of("message", "记录已删除", "id", id);
+    }
+}

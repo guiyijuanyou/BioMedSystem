@@ -59,6 +59,14 @@ public class GenericRecordRepository {
         );
     }
 
+    public int delete(String resourceType, String id) {
+        return jdbcTemplate.update(
+                "DELETE FROM generic_record WHERE id = ? AND resource_type = ?",
+                id,
+                resourceType
+        );
+    }
+
     public List<GenericRecord> findAll() {
         return jdbcTemplate.query(
                 "SELECT id, resource_type, payload, created_at, updated_at FROM generic_record ORDER BY resource_type, created_at DESC",
@@ -96,4 +104,3 @@ public class GenericRecordRepository {
         return timestamp == null ? null : timestamp.toLocalDateTime();
     }
 }
-

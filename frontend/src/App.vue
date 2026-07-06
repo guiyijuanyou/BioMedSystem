@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { Menu, RefreshCw, Save } from "lucide-vue-next";
+import { Menu, RefreshCw, Save, ShieldCheck } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import ResourceView from "@/views/ResourceView.vue";
@@ -142,11 +142,12 @@ onBeforeUnmount(() => {
 
     <main class="workspace">
       <header class="topbar">
-        <div>
+        <div class="page-heading">
           <p class="eyebrow">重庆市中药材资源管理</p>
           <h1>{{ pageTitle }}</h1>
         </div>
         <div class="actions">
+          <span class="system-health"><ShieldCheck :size="15" />数据服务在线</span>
           <button class="button-secondary" type="button" :disabled="backingUp" @click="backup"><Save :size="16" />{{ backingUp ? "备份中..." : "自动备份" }}</button>
           <button type="button" :disabled="refreshing" @click="refresh"><RefreshCw :size="16" />{{ refreshing ? "刷新中..." : "刷新数据" }}</button>
         </div>

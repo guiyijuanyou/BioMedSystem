@@ -2,7 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import L from "leaflet";
 import "leaflet.markercluster";
-import { RotateCcw, Search, X, ZoomIn, ZoomOut } from "lucide-vue-next";
+import {
+  Activity, Award, BookOpen, ClipboardCheck, FlaskConical, Leaf,
+  RotateCcw, Search, X, ZoomIn, ZoomOut
+} from "lucide-vue-next";
 
 const props = defineProps({
   summary: { type: Object, required: true },
@@ -48,12 +51,12 @@ const tileSources = [
 ];
 
 const metrics = computed(() => [
-  ["药材品种", props.summary.herbCount || 0],
-  ["采集记录", props.summary.growthRecordCount || 0],
-  ["试验课程", props.summary.courseCount || 0],
-  ["研究课题", props.summary.projectCount || 0],
-  ["评价记录", props.summary.evaluationCount || 0],
-  ["业绩记录", props.summary.achievementCount || 0]
+  { label: "药材品种", value: props.summary.herbCount || 0, icon: Leaf, tone: "green" },
+  { label: "采集记录", value: props.summary.growthRecordCount || 0, icon: Activity, tone: "blue" },
+  { label: "试验课程", value: props.summary.courseCount || 0, icon: BookOpen, tone: "amber" },
+  { label: "研究课题", value: props.summary.projectCount || 0, icon: FlaskConical, tone: "violet" },
+  { label: "评价记录", value: props.summary.evaluationCount || 0, icon: ClipboardCheck, tone: "cyan" },
+  { label: "业绩记录", value: props.summary.achievementCount || 0, icon: Award, tone: "red" }
 ]);
 
 const herbOptions = computed(() => [...new Set(props.herbs.map(item => item.name).filter(Boolean))].sort());
@@ -194,8 +197,9 @@ onBeforeUnmount(() => map?.remove());
 <template>
   <section>
     <div class="metrics">
-      <article v-for="[label, value] in metrics" :key="label" class="metric">
-        <span>{{ label }}</span><strong>{{ value }}</strong>
+      <article v-for="metric in metrics" :key="metric.label" class="metric" :data-tone="metric.tone">
+        <div class="metric-icon"><component :is="metric.icon" :size="19" /></div>
+        <div><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong><small>实时统计</small></div>
       </article>
     </div>
 
