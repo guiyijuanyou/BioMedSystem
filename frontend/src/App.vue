@@ -2,12 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { Menu, RefreshCw, Save } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
-import DashboardView from "@/components/DashboardView.vue";
-import ResourceView from "@/components/ResourceView.vue";
-import FilesView from "@/components/FilesView.vue";
+import DashboardView from "@/views/DashboardView.vue";
+import ResourceView from "@/views/ResourceView.vue";
+import FilesView from "@/views/FilesView.vue";
 import AiAssistant from "@/components/AiAssistant.vue";
 import { modules } from "@/config";
-import { api } from "@/api";
+import { api } from "@/services/api";
 
 const active = ref("dashboard");
 const drawerOpen = ref(false);

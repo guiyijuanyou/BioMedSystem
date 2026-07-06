@@ -1,7 +1,7 @@
 <script setup>
 import { nextTick, ref } from "vue";
 import { Bot, Send, X } from "lucide-vue-next";
-import { api } from "@/api";
+import { api } from "@/services/api";
 
 const open = ref(false);
 const question = ref("");

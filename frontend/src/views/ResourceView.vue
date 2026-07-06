@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import MapPicker from "./MapPicker.vue";
-import { api } from "@/api";
+import MapPicker from "@/components/MapPicker.vue";
+import { api } from "@/services/api";
 
 const props = defineProps({
   moduleKey: { type: String, required: true },
