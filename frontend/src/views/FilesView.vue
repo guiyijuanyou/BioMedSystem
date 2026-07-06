@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { Download, Eye, Upload } from "lucide-vue-next";
-import { api } from "@/api";
+import { api } from "@/services/api";
 
 const emit = defineEmits(["notify"]);
 const items = ref([]);
