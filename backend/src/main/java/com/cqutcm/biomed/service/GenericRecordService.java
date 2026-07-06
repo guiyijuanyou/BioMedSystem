@@ -67,6 +67,16 @@ public class GenericRecordService {
         return response;
     }
 
+    public void delete(String resourceType, String id) {
+        resourceRegistry.requireSupported(resourceType);
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("缺少 id，无法删除记录");
+        }
+        if (repository.delete(resourceType, id) == 0) {
+            throw new IllegalArgumentException("未找到要删除的数据");
+        }
+    }
+
     public Map<String, Object> summary() {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("herbCount", repository.countByResourceType("herbs"));
@@ -116,4 +126,3 @@ public class GenericRecordService {
         return response;
     }
 }
-

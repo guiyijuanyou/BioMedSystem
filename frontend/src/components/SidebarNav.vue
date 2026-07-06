@@ -1,5 +1,9 @@
 <script setup>
 import { navItems } from "@/config";
+import {
+  Activity, Award, BookOpen, Boxes, ClipboardCheck, FileArchive,
+  FlaskConical, GraduationCap, LayoutDashboard, MapPinned, UsersRound
+} from "lucide-vue-next";
 
 defineProps({
   active: { type: String, required: true },
@@ -7,6 +11,20 @@ defineProps({
 });
 
 const emit = defineEmits(["select", "close"]);
+
+const icons = {
+  dashboard: LayoutDashboard,
+  herbs: MapPinned,
+  "growth-records": Activity,
+  courses: BookOpen,
+  projects: FlaskConical,
+  trainings: GraduationCap,
+  evaluations: ClipboardCheck,
+  achievements: Award,
+  standards: Boxes,
+  users: UsersRound,
+  files: FileArchive
+};
 </script>
 
 <template>
@@ -27,8 +45,13 @@ const emit = defineEmits(["select", "close"]);
         type="button"
         @click="emit('select', key); emit('close')"
       >
+        <component :is="icons[key]" :size="18" />
         {{ label }}
       </button>
     </nav>
+    <div class="sidebar-footer">
+      <span class="user-avatar">管</span>
+      <div><strong>系统管理员</strong><small><i></i>系统服务正常</small></div>
+    </div>
   </aside>
 </template>
