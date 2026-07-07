@@ -4,12 +4,14 @@ import L from "leaflet";
 import "leaflet.markercluster";
 import {
   Activity, Award, BookOpen, ClipboardCheck, FlaskConical, Leaf,
-  RotateCcw, Search, X, ZoomIn, ZoomOut
+  GitBranch, RotateCcw, Search, X, ZoomIn, ZoomOut
 } from "lucide-vue-next";
 
 const props = defineProps({
   summary: { type: Object, required: true },
-  herbs: { type: Array, default: () => [] }
+  herbs: { type: Array, default: () => [] },
+  role: { type: String, default: "admin" },
+  canEditMap: { type: Boolean, default: true }
 });
 
 const emit = defineEmits(["edit-record", "submit-growth", "notify"]);
@@ -53,6 +55,8 @@ const tileSources = [
 const metrics = computed(() => [
   { label: "药材品种", value: props.summary.herbCount || 0, icon: Leaf, tone: "green" },
   { label: "采集记录", value: props.summary.growthRecordCount || 0, icon: Activity, tone: "blue" },
+  { label: "溯源事件", value: props.summary.traceEventCount || 0, icon: GitBranch, tone: "green" },
+  { label: "教学资源", value: props.summary.teachingResourceCount || 0, icon: BookOpen, tone: "amber" },
   { label: "图谱比对", value: props.summary.spectrumComparisonCount || 0, icon: FlaskConical, tone: "violet" },
   { label: "数据分析", value: props.summary.growthAnalysisCount || 0, icon: ClipboardCheck, tone: "cyan" },
   { label: "试验课程", value: props.summary.courseCount || 0, icon: BookOpen, tone: "amber" },
@@ -252,7 +256,7 @@ onBeforeUnmount(() => map?.remove());
                 <div><dt>溯源码</dt><dd>{{ selected.traceCode || "-" }}</dd></div>
                 <div><dt>记录时间</dt><dd>{{ selected.createdAt || selected.recordedAt || "-" }}</dd></div>
               </dl>
-              <button type="button" @click="emit('edit-record', selected)">查看并编辑记录</button>
+              <button v-if="canEditMap" type="button" @click="emit('edit-record', selected)">查看并编辑记录</button>
             </template>
           </aside>
         </div>

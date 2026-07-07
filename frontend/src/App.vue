@@ -1,15 +1,16 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Menu, RefreshCw, Save, ShieldCheck } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
 import DashboardView from "@/views/DashboardView.vue";
 import ResourceView from "@/views/ResourceView.vue";
 import FilesView from "@/views/FilesView.vue";
 import AiAssistant from "@/components/AiAssistant.vue";
-import { modules } from "@/config";
+import { modules, roleMenus, roleModulePermissions, roles } from "@/config";
 import { api } from "@/services/api";
 
 const active = ref("dashboard");
+const currentRole = ref("admin");
 const drawerOpen = ref(false);
 const summary = ref({});
 const herbs = ref([]);
@@ -20,10 +21,22 @@ const backingUp = ref(false);
 let toastTimer;
 let touchStart = null;
 
+const visibleNavItems = computed(() => roleMenus[currentRole.value] || roleMenus.admin);
+const currentNavLabel = computed(() => visibleNavItems.value.find(([key]) => key === active.value)?.[1] || "");
 const pageTitle = computed(() => {
-  if (active.value === "dashboard") return "总览";
-  if (active.value === "files") return "资料上传下载";
-  return modules[active.value]?.title || "生物医药数字信息系统";
+  if (active.value === "dashboard") return roles[currentRole.value]?.title || "工作台";
+  if (active.value === "files") return currentNavLabel.value || "资料上传下载";
+  return currentNavLabel.value || modules[active.value]?.title || "生物医药数字信息系统";
+});
+const currentRoleLabel = computed(() => roles[currentRole.value]?.label || "管理员");
+const activeModuleConfig = computed(() => {
+  const config = modules[active.value];
+  if (!config) return null;
+  return { ...config, title: currentNavLabel.value || config.title };
+});
+const modulePermissions = computed(() => {
+  const rolePermissions = roleModulePermissions[currentRole.value] || roleModulePermissions.admin;
+  return rolePermissions[active.value] || rolePermissions.default || {};
 });
 
 function notify(message) {
@@ -78,7 +91,12 @@ function selectPage(key) {
   if (key === "dashboard") loadDashboard();
 }
 
+function selectRole(role) {
+  currentRole.value = role;
+}
+
 function editMapRecord(item) {
+  if (currentRole.value === "student") return;
   editId.value = item.id;
   selectPage("herbs");
 }
@@ -124,6 +142,14 @@ onMounted(() => {
   window.addEventListener("touchend", onTouchEnd, { passive: true });
 });
 
+watch(currentRole, () => {
+  const menu = visibleNavItems.value;
+  if (!menu.some(([key]) => key === active.value)) {
+    active.value = menu[0]?.[0] || "dashboard";
+  }
+  if (active.value === "dashboard") loadDashboard();
+});
+
 onBeforeUnmount(() => {
   window.removeEventListener("resize", updateAppHeight);
   window.removeEventListener("touchstart", onTouchStart);
@@ -137,7 +163,14 @@ onBeforeUnmount(() => {
     <Menu :size="21" />
   </button>
   <div class="shell" :class="{ 'drawer-open': drawerOpen }">
-    <SidebarNav :active="active" :open="drawerOpen" @select="selectPage" @close="drawerOpen = false" />
+    <SidebarNav
+      :active="active"
+      :open="drawerOpen"
+      :items="visibleNavItems"
+      :role-label="currentRoleLabel"
+      @select="selectPage"
+      @close="drawerOpen = false"
+    />
     <div class="drawer-mask" @click="drawerOpen = false"></div>
 
     <main class="workspace">
@@ -147,8 +180,14 @@ onBeforeUnmount(() => {
           <h1>{{ pageTitle }}</h1>
         </div>
         <div class="actions">
+          <label class="role-switch">
+            <span>当前角色</span>
+            <select :value="currentRole" @change="selectRole($event.target.value)">
+              <option v-for="(role, key) in roles" :key="key" :value="key">{{ role.label }}</option>
+            </select>
+          </label>
           <span class="system-health"><ShieldCheck :size="15" />数据服务在线</span>
-          <button class="button-secondary" type="button" :disabled="backingUp" @click="backup"><Save :size="16" />{{ backingUp ? "备份中..." : "自动备份" }}</button>
+          <button v-if="currentRole === 'admin'" class="button-secondary" type="button" :disabled="backingUp" @click="backup"><Save :size="16" />{{ backingUp ? "备份中..." : "自动备份" }}</button>
           <button type="button" :disabled="refreshing" @click="refresh"><RefreshCw :size="16" />{{ refreshing ? "刷新中..." : "刷新数据" }}</button>
         </div>
       </header>
@@ -157,6 +196,8 @@ onBeforeUnmount(() => {
         v-if="active === 'dashboard'"
         :summary="summary"
         :herbs="herbs"
+        :role="currentRole"
+        :can-edit-map="currentRole !== 'student'"
         @edit-record="editMapRecord"
         @submit-growth="submitGrowth"
         @notify="notify"
@@ -165,12 +206,14 @@ onBeforeUnmount(() => {
         v-else-if="modules[active]"
         :key="active"
         :module-key="active"
-        :config="modules[active]"
+        :config="activeModuleConfig"
+        :permissions="modulePermissions"
+        :role="currentRole"
         :edit-id="editId"
         @edit-consumed="editId = ''"
         @notify="notify"
       />
-      <FilesView v-else-if="active === 'files'" @notify="notify" />
+      <FilesView v-else-if="active === 'files'" :permissions="modulePermissions" :role="currentRole" @notify="notify" />
     </main>
   </div>
 
