@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import {
-  ChevronLeft, ChevronRight, Clock3, Copy, Download, Eye, FileText,
+  BarChart3, ChevronLeft, ChevronRight, Clock3, Copy, Download, Eye, FileText,
   Pencil, Plus, Search, Trash2, X
 } from "lucide-vue-next";
 import MapPicker from "@/components/MapPicker.vue";
@@ -18,6 +18,8 @@ const items = ref([]);
 const search = ref("");
 const editingId = ref(null);
 const selectedIds = ref([]);
+const selectedGrowthKey = ref("");
+const activeGrowthMetric = ref("all");
 const panelOpen = ref(false);
 const panelMode = ref("edit");
 const saving = ref(false);
@@ -27,7 +29,7 @@ const pageSize = ref(8);
 const confirmState = reactive({ open: false, ids: [] });
 const form = reactive({});
 
-const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule"];
+const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion"];
 const statuses = ["待审核", "已通过", "已发布", "数据采集中", "已归档"];
 
 const filtered = computed(() => {
@@ -46,18 +48,214 @@ const panelTitle = computed(() => {
 const primaryField = computed(() => props.config.fields[0]?.[0]);
 const primaryLabel = computed(() => props.config.fields[0]?.[1] || "记录");
 const primaryValue = computed(() => display(form[primaryField.value]));
+const isGrowthModule = computed(() => props.moduleKey === "growth-records");
+const isSpectrumModule = computed(() => props.moduleKey === "spectrum-comparisons");
+const isAnalysisModule = computed(() => props.moduleKey === "growth-analysis");
+const insightVisible = computed(() => isGrowthModule.value || isSpectrumModule.value || isAnalysisModule.value);
+const growthStats = computed(() => {
+  const rows = items.value;
+  const temps = numericValues(rows, "temperature");
+  const humidity = numericValues(rows, "humidity");
+  const ph = numericValues(rows, "soilPh");
+  const sources = countBy(rows, "collector");
+  const districts = countBy(rows, "district");
+  const warnings = rows.filter(item =>
+    toNumber(item.temperature) > 28 || toNumber(item.humidity) < 55 || toNumber(item.soilPh) < 5.8 || toNumber(item.soilPh) > 7.5
+  );
+  return {
+    count: rows.length,
+    avgTemp: average(temps),
+    avgHumidity: average(humidity),
+    avgPh: average(ph),
+    maxTemp: maxValue(temps),
+    minTemp: minValue(temps),
+    sources,
+    districts,
+    warnings
+  };
+});
+const spectrumStats = computed(() => {
+  const rows = items.value;
+  const similarities = numericValues(rows, "similarity");
+  const excellent = rows.filter(item => String(item.result || "").includes("通过") || toNumber(item.similarity) >= 90).length;
+  return {
+    count: rows.length,
+    avgSimilarity: average(similarities),
+    excellent,
+    risk: rows.filter(item => String(item.result || "").includes("复核") || toNumber(item.similarity) < 85).length,
+    types: countBy(rows, "spectrumType")
+  };
+});
+const analysisStats = computed(() => ({
+  count: items.value.length,
+  up: items.value.filter(item => String(item.trend || "").includes("上升")).length,
+  down: items.value.filter(item => String(item.trend || "").includes("下降")).length,
+  stable: items.value.filter(item => String(item.trend || "").includes("稳定")).length,
+  indicators: countBy(items.value, "indicator")
+}));
+const growthSeriesGroups = computed(() => {
+  const groups = {};
+  items.value.forEach(item => {
+    const herbName = item.herbName || "未填写药材";
+    const district = item.district || "未填写地区";
+    const key = `${district}__${herbName}`;
+    if (!groups[key]) groups[key] = { key, herbName, district, rows: [] };
+    groups[key].rows.push(item);
+  });
+  return Object.values(groups)
+    .map(group => ({
+      ...group,
+      rows: group.rows.slice().sort((a, b) => new Date(a.recordedAt || a.createdAt || 0) - new Date(b.recordedAt || b.createdAt || 0))
+    }))
+    .sort((a, b) => b.rows.length - a.rows.length || a.district.localeCompare(b.district, "zh-Hans-CN"));
+});
+const selectedGrowthGroup = computed(() =>
+  growthSeriesGroups.value.find(group => group.key === selectedGrowthKey.value) || growthSeriesGroups.value[0]
+);
+const selectedGrowthRows = computed(() => selectedGrowthGroup.value?.rows || []);
+const latestGrowthComparison = computed(() => {
+  const rows = selectedGrowthRows.value;
+  const latest = rows[rows.length - 1];
+  const previous = rows[rows.length - 2];
+  return {
+    latest,
+    previous,
+    temperature: delta(latest?.temperature, previous?.temperature),
+    humidity: delta(latest?.humidity, previous?.humidity),
+    soilPh: delta(latest?.soilPh, previous?.soilPh)
+  };
+});
+const growthChartSeries = computed(() => {
+  const rows = selectedGrowthRows.value;
+  return {
+    temperature: chartLine(rows, "temperature"),
+    humidity: chartLine(rows, "humidity"),
+    soilPh: chartLine(rows, "soilPh")
+  };
+});
+const growthChartMetrics = [
+  { key: "temperature", label: "温度", lineClass: "temperature-line", dotClass: "temperature-dot", pointClass: "temperature-point" },
+  { key: "humidity", label: "湿度", lineClass: "humidity-line", dotClass: "humidity-dot", pointClass: "humidity-point" },
+  { key: "soilPh", label: "土壤 PH", lineClass: "ph-line", dotClass: "ph-dot", pointClass: "ph-point" }
+];
+const visibleGrowthMetrics = computed(() =>
+  activeGrowthMetric.value === "all"
+    ? growthChartMetrics
+    : growthChartMetrics.filter(metric => metric.key === activeGrowthMetric.value)
+);
+const selectedGrowthMetric = computed(() =>
+  growthChartMetrics.find(metric => metric.key === activeGrowthMetric.value)
+);
+const selectedGrowthSeries = computed(() =>
+  activeGrowthMetric.value === "all" ? null : growthChartSeries.value[activeGrowthMetric.value]
+);
+const chartLabels = computed(() => selectedGrowthRows.value.map((item, index) => ({
+  text: formatShortDate(item.recordedAt || item.createdAt),
+  x: chartX(index, selectedGrowthRows.value.length)
+})));
 
 function defaultValue(name) {
   const values = {
     recordedAt: new Date().toISOString().slice(0, 19),
+    comparedAt: new Date().toISOString().slice(0, 19),
+    analyzedAt: new Date().toISOString().slice(0, 19),
     collector: "电脑终端录入",
     temperature: "20.0",
     humidity: "80",
     soilPh: "6.5",
+    growthStage: "生长期",
     status: "待审核",
+    spectrumType: "HPLC 指纹图谱",
+    result: "待复核",
+    operator: "系统管理员",
+    analyst: "系统管理员",
     effectiveDate: new Date().toISOString().slice(0, 10)
   };
   return values[name] || "";
+}
+
+function toNumber(value) {
+  const number = Number.parseFloat(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function numericValues(rows, key) {
+  return rows.map(item => toNumber(item[key])).filter(value => value !== null);
+}
+
+function average(values) {
+  if (!values.length) return "-";
+  return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1);
+}
+
+function maxValue(values) {
+  return values.length ? Math.max(...values).toFixed(1) : "-";
+}
+
+function minValue(values) {
+  return values.length ? Math.min(...values).toFixed(1) : "-";
+}
+
+function countBy(rows, key) {
+  return rows.reduce((result, item) => {
+    const name = item[key] || "未填写";
+    result[name] = (result[name] || 0) + 1;
+    return result;
+  }, {});
+}
+
+function delta(current, previous) {
+  const currentNumber = toNumber(current);
+  const previousNumber = toNumber(previous);
+  if (currentNumber === null || previousNumber === null) return { text: "暂无对比", tone: "muted" };
+  const value = currentNumber - previousNumber;
+  if (Math.abs(value) < 0.05) return { text: "基本持平", tone: "stable" };
+  return {
+    text: `${value > 0 ? "+" : ""}${value.toFixed(1)}`,
+    tone: value > 0 ? "up" : "down"
+  };
+}
+
+function formatShortDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(5, 10);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function chartX(index, total) {
+  return total === 1 ? 50 : 8 + (index / (total - 1)) * 84;
+}
+
+function chartLine(rows, key) {
+  const values = rows.map(item => toNumber(item[key]));
+  const valid = values.filter(value => value !== null);
+  if (!valid.length) return { points: "", nodes: [] };
+  const min = Math.min(...valid);
+  const max = Math.max(...valid);
+  const span = max - min || 1;
+  const nodes = values.map((value, index) => {
+    const x = chartX(index, rows.length);
+    const y = value === null ? 50 : 90 - ((value - min) / span) * 72;
+    return {
+      x,
+      y,
+      value,
+      text: value === null ? "-" : String(value)
+    };
+  });
+  return {
+    points: nodes.map(point => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" "),
+    nodes
+  };
+}
+
+function selectGrowthGroup(key) {
+  selectedGrowthKey.value = key;
+}
+
+function selectGrowthMetric(key) {
+  activeGrowthMetric.value = activeGrowthMetric.value === key ? "all" : key;
 }
 
 function fillForm(item = null) {
@@ -204,6 +402,15 @@ watch(() => props.moduleKey, () => {
   load();
 });
 watch(search, () => page.value = 1);
+watch(growthSeriesGroups, groups => {
+  if (!groups.length) {
+    selectedGrowthKey.value = "";
+    return;
+  }
+  if (!groups.some(group => group.key === selectedGrowthKey.value)) {
+    selectedGrowthKey.value = groups[0].key;
+  }
+}, { immediate: true });
 watch(() => props.editId, id => {
   if (!id) return;
   const row = items.value.find(item => item.id === id);
@@ -218,6 +425,145 @@ watch(() => props.editId, id => {
       <div><h2>{{ config.title }}</h2><span>{{ config.hint }}</span></div>
       <button type="button" @click="openCreate"><Plus :size="16" />新增记录</button>
     </div>
+
+    <section v-if="insightVisible" class="insight-panel">
+      <div class="insight-heading">
+        <span><BarChart3 :size="18" /></span>
+        <div>
+          <strong>{{ isGrowthModule ? "生长数据对比概览" : isSpectrumModule ? "图谱比对概览" : "分析结论概览" }}</strong>
+          <small>{{ isGrowthModule ? "根据当前采集记录自动计算温湿度、PH 和采集来源分布" : isSpectrumModule ? "汇总图谱相似度、通过情况和待复核样本" : "汇总趋势判断和指标分布，便于横向对比" }}</small>
+        </div>
+      </div>
+
+      <div v-if="isGrowthModule" class="insight-grid">
+        <article><span>记录数量</span><strong>{{ growthStats.count }}</strong><small>条生长数据</small></article>
+        <article><span>平均温度</span><strong>{{ growthStats.avgTemp }}</strong><small>最高 {{ growthStats.maxTemp }} / 最低 {{ growthStats.minTemp }}</small></article>
+        <article><span>平均湿度</span><strong>{{ growthStats.avgHumidity }}</strong><small>相对湿度 %</small></article>
+        <article><span>平均 PH</span><strong>{{ growthStats.avgPh }}</strong><small>土壤酸碱度</small></article>
+      </div>
+      <div v-else-if="isSpectrumModule" class="insight-grid">
+        <article><span>比对样本</span><strong>{{ spectrumStats.count }}</strong><small>条图谱记录</small></article>
+        <article><span>平均相似度</span><strong>{{ spectrumStats.avgSimilarity }}</strong><small>百分制结果</small></article>
+        <article><span>通过样本</span><strong>{{ spectrumStats.excellent }}</strong><small>相似度较高或已通过</small></article>
+        <article><span>待复核</span><strong>{{ spectrumStats.risk }}</strong><small>建议人工确认</small></article>
+      </div>
+      <div v-else class="insight-grid">
+        <article><span>分析记录</span><strong>{{ analysisStats.count }}</strong><small>条对比结论</small></article>
+        <article><span>上升趋势</span><strong>{{ analysisStats.up }}</strong><small>指标改善或增长</small></article>
+        <article><span>下降趋势</span><strong>{{ analysisStats.down }}</strong><small>需要关注变化</small></article>
+        <article><span>稳定趋势</span><strong>{{ analysisStats.stable }}</strong><small>变化较小</small></article>
+      </div>
+
+      <section v-if="isGrowthModule" class="growth-trend-card">
+        <div class="trend-toolbar">
+          <div>
+            <strong>地区药材生长档案</strong>
+            <small>同一地区、同一药材可连续记录多次，并与上一条记录自动对比</small>
+          </div>
+          <select :value="selectedGrowthGroup?.key || ''" @change="selectGrowthGroup($event.target.value)">
+            <option v-for="group in growthSeriesGroups" :key="group.key" :value="group.key">
+              {{ group.district }} / {{ group.herbName }}（{{ group.rows.length }} 次）
+            </option>
+          </select>
+        </div>
+
+        <div v-if="selectedGrowthGroup" class="trend-body">
+          <div class="trend-summary">
+            <article>
+              <span>当前档案</span>
+              <strong>{{ selectedGrowthGroup.district }} / {{ selectedGrowthGroup.herbName }}</strong>
+              <small>共 {{ selectedGrowthRows.length }} 次记录</small>
+            </article>
+            <article>
+              <span>最新温度</span>
+              <strong>{{ display(latestGrowthComparison.latest?.temperature) }}</strong>
+              <small :class="latestGrowthComparison.temperature.tone">较上次 {{ latestGrowthComparison.temperature.text }}</small>
+            </article>
+            <article>
+              <span>最新湿度</span>
+              <strong>{{ display(latestGrowthComparison.latest?.humidity) }}</strong>
+              <small :class="latestGrowthComparison.humidity.tone">较上次 {{ latestGrowthComparison.humidity.text }}</small>
+            </article>
+            <article>
+              <span>最新 PH</span>
+              <strong>{{ display(latestGrowthComparison.latest?.soilPh) }}</strong>
+              <small :class="latestGrowthComparison.soilPh.tone">较上次 {{ latestGrowthComparison.soilPh.text }}</small>
+            </article>
+          </div>
+
+          <div class="line-chart" aria-label="生长数据趋势折线图">
+            <div class="chart-plot">
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+                <line x1="8" y1="90" x2="96" y2="90" />
+                <line x1="8" y1="14" x2="8" y2="90" />
+                <template v-if="selectedGrowthSeries">
+                  <line
+                    v-for="(point, index) in selectedGrowthSeries.nodes"
+                    :key="`guide-${index}`"
+                    class="chart-guide"
+                    :x1="point.x"
+                    :y1="point.y"
+                    :x2="point.x"
+                    y2="90"
+                  />
+                </template>
+                <template v-for="metric in visibleGrowthMetrics" :key="metric.key">
+                  <polyline
+                    v-if="growthChartSeries[metric.key]?.points"
+                    :class="metric.lineClass"
+                    :points="growthChartSeries[metric.key].points"
+                  />
+                </template>
+              </svg>
+              <div v-if="selectedGrowthSeries" class="chart-values">
+                <i
+                  v-for="(point, index) in selectedGrowthSeries.nodes"
+                  :key="`marker-${index}`"
+                  class="chart-marker"
+                  :class="selectedGrowthMetric?.pointClass"
+                  :style="{ left: `${point.x}%`, top: `${point.y}%` }"
+                ></i>
+                <span
+                  v-for="(point, index) in selectedGrowthSeries.nodes"
+                  :key="`value-${index}`"
+                  :style="{ left: `${point.x}%`, top: `${point.y}%` }"
+                >{{ point.text }}</span>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <button
+                v-for="metric in growthChartMetrics"
+                :key="metric.key"
+                type="button"
+                :class="{ active: activeGrowthMetric === metric.key }"
+                @click="selectGrowthMetric(metric.key)"
+              >
+                <i :class="metric.dotClass"></i>{{ metric.label }}
+              </button>
+            </div>
+            <div class="chart-labels">
+              <span
+                v-for="(label, index) in chartLabels"
+                :key="`${label.text}-${index}`"
+                :style="{ left: `${label.x}%` }"
+              >{{ label.text }}</span>
+            </div>
+          </div>
+        </div>
+        <p v-else class="empty-state">暂无可统计的生长记录</p>
+      </section>
+
+      <div v-if="!isGrowthModule" class="insight-lists">
+        <div v-if="isSpectrumModule">
+          <strong>图谱类型</strong>
+          <span v-for="(count, name) in spectrumStats.types" :key="name">{{ name }}：{{ count }}</span>
+        </div>
+        <div v-if="isAnalysisModule">
+          <strong>分析指标</strong>
+          <span v-for="(count, name) in analysisStats.indicators" :key="name">{{ name }}：{{ count }}</span>
+        </div>
+      </div>
+    </section>
 
     <div class="table-tools">
       <div class="input-with-icon table-search">

@@ -53,6 +53,8 @@ const tileSources = [
 const metrics = computed(() => [
   { label: "药材品种", value: props.summary.herbCount || 0, icon: Leaf, tone: "green" },
   { label: "采集记录", value: props.summary.growthRecordCount || 0, icon: Activity, tone: "blue" },
+  { label: "图谱比对", value: props.summary.spectrumComparisonCount || 0, icon: FlaskConical, tone: "violet" },
+  { label: "数据分析", value: props.summary.growthAnalysisCount || 0, icon: ClipboardCheck, tone: "cyan" },
   { label: "试验课程", value: props.summary.courseCount || 0, icon: BookOpen, tone: "amber" },
   { label: "研究课题", value: props.summary.projectCount || 0, icon: FlaskConical, tone: "violet" },
   { label: "评价记录", value: props.summary.evaluationCount || 0, icon: ClipboardCheck, tone: "cyan" },

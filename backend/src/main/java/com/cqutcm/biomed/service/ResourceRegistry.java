@@ -9,6 +9,8 @@ public class ResourceRegistry {
     private final Set<String> resources = Set.of(
             "herbs",
             "growth-records",
+            "spectrum-comparisons",
+            "growth-analysis",
             "courses",
             "projects",
             "trainings",
@@ -24,4 +26,3 @@ public class ResourceRegistry {
         }
     }
 }
-

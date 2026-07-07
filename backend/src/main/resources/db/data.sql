@@ -43,6 +43,66 @@ SELECT 'growth-005', 'growth-records', '{"herbName":"\u4f5b\u624b","district":"\
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-005');
 
 INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-006', 'growth-records', '{"herbName":"黄连","district":"石柱县","temperature":"18.9","humidity":"86","soilPh":"6.1","growthStage":"萌芽期","collector":"传感器网关","recordedAt":"2026-06-01T09:00:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-006');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-007', 'growth-records', '{"herbName":"黄连","district":"石柱县","temperature":"19.4","humidity":"84","soilPh":"6.2","growthStage":"展叶期","collector":"手机APP采集","recordedAt":"2026-06-08T09:20:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-007');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-008', 'growth-records', '{"herbName":"黄连","district":"石柱县","temperature":"20.2","humidity":"82","soilPh":"6.3","growthStage":"生长期","collector":"传感器网关","recordedAt":"2026-06-15T09:15:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-008');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-009', 'growth-records', '{"herbName":"黄连","district":"石柱县","temperature":"20.7","humidity":"80","soilPh":"6.4","growthStage":"旺长期","collector":"电脑终端录入","recordedAt":"2026-06-22T10:05:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-009');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-010', 'growth-records', '{"herbName":"金银花","district":"秀山县","temperature":"23.1","humidity":"69","soilPh":"6.8","growthStage":"抽枝期","collector":"手机APP采集","recordedAt":"2026-06-02T08:40:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-010');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-011', 'growth-records', '{"herbName":"金银花","district":"秀山县","temperature":"24.0","humidity":"66","soilPh":"6.9","growthStage":"现蕾期","collector":"传感器网关","recordedAt":"2026-06-09T08:50:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-011');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-012', 'growth-records', '{"herbName":"金银花","district":"秀山县","temperature":"25.2","humidity":"64","soilPh":"7.0","growthStage":"花蕾期","collector":"传感器网关","recordedAt":"2026-06-16T08:30:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-012');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-013', 'growth-records', '{"herbName":"天麻","district":"巫溪县","temperature":"16.8","humidity":"79","soilPh":"6.7","growthStage":"出芽期","collector":"传感器网关","recordedAt":"2026-06-03T11:00:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-013');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-014', 'growth-records', '{"herbName":"天麻","district":"巫溪县","temperature":"17.5","humidity":"77","soilPh":"6.8","growthStage":"块茎膨大期","collector":"手机APP采集","recordedAt":"2026-06-10T11:10:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-014');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-015', 'growth-records', '{"herbName":"天麻","district":"巫溪县","temperature":"18.0","humidity":"76","soilPh":"6.9","growthStage":"块茎膨大期","collector":"电脑终端录入","recordedAt":"2026-06-17T11:20:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-015');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'spectrum-compare-001', 'spectrum-comparisons', '{"herbName":"黄连","sampleCode":"HL-SZ-20260601","district":"石柱县","spectrumType":"HPLC 指纹图谱","referenceName":"重庆黄连标准图谱 V1","similarity":"94.6","result":"通过","operator":"张老师","comparedAt":"2026-06-06T16:00:00","remark":"主峰保留时间稳定，特征峰匹配度高"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'spectrum-compare-001');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'spectrum-compare-002', 'spectrum-comparisons', '{"herbName":"金银花","sampleCode":"JYH-XS-20260602","district":"秀山县","spectrumType":"薄层色谱图谱","referenceName":"金银花薄层鉴别标准图谱","similarity":"88.2","result":"建议复核","operator":"李老师","comparedAt":"2026-06-07T10:30:00","remark":"局部斑点颜色偏浅，建议补充复测"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'spectrum-compare-002');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'spectrum-compare-003', 'spectrum-comparisons', '{"herbName":"天麻","sampleCode":"TM-WX-20260603","district":"巫溪县","spectrumType":"红外图谱","referenceName":"天麻红外标准图谱","similarity":"91.3","result":"通过","operator":"王老师","comparedAt":"2026-06-08T14:20:00","remark":"样本图谱与参考图谱整体一致"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'spectrum-compare-003');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-analysis-001', 'growth-analysis', '{"analysisName":"石柱黄连六月生长趋势分析","herbName":"黄连","district":"石柱县","indicator":"温度、湿度、土壤PH","baseline":"2026-06-01 首次记录","currentValue":"2026-06-22 最新记录","difference":"温度 +1.8，湿度 -6，PH +0.3","trend":"温度上升、湿度下降、PH稳定","conclusion":"黄连处于旺长期，温湿度变化仍在适宜范围内，建议保持遮阴与土壤保湿。","analyst":"李老师","analyzedAt":"2026-06-22T17:00:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-analysis-001');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'growth-analysis-002', 'growth-analysis', '{"analysisName":"秀山金银花花蕾期环境对比","herbName":"金银花","district":"秀山县","indicator":"温度、湿度","baseline":"2026-06-02 抽枝期","currentValue":"2026-06-16 花蕾期","difference":"温度 +2.1，湿度 -5","trend":"温度上升、湿度下降","conclusion":"花蕾期温度升高较明显，应关注连续高温对花蕾质量的影响。","analyst":"王老师","analyzedAt":"2026-06-16T16:30:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-analysis-002');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'course-001', 'courses', '{"title":"\u4e2d\u836f\u6750\u663e\u5fae\u9274\u5b9a\u5b9e\u9a8c","teacher":"\u5f20\u8001\u5e08","hours":"4","materialType":"\u89c6\u9891+\u8bb2\u4e49","status":"\u5df2\u53d1\u5e03"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'course-001');
 
