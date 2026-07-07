@@ -126,6 +126,22 @@ INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'project-003', 'projects', '{"title":"\u4f5b\u624b\u4ea7\u5730\u751f\u6001\u56e0\u5b50\u4e0e\u54c1\u8d28\u5173\u8054\u5206\u6790","leader":"\u738b\u8001\u5e08","stage":"\u6570\u636e\u5bf9\u6bd4\u5206\u6790","transformation":"\u5efa\u7acb\u4ea7\u5730\u54c1\u8d28\u8bc4\u4ef7\u6a21\u578b"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'project-003');
 
+UPDATE generic_record
+SET payload = '{"title":"重庆道地药材生态适应性研究","leader":"李老师","requirements":"招募2名学生，要求能参与野外采样、掌握基础数据录入，按周提交采集记录。","status":"已发布","stage":"数据采集中","applicantRequests":"当前学生","approvedMembers":"","rejectedApplicants":"","transformation":"种植规范转化"}'
+WHERE id = 'project-001' AND resource_type = 'projects' AND payload NOT LIKE '%requirements%';
+
+UPDATE generic_record
+SET payload = '{"title":"中药材非遗申报评价素材建设","leader":"张老师","requirements":"招募熟悉文献整理和影像资料归档的学生，需完成评价素材标注与过程记录。","status":"已发布","stage":"评价资料整理","applicantRequests":"","approvedMembers":"学生A","rejectedApplicants":"学生B","transformation":"形成非遗申报资料库"}'
+WHERE id = 'project-002' AND resource_type = 'projects' AND payload NOT LIKE '%requirements%';
+
+UPDATE generic_record
+SET payload = '{"title":"佛手产地生态因子与品质关联分析","leader":"王老师","requirements":"招募具备图谱比对或统计分析基础的学生，参与样本数据清洗和品质模型验证。","status":"待审核","stage":"数据对比分析","applicantRequests":"","approvedMembers":"","rejectedApplicants":"","transformation":"建立产地品质评价模型"}'
+WHERE id = 'project-003' AND resource_type = 'projects' AND payload NOT LIKE '%requirements%';
+
+UPDATE generic_record
+SET payload = REPLACE(payload, '"transformation"', '"rejectedApplicants":"","transformation"')
+WHERE resource_type = 'projects' AND payload LIKE '%"requirements"%' AND payload NOT LIKE '%rejectedApplicants%';
+
 INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'training-001', 'trainings', '{"title":"\u4e2d\u836f\u6750\u89c4\u8303\u5316\u91c7\u6536\u57f9\u8bad","trainer":"\u738b\u8001\u5e08","audience":"\u57fa\u5c42\u6280\u672f\u4eba\u5458","tracking":"\u7b7e\u5230\u3001\u89c6\u9891\u3001\u8003\u6838\u8bb0\u5f55\u5b8c\u6574"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'training-001');
@@ -177,3 +193,43 @@ WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'user-003');
 INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'standard-001', 'standards', '{"name":"\u5b66\u6821\u4e1a\u7ee9\u5206\u7c7b\u8ba4\u5b9a\u529e\u6cd5","category":"\u6559\u5b66\u79d1\u7814\u4e1a\u7ee9","levelRule":"\u56fd\u5bb6\u7ea7/\u7701\u90e8\u7ea7/\u6821\u7ea7/\u9662\u7ea7","effectiveDate":"2026-06-06"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'standard-001');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'trace-event-001', 'trace-events', '{"herbName":"黄连","traceCode":"CQ-HL-001","eventType":"种植","eventContent":"完成黄连种植地块登记，记录海拔、遮阴、土壤湿度等基础生态信息。","operator":"张老师","eventTime":"2026-03-10T09:30:00","location":"石柱县黄水镇"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'trace-event-001');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'trace-event-002', 'trace-events', '{"herbName":"黄连","traceCode":"CQ-HL-001","eventType":"采集","eventContent":"通过手机 APP 采集温湿度、土壤 PH 和生长阶段数据，并绑定同一溯源码。","operator":"学生用户","eventTime":"2026-06-06T11:00:00","location":"石柱县黄水镇"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'trace-event-002');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'trace-event-003', 'trace-events', '{"herbName":"黄连","traceCode":"CQ-HL-001","eventType":"检测","eventContent":"完成黄连样本 HPLC 指纹图谱比对，相似度较高，可作为教学样本归档。","operator":"李老师","eventTime":"2026-06-06T16:00:00","location":"中药材数字信息实验室"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'trace-event-003');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'trace-event-004', 'trace-events', '{"herbName":"杜仲","traceCode":"CQ-DZ-004","eventType":"检测","eventContent":"完成杜仲样品胶丝特征、含水率和外观性状检测，结果用于产地质量证明。","operator":"王老师","eventTime":"2026-06-06T14:30:00","location":"垫江县沙坪镇"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'trace-event-004');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'trace-event-005', 'trace-events', '{"herbName":"佛手","traceCode":"CQ-FS-006","eventType":"加工","eventContent":"记录佛手切片、干燥和包装过程，形成后续质量追溯节点。","operator":"王老师","eventTime":"2026-06-06T16:20:00","location":"江津区石门镇"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'trace-event-005');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'teaching-resource-001', 'teaching-resources', '{"title":"黄连生长数据采集实验视频","resourceType":"教学视频","courseTitle":"中药材生长数据采集实验","uploader":"李老师","uploaderRole":"教师","status":"已发布","reviewComment":"内容完整，已发布至学生课程学习。","videoUrl":"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4","fileUrl":"","publishedAt":"2026-06-08T09:00:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-001');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'teaching-resource-002', 'teaching-resources', '{"title":"佛手样本图谱比对资料包","resourceType":"图谱文件","courseTitle":"药材溯源码与图谱比对实训","uploader":"王老师","uploaderRole":"科研人员","status":"待审核","reviewComment":"等待管理员审核图谱文件与说明文档。","videoUrl":"","fileUrl":"","publishedAt":""}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-002');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'teaching-resource-003', 'teaching-resources', '{"title":"中药材规范化采收培训课件","resourceType":"课件文档","courseTitle":"中药材规范化采收培训","uploader":"张老师","uploaderRole":"教师","status":"已驳回","reviewComment":"缺少封面和实验安全说明，补充后重新提交。","videoUrl":"","fileUrl":"","publishedAt":""}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-003');
+
+INSERT INTO generic_record (id, resource_type, payload, created_at)
+SELECT 'teaching-resource-004', 'teaching-resources', '{"title":"显微鉴定实验操作演示","resourceType":"教学视频","courseTitle":"中药材显微鉴定实验","uploader":"张老师","uploaderRole":"教师","status":"已发布","reviewComment":"显微制片和观察步骤清晰，已发布给学生。","videoUrl":"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4","fileUrl":"","publishedAt":"2026-06-10T10:30:00"}', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-004');
+
+UPDATE generic_record
+SET payload = '{"title":"黄连生长数据采集实验视频","resourceType":"教学视频","courseTitle":"中药材生长数据采集实验","uploader":"李老师","uploaderRole":"教师","status":"已发布","reviewComment":"内容完整，已发布至学生课程学习。","videoUrl":"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4","fileUrl":"","publishedAt":"2026-06-08T09:00:00"}'
+WHERE id = 'teaching-resource-001' AND resource_type = 'teaching-resources' AND payload NOT LIKE '%videoUrl%';

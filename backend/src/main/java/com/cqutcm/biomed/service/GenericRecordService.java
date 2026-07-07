@@ -81,6 +81,8 @@ public class GenericRecordService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("herbCount", repository.countByResourceType("herbs"));
         result.put("growthRecordCount", repository.countByResourceType("growth-records"));
+        result.put("traceEventCount", repository.countByResourceType("trace-events"));
+        result.put("teachingResourceCount", repository.countByResourceType("teaching-resources"));
         result.put("spectrumComparisonCount", repository.countByResourceType("spectrum-comparisons"));
         result.put("growthAnalysisCount", repository.countByResourceType("growth-analysis"));
         result.put("courseCount", repository.countByResourceType("courses"));

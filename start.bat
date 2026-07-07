@@ -3,6 +3,7 @@ cd /d "%~dp0"
 
 set "APP_JAR=backend\target\biomed-digital-system-1.0.0.jar"
 set "MAVEN_CMD=D:\IntelliJ IDEA 2024.3.1.1\plugins\maven\lib\maven3\bin\mvn.cmd"
+if "%APP_PROFILE%"=="" set "APP_PROFILE=local"
 
 netstat -ano | findstr /R /C:":8088 .*LISTENING" >nul
 if not errorlevel 1 (
@@ -61,10 +62,11 @@ if not exist "%APP_JAR%" (
 echo.
 echo Starting Biomed Digital Information System...
 echo Open http://localhost:8088 after startup.
+echo Active profile: %APP_PROFILE%
 echo Keep this window open.
 echo.
 
-java -jar "%APP_JAR%" --spring.profiles.active=local
+java -jar "%APP_JAR%" --spring.profiles.active=%APP_PROFILE%
 
 if errorlevel 1 (
   echo.

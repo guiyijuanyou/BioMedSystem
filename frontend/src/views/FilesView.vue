@@ -3,6 +3,11 @@ import { onMounted, ref } from "vue";
 import { Download, Eye, Upload } from "lucide-vue-next";
 import { api } from "@/services/api";
 
+defineProps({
+  permissions: { type: Object, default: () => ({ create: true }) },
+  role: { type: String, default: "admin" }
+});
+
 const emit = defineEmits(["notify"]);
 const items = ref([]);
 const category = ref("教学视频");
@@ -64,11 +69,12 @@ onMounted(load);
   <div class="module-layout">
     <section class="panel">
       <div class="panel-head"><div><h2>资料上传下载</h2><span>课程视频、图谱、培训材料、评价佐证</span></div></div>
-      <form class="form-grid" @submit.prevent="upload">
+      <form v-if="permissions.create !== false" class="form-grid" @submit.prevent="upload">
         <label>资料分类<select v-model="category"><option>教学视频</option><option>图谱文件</option><option>培训材料</option><option>评价佐证</option><option>溯源附件</option></select></label>
         <label>选择文件<input id="vue-file-input" type="file" required @change="chooseFile"></label>
         <button type="submit" :disabled="uploading || !file"><Upload :size="16" />{{ uploading ? "上传中..." : "上传文件" }}</button>
       </form>
+      <p v-else class="empty-state">当前角色仅可查看和下载已发布资料</p>
     </section>
     <section class="panel">
       <div class="panel-head"><div><h2>已上传资料</h2><span>支持在线查看与下载</span></div></div>

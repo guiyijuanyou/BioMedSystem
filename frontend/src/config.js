@@ -15,6 +15,23 @@ export const modules = {
       ["humidity", "湿度"], ["soilPh", "土壤 PH"], ["growthStage", "生长阶段"], ["collector", "采集来源"], ["recordedAt", "采集时间"]
     ]
   },
+  "trace-events": {
+    title: "溯源管理",
+    hint: "按溯源码记录药材种植、采集、检测、加工、入库等流转事件",
+    fields: [
+      ["herbName", "药材名称"], ["traceCode", "溯源码"], ["eventType", "事件类型"],
+      ["eventContent", "事件内容"], ["operator", "操作人"], ["eventTime", "事件时间"], ["location", "发生地点"]
+    ]
+  },
+  "teaching-resources": {
+    title: "教学资源审核",
+    hint: "教师和科研人员上传视频、课件、图片等资料，经管理员审核后发布给学生学习",
+    fields: [
+      ["title", "资源标题"], ["resourceType", "资源类型"], ["courseTitle", "所属课程"],
+      ["uploader", "上传人"], ["uploaderRole", "上传角色"], ["status", "审核状态"],
+      ["reviewComment", "审核意见"], ["videoUrl", "视频地址"], ["fileUrl", "资料地址"], ["publishedAt", "发布时间"]
+    ]
+  },
   "spectrum-comparisons": {
     title: "图谱比对",
     hint: "中药材图谱上传、参考图谱比对和相似度判定",
@@ -40,8 +57,12 @@ export const modules = {
   },
   projects: {
     title: "试验课题研究",
-    hint: "课题内容、参与研究、成果转化",
-    fields: [["title", "课题名称"], ["leader", "负责人"], ["stage", "研究阶段"], ["transformation", "成果转化"]]
+    hint: "教师或科研人员创建课题，管理员审核发布，学生申请加入后由负责人审批",
+    fields: [
+      ["title", "课题名称"], ["leader", "负责人"], ["requirements", "加入要求"], ["status", "审核状态"],
+      ["stage", "研究阶段"], ["applicantRequests", "学生申请"], ["approvedMembers", "已加入成员"],
+      ["rejectedApplicants", "已拒绝申请"], ["transformation", "成果转化"]
+    ]
   },
   trainings: {
     title: "培训素材与跟踪",
@@ -74,6 +95,7 @@ export const navItems = [
   ["dashboard", "总览"],
   ["herbs", "分布地图"],
   ["growth-records", "生长采集"],
+  ["trace-events", "溯源管理"],
   ["spectrum-comparisons", "图谱比对"],
   ["growth-analysis", "数据分析"],
   ["courses", "试验课程"],
@@ -85,3 +107,86 @@ export const navItems = [
   ["users", "用户层级"],
   ["files", "资料文件"]
 ];
+
+export const roles = {
+  admin: { label: "管理员", title: "系统管理工作台" },
+  teacher: { label: "教师", title: "教学工作台" },
+  researcher: { label: "科研人员", title: "科研工作台" },
+  student: { label: "学生", title: "学习首页" }
+};
+
+export const roleMenus = {
+  admin: [
+    ["dashboard", "工作台"],
+    ["teaching-resources", "资源审核"],
+    ["users", "用户管理"],
+    ["herbs", "中药材管理"],
+    ["growth-records", "生长数据"],
+    ["trace-events", "溯源管理"],
+    ["courses", "课程管理"],
+    ["projects", "课题研究"],
+    ["trainings", "培训素材"],
+    ["evaluations", "评价体系"],
+    ["achievements", "工作业绩"],
+    ["standards", "认定标准"],
+    ["files", "资料文件"]
+  ],
+  teacher: [
+    ["dashboard", "教学工作台"],
+    ["growth-records", "生长采集"],
+    ["trace-events", "溯源管理"],
+    ["spectrum-comparisons", "图谱比对"],
+    ["growth-analysis", "数据分析"],
+    ["courses", "试验课程"],
+    ["projects", "课题研究"],
+    ["trainings", "培训素材"],
+    ["evaluations", "评价体系"],
+    ["teaching-resources", "资源上传"],
+    ["achievements", "工作业绩"],
+    ["files", "资料文件"]
+  ],
+  researcher: [
+    ["dashboard", "科研工作台"],
+    ["growth-records", "生长数据"],
+    ["trace-events", "溯源管理"],
+    ["spectrum-comparisons", "图谱比对"],
+    ["growth-analysis", "数据分析"],
+    ["projects", "课题研究"],
+    ["evaluations", "评价体系"],
+    ["teaching-resources", "资源上传"],
+    ["achievements", "工作业绩"],
+    ["files", "资料文件"]
+  ],
+  student: [
+    ["dashboard", "学习首页"],
+    ["courses", "课程学习"],
+    ["growth-records", "生长采集"],
+    ["trace-events", "溯源查询"],
+    ["projects", "课题研究"],
+    ["trainings", "培训素材"],
+    ["files", "资料文件"]
+  ]
+};
+
+export const roleModulePermissions = {
+  admin: {
+    default: { create: true, edit: true, duplicate: true, delete: true, export: true, batchDelete: true },
+    "teaching-resources": { create: false, edit: true, duplicate: false, delete: true, export: true, batchDelete: true }
+  },
+  teacher: {
+    default: { create: true, edit: true, duplicate: true, delete: true, export: true, batchDelete: true },
+    users: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
+    standards: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false }
+  },
+  researcher: {
+    default: { create: true, edit: true, duplicate: true, delete: true, export: true, batchDelete: true },
+    trainings: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false }
+  },
+  student: {
+    default: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
+    "growth-records": { create: true, edit: true, duplicate: false, delete: false, export: false, batchDelete: false },
+    courses: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
+    "trace-events": { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
+    files: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false }
+  }
+};

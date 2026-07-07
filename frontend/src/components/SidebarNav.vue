@@ -1,13 +1,14 @@
 <script setup>
-import { navItems } from "@/config";
 import {
   Activity, Award, BarChart3, BookOpen, Boxes, ClipboardCheck, FileArchive,
-  FlaskConical, GraduationCap, LayoutDashboard, MapPinned, UsersRound
+  FlaskConical, GitBranch, GraduationCap, LayoutDashboard, MapPinned, ShieldCheck, UsersRound
 } from "lucide-vue-next";
 
 defineProps({
   active: { type: String, required: true },
-  open: { type: Boolean, default: false }
+  open: { type: Boolean, default: false },
+  items: { type: Array, required: true },
+  roleLabel: { type: String, default: "管理员" }
 });
 
 const emit = defineEmits(["select", "close"]);
@@ -16,6 +17,8 @@ const icons = {
   dashboard: LayoutDashboard,
   herbs: MapPinned,
   "growth-records": Activity,
+  "trace-events": GitBranch,
+  "teaching-resources": ShieldCheck,
   "spectrum-comparisons": FlaskConical,
   "growth-analysis": BarChart3,
   courses: BookOpen,
@@ -40,7 +43,7 @@ const icons = {
     </div>
     <nav>
       <button
-        v-for="[key, label] in navItems"
+        v-for="[key, label] in items"
         :key="key"
         class="nav-item"
         :class="{ active: active === key }"
@@ -52,8 +55,8 @@ const icons = {
       </button>
     </nav>
     <div class="sidebar-footer">
-      <span class="user-avatar">管</span>
-      <div><strong>系统管理员</strong><small><i></i>系统服务正常</small></div>
+      <span class="user-avatar">{{ roleLabel.slice(0, 1) }}</span>
+      <div><strong>{{ roleLabel }}</strong><small><i></i>系统服务正常</small></div>
     </div>
   </aside>
 </template>
