@@ -758,6 +758,317 @@ input[type="file"]::file-selector-button {
   margin-bottom: 11px;
 }
 
+.insight-panel {
+  display: grid;
+  gap: 13px;
+  padding: 14px;
+  margin-bottom: 13px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.insight-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.insight-heading > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--brand);
+  background: var(--brand-soft);
+  border-radius: 7px;
+}
+
+.insight-heading strong,
+.insight-heading small {
+  display: block;
+}
+
+.insight-heading small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.insight-grid,
+.trend-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.insight-grid article,
+.trend-summary article {
+  min-width: 0;
+  padding: 11px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.insight-grid span,
+.trend-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.insight-grid strong,
+.trend-summary strong {
+  display: block;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.insight-grid small,
+.trend-summary small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.insight-lists {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.insight-lists div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.insight-lists strong {
+  color: var(--brand-dark);
+  font-size: 12px;
+}
+
+.insight-lists span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.growth-trend-card {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.trend-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trend-toolbar strong,
+.trend-toolbar small {
+  display: block;
+}
+
+.trend-toolbar small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.trend-toolbar select {
+  max-width: 310px;
+}
+
+.trend-body {
+  display: grid;
+  gap: 12px;
+}
+
+.trend-summary strong {
+  font-size: 19px;
+}
+
+.trend-summary small.up {
+  color: #b6532e;
+  font-weight: 750;
+}
+
+.trend-summary small.down {
+  color: #216f9c;
+  font-weight: 750;
+}
+
+.trend-summary small.stable {
+  color: var(--brand);
+  font-weight: 750;
+}
+
+.line-chart {
+  position: relative;
+  padding: 12px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.chart-plot {
+  position: relative;
+}
+
+.line-chart svg {
+  display: block;
+  width: 100%;
+  height: 230px;
+}
+
+.line-chart line {
+  stroke: #cad6cf;
+  stroke-width: 0.7;
+}
+
+.line-chart .chart-guide {
+  stroke: #c4d0ca;
+  stroke-dasharray: 1.6 2.4;
+  stroke-width: 0.28;
+}
+
+.line-chart polyline {
+  fill: none;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.temperature-line {
+  stroke: var(--accent);
+}
+
+.humidity-line {
+  stroke: #2677a8;
+}
+
+.ph-line {
+  stroke: var(--brand);
+}
+
+.temperature-point {
+  color: var(--accent);
+}
+
+.humidity-point {
+  color: #2677a8;
+}
+
+.ph-point {
+  color: var(--brand);
+}
+
+.chart-values {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chart-marker {
+  position: absolute;
+  z-index: 2;
+  width: 8px;
+  height: 8px;
+  background: var(--surface-subtle);
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.chart-values span {
+  position: absolute;
+  z-index: 1;
+  padding: 0 4px;
+  color: var(--ink);
+  background: var(--surface-subtle);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.2;
+  transform: translate(-50%, calc(-100% - 8px));
+  white-space: nowrap;
+}
+
+.chart-legend,
+.chart-labels {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chart-legend button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 8px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.chart-legend button:hover,
+.chart-legend button.active {
+  color: var(--brand-dark);
+  background: #fff;
+  border-color: var(--line);
+}
+
+.chart-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.temperature-dot {
+  background: var(--accent);
+}
+
+.humidity-dot {
+  background: #2677a8;
+}
+
+.ph-dot {
+  background: var(--brand);
+}
+
+.chart-labels {
+  position: relative;
+  height: 20px;
+  margin-top: 6px;
+}
+
+.chart-labels span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
 .table-tools input {
   flex: 1;
 }
@@ -2359,6 +2670,32 @@ thead .sticky-action {
 
   .selection-bar span {
     margin-right: auto;
+  }
+
+  .insight-panel {
+    padding: 12px;
+  }
+
+  .insight-grid,
+  .trend-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trend-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .trend-toolbar select {
+    max-width: none;
+  }
+
+  .line-chart svg {
+    height: 180px;
+  }
+
+  .chart-labels {
+    justify-content: flex-start;
   }
 
   .resource-table {

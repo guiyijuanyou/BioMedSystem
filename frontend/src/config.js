@@ -12,7 +12,25 @@ export const modules = {
     hint: "APP、传感器和电脑终端采集记录",
     fields: [
       ["herbName", "药材名称"], ["district", "采集地点"], ["temperature", "温度"],
-      ["humidity", "湿度"], ["soilPh", "土壤 PH"], ["collector", "采集来源"], ["recordedAt", "采集时间"]
+      ["humidity", "湿度"], ["soilPh", "土壤 PH"], ["growthStage", "生长阶段"], ["collector", "采集来源"], ["recordedAt", "采集时间"]
+    ]
+  },
+  "spectrum-comparisons": {
+    title: "图谱比对",
+    hint: "中药材图谱上传、参考图谱比对和相似度判定",
+    fields: [
+      ["herbName", "药材名称"], ["sampleCode", "样本编号"], ["district", "采集区县"],
+      ["spectrumType", "图谱类型"], ["referenceName", "参考图谱"], ["similarity", "相似度"],
+      ["result", "比对结果"], ["operator", "操作人"], ["comparedAt", "比对时间"], ["remark", "备注"]
+    ]
+  },
+  "growth-analysis": {
+    title: "数据对比分析",
+    hint: "按批次、区县和生态指标对生长数据进行对比分析",
+    fields: [
+      ["analysisName", "分析名称"], ["herbName", "药材名称"], ["district", "对比区县"],
+      ["indicator", "分析指标"], ["baseline", "基准值"], ["currentValue", "当前值"],
+      ["difference", "差异"], ["trend", "趋势判断"], ["conclusion", "分析结论"], ["analyst", "分析人"], ["analyzedAt", "分析时间"]
     ]
   },
   courses: {
@@ -56,6 +74,8 @@ export const navItems = [
   ["dashboard", "总览"],
   ["herbs", "分布地图"],
   ["growth-records", "生长采集"],
+  ["spectrum-comparisons", "图谱比对"],
+  ["growth-analysis", "数据分析"],
   ["courses", "试验课程"],
   ["projects", "课题研究"],
   ["trainings", "培训素材"],

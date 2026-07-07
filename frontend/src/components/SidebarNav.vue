@@ -1,7 +1,7 @@
 <script setup>
 import { navItems } from "@/config";
 import {
-  Activity, Award, BookOpen, Boxes, ClipboardCheck, FileArchive,
+  Activity, Award, BarChart3, BookOpen, Boxes, ClipboardCheck, FileArchive,
   FlaskConical, GraduationCap, LayoutDashboard, MapPinned, UsersRound
 } from "lucide-vue-next";
 
@@ -16,6 +16,8 @@ const icons = {
   dashboard: LayoutDashboard,
   herbs: MapPinned,
   "growth-records": Activity,
+  "spectrum-comparisons": FlaskConical,
+  "growth-analysis": BarChart3,
   courses: BookOpen,
   projects: FlaskConical,
   trainings: GraduationCap,
