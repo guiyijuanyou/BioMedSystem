@@ -12,7 +12,8 @@ export const modules = {
     hint: "APP、传感器和电脑终端采集记录",
     fields: [
       ["herbName", "药材名称"], ["district", "采集地点"], ["temperature", "温度"],
-      ["humidity", "湿度"], ["soilPh", "土壤 PH"], ["growthStage", "生长阶段"], ["collector", "采集来源"], ["recordedAt", "采集时间"]
+      ["humidity", "湿度"], ["soilPh", "土壤 PH"], ["growthStage", "生长阶段"], ["collector", "采集来源"],
+      ["recorder", "采集人"], ["recorderRole", "采集角色"], ["recordedAt", "采集时间"]
     ]
   },
   "trace-events": {

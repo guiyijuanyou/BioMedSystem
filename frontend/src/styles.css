@@ -1282,6 +1282,11 @@ input[type="file"]::file-selector-button {
   line-height: 1.6;
 }
 
+.course-download-current {
+  width: fit-content;
+  margin-top: 4px;
+}
+
 .course-player-sidebar {
   display: grid;
   gap: 14px;
