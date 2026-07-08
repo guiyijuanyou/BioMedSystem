@@ -29,6 +29,16 @@ const pageTitle = computed(() => {
   return currentNavLabel.value || modules[active.value]?.title || "生物医药数字信息系统";
 });
 const currentRoleLabel = computed(() => roles[currentRole.value]?.label || "管理员");
+const currentUser = computed(() => ({
+  role: currentRole.value,
+  roleLabel: currentRoleLabel.value,
+  name: {
+    admin: "系统管理员",
+    teacher: "李老师",
+    researcher: "王老师",
+    student: "当前学生"
+  }[currentRole.value] || "当前用户"
+}));
 const activeModuleConfig = computed(() => {
   const config = modules[active.value];
   if (!config) return null;
@@ -103,7 +113,14 @@ function editMapRecord(item) {
 
 async function submitGrowth(payload) {
   try {
-    await api("/api/growth-records", { method: "POST", body: JSON.stringify(payload) });
+    await api("/api/growth-records", {
+      method: "POST",
+      body: JSON.stringify({
+        ...payload,
+        recorder: currentUser.value.name,
+        recorderRole: currentUser.value.roleLabel
+      })
+    });
     notify("生长采集数据已入库");
     await loadDashboard();
   } catch (error) {
@@ -197,6 +214,7 @@ onBeforeUnmount(() => {
         :summary="summary"
         :herbs="herbs"
         :role="currentRole"
+        :current-user="currentUser"
         :can-edit-map="currentRole !== 'student'"
         @edit-record="editMapRecord"
         @submit-growth="submitGrowth"
@@ -209,6 +227,7 @@ onBeforeUnmount(() => {
         :config="activeModuleConfig"
         :permissions="modulePermissions"
         :role="currentRole"
+        :current-user="currentUser"
         :edit-id="editId"
         @edit-consumed="editId = ''"
         @notify="notify"

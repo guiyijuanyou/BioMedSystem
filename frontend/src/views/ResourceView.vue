@@ -12,6 +12,7 @@ const props = defineProps({
   config: { type: Object, required: true },
   permissions: { type: Object, default: () => ({}) },
   role: { type: String, default: "admin" },
+  currentUser: { type: Object, default: () => ({ name: "当前用户", role: "student", roleLabel: "学生" }) },
   editId: String
 });
 
@@ -51,7 +52,8 @@ const canEdit = computed(() => props.permissions.edit !== false);
 const canDuplicate = computed(() => props.permissions.duplicate !== false);
 const canDelete = computed(() => props.permissions.delete !== false);
 const canExport = computed(() => props.permissions.export !== false);
-const canBatchDelete = computed(() => props.permissions.batchDelete !== false && canDelete.value);
+const hasOwnershipScope = computed(() => props.role !== "admin" && ["growth-records", "teaching-resources", "projects", "courses", "achievements"].includes(props.moduleKey));
+const canBatchDelete = computed(() => props.permissions.batchDelete !== false && canDelete.value && !hasOwnershipScope.value);
 const hasRowActions = computed(() => true);
 const panelTitle = computed(() => {
   if (panelMode.value === "view") return "记录详情";
@@ -251,13 +253,19 @@ function defaultValue(name) {
     comparedAt: new Date().toISOString().slice(0, 19),
     analyzedAt: new Date().toISOString().slice(0, 19),
     collector: "电脑终端录入",
+    recorder: props.currentUser.name || "当前用户",
+    recorderRole: props.currentUser.roleLabel || "当前角色",
     temperature: "20.0",
     humidity: "80",
     soilPh: "6.5",
     growthStage: "生长期",
     eventType: "采集",
     resourceType: "教学视频",
+    uploader: props.currentUser.name || "当前用户",
     uploaderRole: "教师",
+    teacher: props.currentUser.name || "当前教师",
+    leader: props.currentUser.name || "当前负责人",
+    owner: props.currentUser.name || "当前用户",
     status: "待审核",
     requirements: "面向对中药材研究感兴趣的学生，需具备基础实验记录能力，能够按要求参与数据采集和阶段汇报。",
     applicantRequests: "",
@@ -380,6 +388,76 @@ function resourcePreviewUrl(resource) {
 
 function resourceDownloadUrl(resource) {
   return resource.downloadUrl || resource.fileUrl || resource.videoUrl || "";
+}
+
+function ownerName(item) {
+  return item.recorder || item.uploader || item.leader || item.teacher || item.owner || item.operator || "";
+}
+
+function ownerRole(item) {
+  return item.recorderRole || item.uploaderRole || (String(ownerName(item)).includes("学生") ? "学生" : String(ownerName(item)).includes("老师") ? "教师" : "");
+}
+
+function isStudentOwned(item) {
+  return ownerRole(item) === "学生" || String(ownerName(item)).includes("学生");
+}
+
+function isOwnRecord(item) {
+  return ownerName(item) === props.currentUser.name;
+}
+
+function canManageItem(item, action = "edit") {
+  if (props.role === "admin") return action === "delete" ? canDelete.value : canEdit.value;
+  if (action === "delete" && !canDelete.value) return false;
+  if (action === "edit" && !canEdit.value) return false;
+  if (!hasOwnershipScope.value) return action === "delete" ? canDelete.value : canEdit.value;
+  if (action === "delete") return isOwnRecord(item);
+  if (props.role === "student") return isOwnRecord(item);
+  if (props.role === "teacher") return isOwnRecord(item) || isStudentOwned(item);
+  if (props.role === "researcher") return isOwnRecord(item) || isStudentOwned(item);
+  return false;
+}
+
+function resourceFileName(resource) {
+  const title = String(resource.title || "教学资源").replace(/[\\/:*?"<>|]/g, "_");
+  const url = resourceDownloadUrl(resource);
+  const urlName = url.split("?")[0].split("/").pop() || "";
+  const extension = urlName.includes(".")
+    ? `.${urlName.split(".").pop()}`
+    : isVideoResource(resource) ? ".mp4" : "";
+  return title.endsWith(extension) ? title : `${title}${extension}`;
+}
+
+async function downloadResource(resource) {
+  const url = resourceDownloadUrl(resource);
+  if (!url) {
+    emit("notify", "该资源没有可下载地址");
+    return;
+  }
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`下载失败（${response.status}）`);
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = resourceFileName(resource);
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
+    emit("notify", "资源已开始下载");
+  } catch (error) {
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = resourceFileName(resource);
+    anchor.target = "_blank";
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    emit("notify", `已尝试下载；若浏览器直接打开资源，请检查资源地址是否允许下载。${error.message}`);
+  }
 }
 
 function splitNames(value) {
@@ -516,12 +594,20 @@ function openView(item) {
 }
 
 function openEdit(item) {
+  if (!canManageItem(item, "edit")) {
+    emit("notify", "当前角色不能修改这条记录");
+    return;
+  }
   fillForm(item);
   panelMode.value = "edit";
   panelOpen.value = true;
 }
 
 function duplicate(item) {
+  if (!canManageItem(item, "edit")) {
+    emit("notify", "当前角色不能复制这条记录");
+    return;
+  }
   fillForm(item);
   editingId.value = null;
   delete form.createdAt;
@@ -560,8 +646,34 @@ async function load() {
 async function save() {
   saving.value = true;
   try {
+    const source = editingId.value ? items.value.find(item => item.id === editingId.value) : null;
+    if (editingId.value) {
+      if (source && !canManageItem(source, "edit")) {
+        emit("notify", "当前角色不能保存这条记录");
+        return;
+      }
+    }
     const payload = {};
     props.config.fields.forEach(([name]) => payload[name] = form[name] ?? "");
+    if (props.role !== "admin") {
+      if (props.moduleKey === "growth-records") {
+        payload.recorder = source?.recorder || props.currentUser.name;
+        payload.recorderRole = source?.recorderRole || props.currentUser.roleLabel;
+      }
+      if (props.moduleKey === "teaching-resources") {
+        payload.uploader = source?.uploader || props.currentUser.name;
+        payload.uploaderRole = source?.uploaderRole || props.currentUser.roleLabel;
+      }
+      if (props.moduleKey === "projects") {
+        payload.leader = source?.leader || props.currentUser.name;
+      }
+      if (props.moduleKey === "courses") {
+        payload.teacher = source?.teacher || props.currentUser.name;
+      }
+      if (props.moduleKey === "achievements") {
+        payload.owner = source?.owner || props.currentUser.name;
+      }
+    }
     if (editingId.value) payload.id = editingId.value;
     await api(`/api/${props.moduleKey}`, {
       method: editingId.value ? "PUT" : "POST",
@@ -578,6 +690,14 @@ async function save() {
 }
 
 function requestDelete(ids) {
+  const denied = ids.filter(id => {
+    const item = items.value.find(row => row.id === id);
+    return item && !canManageItem(item, "delete");
+  });
+  if (denied.length) {
+    emit("notify", "已阻止删除无权限的记录");
+    return;
+  }
   confirmState.ids = [...ids];
   confirmState.open = true;
 }
@@ -869,6 +989,14 @@ watch(() => props.editId, id => {
             <span>{{ learningCourse.teacher }} · {{ learningCourse.hours }} 学时</span>
             <h3>{{ learningCourse.title }}</h3>
             <p>{{ activeLearningResource?.reviewComment || "请选择右侧已发布教学资源进行学习。" }}</p>
+            <button
+              v-if="activeLearningResource && resourceDownloadUrl(activeLearningResource)"
+              class="button-secondary course-download-current"
+              type="button"
+              @click="downloadResource(activeLearningResource)"
+            >
+              <Download :size="16" />下载当前资源
+            </button>
           </div>
         </main>
         <aside class="course-player-sidebar">
@@ -892,7 +1020,7 @@ watch(() => props.editId, id => {
               <div><span>{{ resource.title }}</span><small>{{ resource.resourceType }} · {{ resource.uploader }}</small></div>
               <div>
                 <a v-if="resourcePreviewUrl(resource)" :href="resourcePreviewUrl(resource)" target="_blank" rel="noopener"><button class="icon-button" type="button" title="查看"><Eye :size="15" /></button></a>
-                <a v-if="resourceDownloadUrl(resource)" :href="resourceDownloadUrl(resource)"><button class="icon-button" type="button" title="下载"><Download :size="15" /></button></a>
+                <button v-if="resourceDownloadUrl(resource)" class="icon-button" type="button" title="下载" @click="downloadResource(resource)"><Download :size="15" /></button>
               </div>
             </article>
             <p v-if="!learningResources.length" class="empty-state">暂无已发布资料</p>
@@ -1009,9 +1137,9 @@ watch(() => props.editId, id => {
             <td v-if="hasRowActions" class="sticky-action">
               <div class="row-actions">
                 <button class="icon-button" type="button" title="查看详情" @click="openView(item)"><Eye :size="16" /></button>
-                <button v-if="canEdit" class="icon-button" type="button" title="编辑记录" @click="openEdit(item)"><Pencil :size="16" /></button>
-                <button v-if="canDuplicate" class="icon-button" type="button" title="复制记录" @click="duplicate(item)"><Copy :size="16" /></button>
-                <button v-if="canDelete" class="icon-button danger" type="button" title="删除记录" @click="requestDelete([item.id])"><Trash2 :size="16" /></button>
+                <button v-if="canManageItem(item, 'edit')" class="icon-button" type="button" title="编辑记录" @click="openEdit(item)"><Pencil :size="16" /></button>
+                <button v-if="canDuplicate && canManageItem(item, 'edit')" class="icon-button" type="button" title="复制记录" @click="duplicate(item)"><Copy :size="16" /></button>
+                <button v-if="canManageItem(item, 'delete')" class="icon-button danger" type="button" title="删除记录" @click="requestDelete([item.id])"><Trash2 :size="16" /></button>
               </div>
             </td>
           </tr>
@@ -1075,7 +1203,7 @@ watch(() => props.editId, id => {
                 <div><strong>{{ resource.title }}</strong><span>{{ resource.resourceType }} · {{ resource.uploader }}</span></div>
                 <div>
                   <a v-if="resourcePreviewUrl(resource)" :href="resourcePreviewUrl(resource)" target="_blank" rel="noopener"><button class="button-secondary" type="button"><Eye :size="15" />查看</button></a>
-                  <a v-if="resourceDownloadUrl(resource)" :href="resourceDownloadUrl(resource)"><button type="button"><Download :size="15" />下载</button></a>
+                  <button v-if="resourceDownloadUrl(resource)" type="button" @click="downloadResource(resource)"><Download :size="15" />下载</button>
                 </div>
               </article>
             </div>
@@ -1120,10 +1248,10 @@ watch(() => props.editId, id => {
 
         <footer class="drawer-footer">
           <template v-if="panelMode === 'view'">
-            <button v-if="canDelete" class="danger-ghost" type="button" @click="requestDelete([editingId])"><Trash2 :size="16" />删除</button>
-            <button v-if="canDuplicate" class="button-secondary" type="button" @click="duplicate(form)"><Copy :size="16" />复制</button>
-            <button v-if="canEdit" type="button" @click="panelMode = 'edit'"><Pencil :size="16" />编辑记录</button>
-            <button v-if="!canEdit && !canDuplicate && !canDelete" class="button-secondary" type="button" @click="closePanel">关闭</button>
+            <button v-if="canManageItem(form, 'delete')" class="danger-ghost" type="button" @click="requestDelete([editingId])"><Trash2 :size="16" />删除</button>
+            <button v-if="canDuplicate && canManageItem(form, 'edit')" class="button-secondary" type="button" @click="duplicate(form)"><Copy :size="16" />复制</button>
+            <button v-if="canManageItem(form, 'edit')" type="button" @click="panelMode = 'edit'"><Pencil :size="16" />编辑记录</button>
+            <button v-if="!canManageItem(form, 'edit') && !(canDuplicate && canManageItem(form, 'edit')) && !canManageItem(form, 'delete')" class="button-secondary" type="button" @click="closePanel">关闭</button>
           </template>
           <template v-else>
             <button class="button-secondary" type="button" @click="closePanel">取消</button>

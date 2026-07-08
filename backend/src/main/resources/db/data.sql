@@ -58,6 +58,18 @@ INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'growth-009', 'growth-records', '{"herbName":"黄连","district":"石柱县","temperature":"20.7","humidity":"80","soilPh":"6.4","growthStage":"旺长期","collector":"电脑终端录入","recordedAt":"2026-06-22T10:05:00"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-009');
 
+UPDATE generic_record
+SET payload = REPLACE(payload, '"recordedAt"', '"recorder":"当前学生","recorderRole":"学生","recordedAt"')
+WHERE resource_type = 'growth-records' AND payload NOT LIKE '%"recorder"%';
+
+UPDATE generic_record
+SET payload = '{"herbName":"黄连","district":"石柱县","temperature":"18.9","humidity":"86","soilPh":"6.1","growthStage":"萌芽期","collector":"传感器网关","recorder":"李老师","recorderRole":"教师","recordedAt":"2026-06-01T09:00:00"}'
+WHERE id = 'growth-006' AND resource_type = 'growth-records';
+
+UPDATE generic_record
+SET payload = '{"herbName":"黄连","district":"石柱县","temperature":"20.7","humidity":"80","soilPh":"6.4","growthStage":"旺长期","collector":"电脑终端录入","recorder":"张老师","recorderRole":"教师","recordedAt":"2026-06-22T10:05:00"}'
+WHERE id = 'growth-009' AND resource_type = 'growth-records';
+
 INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'growth-010', 'growth-records', '{"herbName":"金银花","district":"秀山县","temperature":"23.1","humidity":"69","soilPh":"6.8","growthStage":"抽枝期","collector":"手机APP采集","recordedAt":"2026-06-02T08:40:00"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'growth-010');

@@ -11,6 +11,7 @@ const props = defineProps({
   summary: { type: Object, required: true },
   herbs: { type: Array, default: () => [] },
   role: { type: String, default: "admin" },
+  currentUser: { type: Object, default: () => ({ name: "当前用户", role: "student", roleLabel: "学生" }) },
   canEditMap: { type: Boolean, default: true }
 });
 
