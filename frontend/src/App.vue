@@ -89,6 +89,11 @@ function logout() {
   drawerOpen.value = false;
 }
 
+function handleLoginRequired() {
+  logout();
+  notify("登录状态已失效，请重新登录");
+}
+
 async function loadDashboard() {
   if (!isAuthenticated.value) return;
   try {
@@ -146,6 +151,11 @@ function editMapRecord(item) {
   selectPage("herbs");
 }
 
+function openModuleRecord({ moduleKey, id }) {
+  editId.value = id;
+  selectPage(moduleKey);
+}
+
 async function submitGrowth(payload) {
   try {
     await api("/api/growth-records", {
@@ -192,6 +202,7 @@ onMounted(() => {
   window.addEventListener("resize", updateAppHeight);
   window.addEventListener("touchstart", onTouchStart, { passive: true });
   window.addEventListener("touchend", onTouchEnd, { passive: true });
+  window.addEventListener("biomed-login-required", handleLoginRequired);
 });
 
 watch(currentRole, () => {
@@ -207,6 +218,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateAppHeight);
   window.removeEventListener("touchstart", onTouchStart);
   window.removeEventListener("touchend", onTouchEnd);
+  window.removeEventListener("biomed-login-required", handleLoginRequired);
   clearTimeout(toastTimer);
 });
 </script>
@@ -288,6 +300,7 @@ onBeforeUnmount(() => {
           :current-user="currentUser"
           :edit-id="editId"
           @edit-consumed="editId = ''"
+          @open-module-record="openModuleRecord"
           @notify="notify"
         />
         <FilesView v-else-if="active === 'files'" :permissions="modulePermissions" :role="currentRole" @notify="notify" />

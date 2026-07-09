@@ -52,8 +52,7 @@ export const modules = {
       ["uploaderRole", "上传角色"],
       ["status", "审核状态"],
       ["reviewComment", "审核意见"],
-      ["videoUrl", "视频地址"],
-      ["fileUrl", "资料地址"],
+      ["fileId", "资料文件"],
       ["publishedAt", "发布时间"]
     ]
   },

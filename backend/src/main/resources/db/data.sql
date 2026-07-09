@@ -73,6 +73,18 @@ INSERT INTO growth_record (id, herb_name, district, temperature, humidity, soil_
 SELECT 'growth-009', '黄连', '石柱县', 20.7, 80, 6.4, '旺长期', '电脑终端录入', '张老师', 'teacher', '2026-06-22 10:05:00', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM growth_record WHERE id = 'growth-009');
 
+INSERT INTO course (id, title, teacher_name, hours, material_type, status, created_at)
+SELECT 'course-001', '中药材显微鉴定实验', '张老师', 4, '视频+讲义', '已发布', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM course WHERE id = 'course-001');
+
+INSERT INTO course (id, title, teacher_name, hours, material_type, status, created_at)
+SELECT 'course-002', '中药材生长数据采集实验', '李老师', 6, '视频+数据模板', '已发布', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM course WHERE id = 'course-002');
+
+INSERT INTO course (id, title, teacher_name, hours, material_type, status, created_at)
+SELECT 'course-003', '药材溯源码与图谱比对实训', '王老师', 3, '图谱文件+案例', '已发布', CURRENT_TIMESTAMP
+WHERE NOT EXISTS (SELECT 1 FROM course WHERE id = 'course-003');
+
 INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'herb-001', 'herbs', '{"name":"\u9ec4\u8fde","district":"\u77f3\u67f1\u53bf","longitude":"108.12","latitude":"30.00","scale":"3200\u4ea9","environment":"\u6d77\u62d4\u9ad8\u3001\u6e7f\u6da6\u9634\u51c9","traceCode":"CQ-HL-001"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'herb-001');
@@ -301,22 +313,3 @@ INSERT INTO generic_record (id, resource_type, payload, created_at)
 SELECT 'trace-event-005', 'trace-events', '{"herbName":"浣涙墜","traceCode":"CQ-FS-006","eventType":"鍔犲伐","eventContent":"璁板綍浣涙墜鍒囩墖銆佸共鐕ュ拰鍖呰杩囩▼锛屽舰鎴愬悗缁川閲忚拷婧妭鐐广€?,"operator":"鐜嬭€佸笀","eventTime":"2026-06-06T16:20:00","location":"姹熸触鍖虹煶闂ㄩ晣"}', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'trace-event-005');
 
-INSERT INTO generic_record (id, resource_type, payload, created_at)
-SELECT 'teaching-resource-001', 'teaching-resources', '{"title":"榛勮繛鐢熼暱鏁版嵁閲囬泦瀹為獙瑙嗛","resourceType":"鏁欏瑙嗛","courseTitle":"涓嵂鏉愮敓闀挎暟鎹噰闆嗗疄楠?,"uploader":"鏉庤€佸笀","uploaderRole":"鏁欏笀","status":"宸插彂甯?,"reviewComment":"鍐呭瀹屾暣锛屽凡鍙戝竷鑷冲鐢熻绋嬪涔犮€?,"videoUrl":"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4","fileUrl":"","publishedAt":"2026-06-08T09:00:00"}', CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-001');
-
-INSERT INTO generic_record (id, resource_type, payload, created_at)
-SELECT 'teaching-resource-002', 'teaching-resources', '{"title":"浣涙墜鏍锋湰鍥捐氨姣斿璧勬枡鍖?,"resourceType":"鍥捐氨鏂囦欢","courseTitle":"鑽潗婧簮鐮佷笌鍥捐氨姣斿瀹炶","uploader":"鐜嬭€佸笀","uploaderRole":"绉戠爺浜哄憳","status":"寰呭鏍?,"reviewComment":"绛夊緟绠＄悊鍛樺鏍稿浘璋辨枃浠朵笌璇存槑鏂囨。銆?,"videoUrl":"","fileUrl":"","publishedAt":""}', CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-002');
-
-INSERT INTO generic_record (id, resource_type, payload, created_at)
-SELECT 'teaching-resource-003', 'teaching-resources', '{"title":"涓嵂鏉愯鑼冨寲閲囨敹鍩硅璇句欢","resourceType":"璇句欢鏂囨。","courseTitle":"涓嵂鏉愯鑼冨寲閲囨敹鍩硅","uploader":"寮犺€佸笀","uploaderRole":"鏁欏笀","status":"宸查┏鍥?,"reviewComment":"缂哄皯灏侀潰鍜屽疄楠屽畨鍏ㄨ鏄庯紝琛ュ厖鍚庨噸鏂版彁浜ゃ€?,"videoUrl":"","fileUrl":"","publishedAt":""}', CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-003');
-
-INSERT INTO generic_record (id, resource_type, payload, created_at)
-SELECT 'teaching-resource-004', 'teaching-resources', '{"title":"鏄惧井閴村畾瀹為獙鎿嶄綔婕旂ず","resourceType":"鏁欏瑙嗛","courseTitle":"涓嵂鏉愭樉寰壌瀹氬疄楠?,"uploader":"寮犺€佸笀","uploaderRole":"鏁欏笀","status":"宸插彂甯?,"reviewComment":"鏄惧井鍒剁墖鍜岃瀵熸楠ゆ竻鏅帮紝宸插彂甯冪粰瀛︾敓銆?,"videoUrl":"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4","fileUrl":"","publishedAt":"2026-06-10T10:30:00"}', CURRENT_TIMESTAMP
-WHERE NOT EXISTS (SELECT 1 FROM generic_record WHERE id = 'teaching-resource-004');
-
-UPDATE generic_record
-SET payload = '{"title":"榛勮繛鐢熼暱鏁版嵁閲囬泦瀹為獙瑙嗛","resourceType":"鏁欏瑙嗛","courseTitle":"涓嵂鏉愮敓闀挎暟鎹噰闆嗗疄楠?,"uploader":"鏉庤€佸笀","uploaderRole":"鏁欏笀","status":"宸插彂甯?,"reviewComment":"鍐呭瀹屾暣锛屽凡鍙戝竷鑷冲鐢熻绋嬪涔犮€?,"videoUrl":"https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4","fileUrl":"","publishedAt":"2026-06-08T09:00:00"}'
-WHERE id = 'teaching-resource-001' AND resource_type = 'teaching-resources' AND payload NOT LIKE '%videoUrl%';
