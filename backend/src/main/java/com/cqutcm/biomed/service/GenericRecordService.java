@@ -3,6 +3,7 @@ package com.cqutcm.biomed.service;
 import com.cqutcm.biomed.model.GenericRecord;
 import com.cqutcm.biomed.repository.GenericRecordRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -19,11 +20,13 @@ public class GenericRecordService {
     private final GenericRecordRepository repository;
     private final ResourceRegistry resourceRegistry;
     private final ObjectMapper objectMapper;
+    private final JdbcTemplate jdbcTemplate;
 
-    public GenericRecordService(GenericRecordRepository repository, ResourceRegistry resourceRegistry, ObjectMapper objectMapper) {
+    public GenericRecordService(GenericRecordRepository repository, ResourceRegistry resourceRegistry, ObjectMapper objectMapper, JdbcTemplate jdbcTemplate) {
         this.repository = repository;
         this.resourceRegistry = resourceRegistry;
         this.objectMapper = objectMapper;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public List<Map<String, Object>> list(String resourceType) {
@@ -46,7 +49,7 @@ public class GenericRecordService {
         resourceRegistry.requireSupported(resourceType);
         String id = String.valueOf(payload.getOrDefault("id", ""));
         if (id.isBlank()) {
-            throw new IllegalArgumentException("缺少 id，无法更新记录");
+            throw new IllegalArgumentException("missing id for record update");
         }
         Map<String, Object> cleaned = new LinkedHashMap<>(payload);
         cleaned.remove("id");
@@ -57,9 +60,8 @@ public class GenericRecordService {
         record.setId(id);
         record.setResourceType(resourceType);
         record.setPayload(cleaned);
-        int updated = repository.update(record);
-        if (updated == 0) {
-            throw new IllegalArgumentException("未找到要更新的数据");
+        if (repository.update(record) == 0) {
+            throw new IllegalArgumentException("record not found for update");
         }
         Map<String, Object> response = new LinkedHashMap<>(cleaned);
         response.put("id", id);
@@ -70,10 +72,10 @@ public class GenericRecordService {
     public void delete(String resourceType, String id) {
         resourceRegistry.requireSupported(resourceType);
         if (id == null || id.isBlank()) {
-            throw new IllegalArgumentException("缺少 id，无法删除记录");
+            throw new IllegalArgumentException("missing id for record delete");
         }
         if (repository.delete(resourceType, id) == 0) {
-            throw new IllegalArgumentException("未找到要删除的数据");
+            throw new IllegalArgumentException("record not found for delete");
         }
     }
 
@@ -104,16 +106,48 @@ public class GenericRecordService {
                 List<Map<String, Object>> rows = (List<Map<String, Object>>) backup.get(record.getResourceType());
                 rows.add(toResponse(record));
             }
+            appendTable(backup, "growthRecords", "growth_record");
+            appendTable(backup, "traceEvents", "trace_event");
+            appendTable(backup, "spectrumComparisons", "spectrum_comparison");
+            appendTable(backup, "growthAnalyses", "growth_analysis");
+            appendTable(backup, "coursesNormalized", "course");
+            appendTable(backup, "teachingResourcesNormalized", "teaching_resource");
+            appendTable(backup, "researchProjects", "research_project");
+            appendTable(backup, "projectApplications", "project_application");
+            appendTable(backup, "projectMembers", "project_member");
+            appendTable(backup, "herbsNormalized", "herb");
+            appendTable(backup, "trainingsNormalized", "training_material");
+            appendTable(backup, "evaluationsNormalized", "evaluation_record");
+            appendTable(backup, "achievementsNormalized", "achievement_record");
+            appendTable(backup, "standardsNormalized", "achievement_standard");
+            appendTable(backup, "usersNormalized", "sys_user");
+            appendTable(backup, "rolesNormalized", "sys_role");
+            appendTable(backup, "userRolesNormalized", "sys_user_role");
             Files.writeString(target, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(backup), StandardCharsets.UTF_8);
             return target;
         } catch (Exception ex) {
-            throw new IllegalStateException("备份失败", ex);
+            throw new IllegalStateException("backup failed", ex);
         }
     }
 
     public List<Map<String, Object>> queryHerbs(String keyword) {
         String safeKeyword = keyword == null ? "" : keyword.trim();
-        return list("herbs").stream()
+        String sql = "SELECT id, name, district, longitude, latitude, scale_desc, environment, trace_code, created_at, updated_at FROM herb";
+        List<Map<String, Object>> rows = jdbcTemplate.query(sql, (rs, rowNum) -> {
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", rs.getString("id"));
+            row.put("name", rs.getString("name"));
+            row.put("district", rs.getString("district"));
+            row.put("longitude", rs.getString("longitude"));
+            row.put("latitude", rs.getString("latitude"));
+            row.put("scale", rs.getString("scale_desc"));
+            row.put("environment", rs.getString("environment"));
+            row.put("traceCode", rs.getString("trace_code"));
+            row.put("createdAt", rs.getTimestamp("created_at") == null ? "" : rs.getTimestamp("created_at").toLocalDateTime().toString());
+            row.put("updatedAt", rs.getTimestamp("updated_at") == null ? "" : rs.getTimestamp("updated_at").toLocalDateTime().toString());
+            return row;
+        });
+        return rows.stream()
                 .filter(item -> safeKeyword.isBlank()
                         || String.valueOf(item.getOrDefault("name", "")).contains(safeKeyword)
                         || String.valueOf(item.getOrDefault("district", "")).contains(safeKeyword))
@@ -128,5 +162,9 @@ public class GenericRecordService {
             response.put("updatedAt", record.getUpdatedAt().toString());
         }
         return response;
+    }
+
+    private void appendTable(Map<String, Object> backup, String key, String tableName) {
+        backup.put(key, jdbcTemplate.queryForList("SELECT * FROM " + tableName));
     }
 }

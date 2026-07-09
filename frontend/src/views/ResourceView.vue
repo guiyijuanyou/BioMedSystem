@@ -211,6 +211,18 @@ const selectedGrowthMetric = computed(() =>
 const selectedGrowthSeries = computed(() =>
   activeGrowthMetric.value === "all" ? null : growthChartSeries.value[activeGrowthMetric.value]
 );
+const growthChartMarkers = computed(() => {
+  if (activeGrowthMetric.value !== "all") return [];
+  return visibleGrowthMetrics.value.flatMap(metric =>
+    (growthChartSeries.value[metric.key]?.nodes || [])
+      .filter(point => point.value !== null)
+      .map((point, index) => ({
+        ...point,
+        key: `${metric.key}-${index}`,
+        pointClass: metric.pointClass
+      }))
+  );
+});
 const chartLabels = computed(() => selectedGrowthRows.value.map((item, index) => ({
   text: formatShortDate(item.recordedAt || item.createdAt),
   x: chartX(index, selectedGrowthRows.value.length)
@@ -765,7 +777,8 @@ watch(growthSeriesGroups, groups => {
     selectedGrowthKey.value = "";
     return;
   }
-  if (!groups.some(group => group.key === selectedGrowthKey.value)) {
+  const current = groups.find(group => group.key === selectedGrowthKey.value);
+  if (!current || (current.rows.length <= 1 && groups[0].rows.length > current.rows.length)) {
     selectedGrowthKey.value = groups[0].key;
   }
 }, { immediate: true });
@@ -888,15 +901,16 @@ watch(() => props.editId, id => {
                   />
                 </template>
               </svg>
-              <div v-if="selectedGrowthSeries" class="chart-values">
+              <div v-if="selectedGrowthSeries || growthChartMarkers.length" class="chart-values">
                 <i
-                  v-for="(point, index) in selectedGrowthSeries.nodes"
-                  :key="`marker-${index}`"
+                  v-for="(point, index) in (selectedGrowthSeries?.nodes || growthChartMarkers)"
+                  :key="selectedGrowthSeries ? `marker-${index}` : point.key"
                   class="chart-marker"
-                  :class="selectedGrowthMetric?.pointClass"
+                  :class="selectedGrowthSeries ? selectedGrowthMetric?.pointClass : point.pointClass"
                   :style="{ left: `${point.x}%`, top: `${point.y}%` }"
                 ></i>
                 <span
+                  v-if="selectedGrowthSeries"
                   v-for="(point, index) in selectedGrowthSeries.nodes"
                   :key="`value-${index}`"
                   :style="{ left: `${point.x}%`, top: `${point.y}%` }"
