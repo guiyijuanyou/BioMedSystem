@@ -4,6 +4,7 @@ import com.cqutcm.biomed.model.FileAsset;
 import com.cqutcm.biomed.repository.FileAssetRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,27 +33,54 @@ public class FileAssetService {
         return repository.findById(id);
     }
 
-    public FileAsset upload(Map<String, String> request) {
+    public FileAsset upload(MultipartFile upload, String category) {
         try {
+            if (upload == null || upload.isEmpty()) {
+                throw new IllegalArgumentException("请选择要上传的文件");
+            }
             Files.createDirectories(uploadDir);
             String id = UUID.randomUUID().toString();
-            String fileName = request.getOrDefault("fileName", "upload.bin").replaceAll("[\\\\/:*?\"<>|]", "_");
-            byte[] content = Base64.getDecoder().decode(request.getOrDefault("contentBase64", ""));
+            String originalName = upload.getOriginalFilename() == null || upload.getOriginalFilename().isBlank()
+                    ? "upload.bin"
+                    : upload.getOriginalFilename();
+            String fileName = sanitizeFileName(originalName);
             Path target = uploadDir.resolve(id + "-" + fileName);
-            Files.write(target, content);
-
-            FileAsset file = new FileAsset();
-            file.setId(id);
-            file.setFileName(fileName);
-            file.setCategory(request.getOrDefault("category", "教学资料"));
-            file.setSize(content.length);
-            file.setPath(target.toString());
-            file.setCreatedAt(LocalDateTime.now());
-            repository.insert(file);
-            return file;
+            upload.transferTo(target);
+            return saveFile(id, fileName, category, upload.getSize(), target);
+        } catch (RuntimeException ex) {
+            throw ex;
         } catch (Exception ex) {
             throw new IllegalStateException("文件上传失败", ex);
         }
     }
-}
 
+    public FileAsset uploadBase64(Map<String, String> request) {
+        try {
+            Files.createDirectories(uploadDir);
+            String id = UUID.randomUUID().toString();
+            String fileName = sanitizeFileName(request.getOrDefault("fileName", "upload.bin"));
+            byte[] content = Base64.getDecoder().decode(request.getOrDefault("contentBase64", ""));
+            Path target = uploadDir.resolve(id + "-" + fileName);
+            Files.write(target, content);
+            return saveFile(id, fileName, request.get("category"), content.length, target);
+        } catch (Exception ex) {
+            throw new IllegalStateException("文件上传失败", ex);
+        }
+    }
+
+    private FileAsset saveFile(String id, String fileName, String category, long size, Path target) {
+        FileAsset file = new FileAsset();
+        file.setId(id);
+        file.setFileName(fileName);
+        file.setCategory(category == null || category.isBlank() ? "教学资料" : category);
+        file.setSize(size);
+        file.setPath(target.toString());
+        file.setCreatedAt(LocalDateTime.now());
+        repository.insert(file);
+        return file;
+    }
+
+    private String sanitizeFileName(String fileName) {
+        return fileName.replaceAll("[\\\\/:*?\"<>|]", "_");
+    }
+}

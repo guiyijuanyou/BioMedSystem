@@ -12,8 +12,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -32,8 +36,16 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public FileAsset upload(@RequestBody Map<String, String> request) {
-        return service.upload(request);
+    public FileAsset upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "category", required = false) String category
+    ) {
+        return service.upload(file, category);
+    }
+
+    @PostMapping(value = "/upload-json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public FileAsset uploadJson(@RequestBody Map<String, String> request) {
+        return service.uploadBase64(request);
     }
 
     @GetMapping("/{id}/download")
@@ -41,7 +53,7 @@ public class FileController {
         FileAsset file = getExistingFile(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName(file))
                 .body(new FileSystemResource(Path.of(file.getPath())));
     }
 
@@ -50,7 +62,7 @@ public class FileController {
         FileAsset file = getExistingFile(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(detectContentType(file.getFileName())))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFileName() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename*=UTF-8''" + encodedFileName(file))
                 .body(new FileSystemResource(Path.of(file.getPath())));
     }
 
@@ -62,6 +74,10 @@ public class FileController {
         return file;
     }
 
+    private String encodedFileName(FileAsset file) {
+        return URLEncoder.encode(file.getFileName(), StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
     private String detectContentType(String fileName) {
         String lower = fileName == null ? "" : fileName.toLowerCase();
         if (lower.endsWith(".png")) return "image/png";
@@ -71,6 +87,7 @@ public class FileController {
         if (lower.endsWith(".pdf")) return "application/pdf";
         if (lower.endsWith(".mp4")) return "video/mp4";
         if (lower.endsWith(".webm")) return "video/webm";
+        if (lower.endsWith(".mov")) return "video/quicktime";
         if (lower.endsWith(".mp3")) return "audio/mpeg";
         if (lower.endsWith(".txt")) return "text/plain; charset=utf-8";
         if (lower.endsWith(".html")) return "text/html; charset=utf-8";

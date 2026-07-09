@@ -16,9 +16,11 @@ const props = defineProps({
   editId: String
 });
 
-const emit = defineEmits(["notify", "edit-consumed"]);
+const emit = defineEmits(["notify", "edit-consumed", "open-module-record"]);
 const items = ref([]);
 const teachingResources = ref([]);
+const uploadedFiles = ref([]);
+const courseOptions = ref([]);
 const search = ref("");
 const editingId = ref(null);
 const selectedIds = ref([]);
@@ -38,6 +40,9 @@ const form = reactive({});
 
 const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion", "eventContent", "reviewComment", "requirements", "applicantRequests", "approvedMembers", "rejectedApplicants"];
 const statuses = ["待审核", "已通过", "已发布", "已驳回", "数据采集中", "已归档"];
+const editableFields = computed(() =>
+  props.config.fields.filter(([name]) => !isRestrictedAuditField(name))
+);
 
 const filtered = computed(() => {
   const keyword = search.value.trim().toLowerCase();
@@ -292,6 +297,17 @@ function defaultValue(name) {
   return values[name] || "";
 }
 
+function isRestrictedAuditField(name) {
+  if (props.role === "admin") return false;
+  if (props.moduleKey === "courses") {
+    return name === "status";
+  }
+  if (props.moduleKey === "teaching-resources") {
+    return ["status", "reviewComment", "publishedAt"].includes(name);
+  }
+  return false;
+}
+
 function toNumber(value) {
   const number = Number.parseFloat(value);
   return Number.isFinite(number) ? number : null;
@@ -391,15 +407,40 @@ function isVideoResource(resource) {
 
 function courseResources(courseTitle) {
   if (!courseTitle) return [];
-  return publishedTeachingResources.value.filter(resource => resource.courseTitle === courseTitle);
+  const source = isStudentCourseModule.value ? publishedTeachingResources.value : teachingResources.value;
+  return source.filter(resource => resource.courseTitle === courseTitle);
+}
+
+function openTeachingResourceAudit(resource) {
+  emit("open-module-record", { moduleKey: "teaching-resources", id: resource.id });
 }
 
 function resourcePreviewUrl(resource) {
-  return resource.previewUrl || resource.videoUrl || resource.fileUrl || "";
+  return resource.previewUrl || (resource.fileId ? `/api/files/${resource.fileId}/preview` : "") || resource.videoUrl || resource.fileUrl || "";
 }
 
 function resourceDownloadUrl(resource) {
-  return resource.downloadUrl || resource.fileUrl || resource.videoUrl || "";
+  return resource.downloadUrl || (resource.fileId ? `/api/files/${resource.fileId}/download` : "") || resource.fileUrl || resource.videoUrl || "";
+}
+
+function fileResourceType(file) {
+  const name = String(file?.fileName || "").toLowerCase();
+  const category = String(file?.category || "");
+  if (category.includes("视频") || /\.(mp4|webm|mov|m4v)$/.test(name)) return "教学视频";
+  if (/\.(ppt|pptx|pdf|doc|docx|xls|xlsx)$/.test(name)) return "课件文档";
+  if (/\.(png|jpg|jpeg|gif|webp)$/.test(name)) return "图片资料";
+  return category || "教学资料";
+}
+
+function selectedFile(fileId) {
+  return uploadedFiles.value.find(file => file.id === fileId);
+}
+
+function applySelectedFile(fileId) {
+  const file = selectedFile(fileId);
+  if (!file) return;
+  if (!form.title) form.title = file.fileName;
+  form.resourceType = fileResourceType(file);
 }
 
 function ownerName(item) {
@@ -637,12 +678,16 @@ function closePanel() {
 
 async function load() {
   try {
-    const [result, resourceResult] = await Promise.all([
+    const [result, resourceResult, fileResult, courseResult] = await Promise.all([
       api(`/api/${props.moduleKey}`),
-      props.moduleKey === "courses" ? api("/api/teaching-resources") : Promise.resolve({ items: [] })
+      props.moduleKey === "courses" ? api("/api/teaching-resources") : Promise.resolve({ items: [] }),
+      ["teaching-resources", "courses"].includes(props.moduleKey) ? api("/api/files") : Promise.resolve({ items: [] }),
+      props.moduleKey === "teaching-resources" ? api("/api/courses") : Promise.resolve({ items: [] })
     ]);
     items.value = result.items || [];
     teachingResources.value = resourceResult.items || [];
+    uploadedFiles.value = fileResult.items || [];
+    courseOptions.value = props.moduleKey === "courses" ? items.value : (courseResult.items || []);
     selectedIds.value = selectedIds.value.filter(id => items.value.some(item => item.id === id));
     if (page.value > totalPages.value) page.value = totalPages.value;
     if (props.editId) {
@@ -667,6 +712,17 @@ async function save() {
     }
     const payload = {};
     props.config.fields.forEach(([name]) => payload[name] = form[name] ?? "");
+    if (props.moduleKey === "teaching-resources" && !payload.courseTitle) {
+      emit("notify", "请选择要发布到的试验课程");
+      return;
+    }
+    if (props.moduleKey === "teaching-resources" && payload.fileId) {
+      const file = selectedFile(payload.fileId);
+      payload.fileName = file?.fileName || "";
+      payload.resourceType = payload.resourceType || fileResourceType(file);
+      payload.videoUrl = "";
+      payload.fileUrl = "";
+    }
     if (props.role !== "admin") {
       if (props.moduleKey === "growth-records") {
         payload.recorder = source?.recorder || props.currentUser.name;
@@ -1198,7 +1254,7 @@ watch(() => props.editId, id => {
 
           <section v-if="isCourseModule" class="course-learning-detail">
             <div class="form-section-heading">
-              <div><strong>已发布教学资源</strong><span>管理员审核通过后，学生可在这里学习视频和资料</span></div>
+              <div><strong>{{ role === "admin" ? "课程资源审核" : "课程教学资源" }}</strong><span>待审核资源由管理员发布后，学生才能学习视频和资料</span></div>
               <span>{{ drawerCourseResources.length }} 个资源</span>
             </div>
             <div v-if="drawerCourseVideos.length" class="course-video-list">
@@ -1207,17 +1263,21 @@ watch(() => props.editId, id => {
                 <div v-else class="course-video-placeholder"><PlayCircle :size="42" /><span>视频地址待绑定</span></div>
                 <div>
                   <strong>{{ resource.title }}</strong>
-                  <span>{{ resource.uploader }} · {{ resource.publishedAt || "已发布" }}</span>
+                  <span>{{ resource.uploader }} · {{ resource.status }} · {{ resource.publishedAt || "未发布" }}</span>
                   <p>{{ resource.reviewComment || "该教学视频已发布至课程学习。" }}</p>
                 </div>
+                <button v-if="role === 'admin'" class="button-secondary" type="button" @click="openTeachingResourceAudit(resource)">
+                  <Pencil :size="15" />审核
+                </button>
               </article>
             </div>
             <div v-if="drawerCourseResources.length" class="course-material-list">
               <article v-for="resource in drawerCourseResources" :key="resource.id">
-                <div><strong>{{ resource.title }}</strong><span>{{ resource.resourceType }} · {{ resource.uploader }}</span></div>
+                <div><strong>{{ resource.title }}</strong><span>{{ resource.resourceType }} · {{ resource.uploader }} · {{ resource.status }}</span></div>
                 <div>
                   <a v-if="resourcePreviewUrl(resource)" :href="resourcePreviewUrl(resource)" target="_blank" rel="noopener"><button class="button-secondary" type="button"><Eye :size="15" />查看</button></a>
                   <button v-if="resourceDownloadUrl(resource)" type="button" @click="downloadResource(resource)"><Download :size="15" />下载</button>
+                  <button v-if="role === 'admin'" type="button" @click="openTeachingResourceAudit(resource)"><Pencil :size="15" />审核</button>
                 </div>
               </article>
             </div>
@@ -1242,14 +1302,22 @@ watch(() => props.editId, id => {
           </div>
           <div class="form-section-heading">
             <div><strong>基础信息</strong><span>请填写并核对该记录的业务信息</span></div>
-            <span>{{ config.fields.length }} 个字段</span>
+            <span>{{ editableFields.length }} 个字段</span>
           </div>
           <div class="form-grid">
-            <label v-for="[name, label] in config.fields" :key="name" :class="{ 'field-wide': textareaFields.includes(name) }">
+            <label v-for="[name, label] in editableFields" :key="name" :class="{ 'field-wide': textareaFields.includes(name) }">
               <span class="field-label">{{ label }}</span>
               <textarea v-if="textareaFields.includes(name)" v-model="form[name]"></textarea>
               <select v-else-if="name === 'status'" v-model="form[name]"><option v-for="status in statuses" :key="status">{{ status }}</option></select>
               <select v-else-if="name === 'collector'" v-model="form[name]"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select>
+              <select v-else-if="name === 'courseTitle' && moduleKey === 'teaching-resources'" v-model="form[name]">
+                <option value="">请选择试验课程</option>
+                <option v-for="course in courseOptions" :key="course.id" :value="course.title">{{ course.title }} / {{ course.teacher }}</option>
+              </select>
+              <select v-else-if="name === 'fileId'" v-model="form[name]" @change="applySelectedFile(form[name])">
+                <option value="">请选择资料文件</option>
+                <option v-for="file in uploadedFiles" :key="file.id" :value="file.id">{{ file.fileName }} / {{ file.category }}</option>
+              </select>
               <input v-else v-model="form[name]">
             </label>
             <MapPicker

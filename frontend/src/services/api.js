@@ -1,8 +1,9 @@
 export async function api(path, options = {}) {
   const session = JSON.parse(localStorage.getItem("biomed-session") || "null");
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers = {
-    "Content-Type": "application/json",
     ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers || {})
   };
   const response = await fetch(path, {
@@ -19,6 +20,7 @@ export async function api(path, options = {}) {
   if (!response.ok) {
     if (data.error === "login required") {
       localStorage.removeItem("biomed-session");
+      window.dispatchEvent(new CustomEvent("biomed-login-required"));
     }
     throw new Error(data.error || `Request failed (${response.status})`);
   }

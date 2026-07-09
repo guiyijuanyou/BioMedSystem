@@ -3,6 +3,7 @@ cd /d "%~dp0"
 
 set "APP_JAR=backend\target\biomed-digital-system-1.0.0.jar"
 set "MAVEN_CMD=D:\IntelliJ IDEA 2024.3.1.1\plugins\maven\lib\maven3\bin\mvn.cmd"
+set "MAVEN_SETTINGS=%USERPROFILE%\.m2\settings.xml"
 if "%APP_PROFILE%"=="" set "APP_PROFILE=local"
 
 netstat -ano | findstr /R /C:":8088 .*LISTENING" >nul
@@ -39,9 +40,17 @@ popd
 echo Building Spring Boot backend...
 pushd backend
 if exist "%MAVEN_CMD%" (
-  call "%MAVEN_CMD%" -DskipTests package
+  if exist "%MAVEN_SETTINGS%" (
+    call "%MAVEN_CMD%" -s "%MAVEN_SETTINGS%" -DskipTests package
+  ) else (
+    call "%MAVEN_CMD%" -DskipTests package
+  )
 ) else (
-  call mvn.cmd -DskipTests package
+  if exist "%MAVEN_SETTINGS%" (
+    call mvn.cmd -s "%MAVEN_SETTINGS%" -DskipTests package
+  ) else (
+    call mvn.cmd -DskipTests package
+  )
 )
 if errorlevel 1 (
   echo.

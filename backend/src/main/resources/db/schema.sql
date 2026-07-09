@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS teaching_resource (
   course_title VARCHAR(200),
   title VARCHAR(200) NOT NULL,
   resource_type VARCHAR(80) NOT NULL,
+  file_id VARCHAR(64),
   video_url VARCHAR(500),
   file_url VARCHAR(500),
   uploader_name VARCHAR(100),
