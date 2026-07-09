@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -88,7 +89,10 @@ public class GenericRecordRepository {
         try {
             return objectMapper.readValue(payload, new TypeReference<>() {});
         } catch (Exception ex) {
-            throw new IllegalStateException("业务数据 JSON 解析失败", ex);
+            Map<String, Object> fallback = new LinkedHashMap<>();
+            fallback.put("_invalidPayload", true);
+            fallback.put("_rawPayload", payload == null ? "" : payload);
+            return fallback;
         }
     }
 
@@ -96,7 +100,7 @@ public class GenericRecordRepository {
         try {
             return objectMapper.writeValueAsString(payload);
         } catch (Exception ex) {
-            throw new IllegalStateException("业务数据 JSON 写入失败", ex);
+            throw new IllegalStateException("Failed to write business JSON", ex);
         }
     }
 

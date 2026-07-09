@@ -24,7 +24,7 @@ public class ResourceRegistry {
 
     public void requireSupported(String resourceType) {
         if (!resources.contains(resourceType)) {
-            throw new IllegalArgumentException("未知资源: " + resourceType);
+            throw new IllegalArgumentException("unknown resource: " + resourceType);
         }
     }
 }
