@@ -1,15 +1,30 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.LocalDateTime;
 
+@TableName("sys_user")
 public class SysUser {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("username")
     private String username;
+    @TableField("display_name")
     private String displayName;
+    @TableField("password_hash")
     private String passwordHash;
+    @TableField("department")
     private String department;
+    @TableField("status")
     private String status;
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+    @TableField(value = "updated_at", fill = FieldFill.UPDATE)
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -29,3 +44,4 @@ public class SysUser {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+

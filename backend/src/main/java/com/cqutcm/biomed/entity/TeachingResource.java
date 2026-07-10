@@ -1,22 +1,44 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.LocalDateTime;
 
+@TableName("teaching_resource")
 public class TeachingResource {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("course_id")
     private String courseId;
+    @TableField("course_title")
     private String courseTitle;
+    @TableField("title")
     private String title;
+    @TableField("resource_type")
     private String resourceType;
+    @TableField("file_id")
     private String fileId;
+    @TableField("video_url")
     private String videoUrl;
+    @TableField("file_url")
     private String fileUrl;
+    @TableField("uploader_name")
     private String uploaderName;
+    @TableField("uploader_role")
     private String uploaderRole;
+    @TableField("status")
     private String status;
+    @TableField("review_comment")
     private String reviewComment;
+    @TableField("published_at")
     private LocalDateTime publishedAt;
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+    @TableField(value = "updated_at", fill = FieldFill.UPDATE)
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -50,3 +72,4 @@ public class TeachingResource {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+

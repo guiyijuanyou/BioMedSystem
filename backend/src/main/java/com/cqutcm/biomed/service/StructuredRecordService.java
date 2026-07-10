@@ -155,11 +155,11 @@ public class StructuredRecordService {
 
     public long count(String resourceType) {
         return switch (resourceType) {
-            case "herbs" -> herbMapper.countByTable("herb");
+            case "herbs" -> herbMapper.count();
             case "trainings" -> trainingMapper.count();
             case "evaluations" -> evaluationMapper.count();
             case "achievements" -> achievementMapper.count();
-            case "standards" -> standardMapper.countByTable("achievement_standard");
+            case "standards" -> standardMapper.count();
             default -> 0;
         };
     }

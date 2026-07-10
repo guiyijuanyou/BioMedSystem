@@ -1,21 +1,41 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@TableName("growth_record")
 public class GrowthRecord {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("herb_name")
     private String herbName;
+    @TableField("district")
     private String district;
+    @TableField("temperature")
     private BigDecimal temperature;
+    @TableField("humidity")
     private BigDecimal humidity;
+    @TableField("soil_ph")
     private BigDecimal soilPh;
+    @TableField("growth_stage")
     private String growthStage;
+    @TableField("collect_source")
     private String collectSource;
+    @TableField("recorder_name")
     private String recorderName;
+    @TableField("recorder_role")
     private String recorderRole;
+    @TableField("recorded_at")
     private LocalDateTime recordedAt;
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+    @TableField(value = "updated_at", fill = FieldFill.UPDATE)
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -45,3 +65,4 @@ public class GrowthRecord {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+

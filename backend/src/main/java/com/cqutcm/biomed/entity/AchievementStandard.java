@@ -1,15 +1,29 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+@TableName("achievement_standard")
 public class AchievementStandard {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("name")
     private String name;
+    @TableField("category")
     private String category;
+    @TableField("level_rule")
     private String levelRule;
+    @TableField("effective_date")
     private LocalDate effectiveDate;
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+    @TableField(value = "updated_at", fill = FieldFill.UPDATE)
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -27,3 +41,4 @@ public class AchievementStandard {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+
