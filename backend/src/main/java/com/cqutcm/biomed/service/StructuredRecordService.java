@@ -57,7 +57,7 @@ public class StructuredRecordService {
             case "evaluations" -> evaluationMapper.findAll().stream().map(this::evaluationToMap).toList();
             case "achievements" -> achievementMapper.findAll().stream().map(this::achievementToMap).toList();
             case "standards" -> standardMapper.findAll().stream().map(this::standardToMap).toList();
-            case "users" -> userMapper.findAllAsMap();
+            case "users" -> userMapper.findAllAsMap().stream().map(this::sanitizeUserMap).toList();
             default -> List.of();
         };
     }
@@ -121,7 +121,12 @@ public class StructuredRecordService {
                 standardMapper.update(s); return standardToMap(s);
             }
             case "users": {
+                SysUser existing = userMapper.findById(id);
+                if (existing == null) throw new IllegalArgumentException("user not found");
                 SysUser u = mapToUser(payload); u.setId(id);
+                if (u.getPasswordHash() == null || u.getPasswordHash().isBlank()) {
+                    u.setPasswordHash(existing.getPasswordHash());
+                }
                 userMapper.update(u);
                 handleUserRoles(payload, id);
                 return userToMap(u);
@@ -262,11 +267,19 @@ public class StructuredRecordService {
     private Map<String, Object> userToMap(SysUser u) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", u.getId()); m.put("username", u.getUsername()); m.put("name", u.getDisplayName());
-        m.put("password", u.getPasswordHash()); m.put("department", u.getDepartment());
+        m.put("password", ""); m.put("department", u.getDepartment());
         m.put("status", u.getStatus());
         if (u.getCreatedAt() != null) m.put("createdAt", u.getCreatedAt().toString());
         if (u.getUpdatedAt() != null) m.put("updatedAt", u.getUpdatedAt().toString());
         return m;
+    }
+
+    private Map<String, Object> sanitizeUserMap(Map<String, Object> source) {
+        Map<String, Object> sanitized = new LinkedHashMap<>(source);
+        sanitized.remove("password");
+        sanitized.remove("passwordHash");
+        sanitized.put("password", "");
+        return sanitized;
     }
 
     private void handleUserRoles(Map<String, Object> payload, String userId) {

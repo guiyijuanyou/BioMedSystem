@@ -40,6 +40,9 @@ public interface SysUserMapper {
             "updated_at = NOW() WHERE id = #{id}")
     int update(SysUser user);
 
+    @Update("UPDATE sys_user SET password_hash = #{passwordHash}, updated_at = NOW() WHERE id = #{id}")
+    int updatePasswordHash(@Param("id") String id, @Param("passwordHash") String passwordHash);
+
     @Delete("DELETE FROM sys_user WHERE id = #{id}")
     int deleteById(String id);
 }

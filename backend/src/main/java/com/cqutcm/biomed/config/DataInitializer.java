@@ -32,8 +32,7 @@ public class DataInitializer implements CommandLineRunner {
         if (user == null) return;
         String hash = user.getPasswordHash();
         if (hash == null || hash.isBlank() || !hash.startsWith("$2a$")) {
-            user.setPasswordHash(passwordEncoder.encode("123456"));
-            userMapper.update(user);
+            userMapper.updatePasswordHash(user.getId(), passwordEncoder.encode("123456"));
         }
     }
 }
