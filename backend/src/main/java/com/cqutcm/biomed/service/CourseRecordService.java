@@ -29,7 +29,7 @@ public class CourseRecordService {
     }
 
     public List<Map<String, Object>> listResources() {
-        return resourceMapper.findAllWithFile();
+        return resourceMapper.findAllWithFile().stream().map(this::safeResourceView).toList();
     }
 
     public Map<String, Object> createCourse(Map<String, Object> payload) {
@@ -197,6 +197,18 @@ public class CourseRecordService {
         if (r.getCreatedAt() != null) m.put("createdAt", r.getCreatedAt().toString());
         if (r.getUpdatedAt() != null) m.put("updatedAt", r.getUpdatedAt().toString());
         return m;
+    }
+
+    private Map<String, Object> safeResourceView(Map<String, Object> source) {
+        Map<String, Object> view = new LinkedHashMap<>(source);
+        view.remove("storage_path");
+        view.remove("storagePath");
+        Object fileId = view.get("fileId");
+        if (fileId != null && !String.valueOf(fileId).isBlank()) {
+            view.put("previewUrl", "/api/files/" + fileId + "/preview");
+            view.put("downloadUrl", "/api/files/" + fileId + "/download");
+        }
+        return view;
     }
 
     private String str(Map<String, Object> m, String key) {

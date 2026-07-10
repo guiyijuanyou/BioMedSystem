@@ -1,6 +1,7 @@
 package com.cqutcm.biomed.controller;
 
 import com.cqutcm.biomed.service.AuthenticationRequiredException;
+import com.cqutcm.biomed.service.AuthorizationDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -10,6 +11,12 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, String> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
     @ExceptionHandler(AuthenticationRequiredException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Map<String, String> handleAuthenticationRequired(AuthenticationRequiredException ex) {

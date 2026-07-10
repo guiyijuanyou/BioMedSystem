@@ -1,6 +1,11 @@
 package com.cqutcm.biomed.controller;
 
 import com.cqutcm.biomed.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,15 +24,34 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public Map<String, Object> login(@RequestBody Map<String, Object> payload) {
-        return authService.login(payload);
+    public ResponseEntity<Map<String, Object>> login(
+            @RequestBody Map<String, Object> payload,
+            HttpServletRequest request
+    ) {
+        Map<String, Object> result = authService.login(payload);
+        ResponseCookie cookie = sessionCookie(String.valueOf(result.get("token")), request.isSecure(), AuthService.SESSION_TTL);
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(result);
     }
 
     @PostMapping("/logout")
-    public Map<String, String> logout(
-            @RequestHeader(value = "Authorization", required = false) String authorization
+    public ResponseEntity<Map<String, String>> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @CookieValue(value = AuthService.SESSION_COOKIE, required = false) String sessionCookie,
+            HttpServletRequest request
     ) {
-        authService.logout(authorization);
-        return Map.of("message", "logged out");
+        authService.logout(authorization, sessionCookie);
+        ResponseCookie expired = sessionCookie("", request.isSecure(), java.time.Duration.ZERO);
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, expired.toString())
+                .body(Map.of("message", "logged out"));
+    }
+
+    private ResponseCookie sessionCookie(String value, boolean secure, java.time.Duration maxAge) {
+        return ResponseCookie.from(AuthService.SESSION_COOKIE, value)
+                .httpOnly(true)
+                .secure(secure)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(maxAge)
+                .build();
     }
 }
