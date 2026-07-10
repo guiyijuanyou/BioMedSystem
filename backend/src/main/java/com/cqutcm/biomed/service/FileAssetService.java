@@ -1,7 +1,7 @@
 package com.cqutcm.biomed.service;
 
-import com.cqutcm.biomed.model.FileAsset;
-import com.cqutcm.biomed.repository.FileAssetRepository;
+import com.cqutcm.biomed.entity.FileAsset;
+import com.cqutcm.biomed.mapper.FileAssetMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,20 +17,20 @@ import java.util.UUID;
 
 @Service
 public class FileAssetService {
-    private final FileAssetRepository repository;
+    private final FileAssetMapper mapper;
     private final Path uploadDir;
 
-    public FileAssetService(FileAssetRepository repository, @Value("${app.upload-dir:data/uploads}") String uploadDir) {
-        this.repository = repository;
+    public FileAssetService(FileAssetMapper mapper, @Value("${app.upload-dir:data/uploads}") String uploadDir) {
+        this.mapper = mapper;
         this.uploadDir = Path.of(uploadDir);
     }
 
     public List<FileAsset> list() {
-        return repository.findAll();
+        return mapper.findAll();
     }
 
     public Optional<FileAsset> findById(String id) {
-        return repository.findById(id);
+        return Optional.ofNullable(mapper.findById(id));
     }
 
     public FileAsset upload(MultipartFile upload, String category) {
@@ -73,10 +73,10 @@ public class FileAssetService {
         file.setId(id);
         file.setFileName(fileName);
         file.setCategory(category == null || category.isBlank() ? "教学资料" : category);
-        file.setSize(size);
-        file.setPath(target.toString());
+        file.setSizeBytes(size);
+        file.setStoragePath(target.toString());
         file.setCreatedAt(LocalDateTime.now());
-        repository.insert(file);
+        mapper.insert(file);
         return file;
     }
 

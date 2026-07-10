@@ -1,7 +1,6 @@
 package com.cqutcm.biomed.service;
 
-import com.cqutcm.biomed.repository.GenericRecordRepository;
-import com.cqutcm.biomed.repository.ProjectRecordRepository;
+import com.cqutcm.biomed.mapper.ResearchProjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,70 +11,51 @@ import java.util.UUID;
 
 @Service
 public class ProjectRecordService {
-    private static final String PENDING_REVIEW = "\u5f85\u5ba1\u6838";
+    private static final String PENDING_REVIEW = "待审核";
 
-    private final ProjectRecordRepository projectRepository;
-    private final GenericRecordRepository genericRepository;
+    private final ResearchProjectMapper projectMapper;
 
-    public ProjectRecordService(ProjectRecordRepository projectRepository, GenericRecordRepository genericRepository) {
-        this.projectRepository = projectRepository;
-        this.genericRepository = genericRepository;
+    public ProjectRecordService(ResearchProjectMapper projectMapper) {
+        this.projectMapper = projectMapper;
     }
 
     public List<Map<String, Object>> list() {
-        seedFromGenericIfEmpty();
-        return projectRepository.findAll();
+        return projectMapper.findAllAsMap();
     }
 
     public Map<String, Object> create(Map<String, Object> payload) {
-        seedFromGenericIfEmpty();
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
         LocalDateTime now = LocalDateTime.now();
-        projectRepository.insert(id, cleaned, now);
         cleaned.put("id", id);
         cleaned.put("createdAt", now.toString());
+        projectMapper.insertMap(cleaned);
         return cleaned;
     }
 
     public Map<String, Object> update(Map<String, Object> payload) {
-        seedFromGenericIfEmpty();
         String id = String.valueOf(payload.getOrDefault("id", ""));
         if (id.isBlank()) {
             throw new IllegalArgumentException("missing id for project update");
         }
         Map<String, Object> cleaned = clean(payload);
-        int updated = projectRepository.update(id, cleaned);
-        if (updated == 0) {
-            throw new IllegalArgumentException("project not found");
-        }
         cleaned.put("id", id);
+        projectMapper.updateMap(cleaned);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return cleaned;
     }
 
     public void delete(String id) {
-        seedFromGenericIfEmpty();
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("missing id for project delete");
         }
-        if (projectRepository.delete(id) == 0) {
+        if (projectMapper.deleteById(id) == 0) {
             throw new IllegalArgumentException("project not found");
         }
     }
 
     public long count() {
-        seedFromGenericIfEmpty();
-        return projectRepository.count();
-    }
-
-    private void seedFromGenericIfEmpty() {
-        if (projectRepository.count() > 0) return;
-        genericRepository.findByResourceType("projects").forEach(record -> {
-            if (!projectRepository.exists(record.getId())) {
-                projectRepository.insert(record.getId(), record.getPayload(), record.getCreatedAt() == null ? LocalDateTime.now() : record.getCreatedAt());
-            }
-        });
+        return projectMapper.count();
     }
 
     private Map<String, Object> clean(Map<String, Object> payload) {

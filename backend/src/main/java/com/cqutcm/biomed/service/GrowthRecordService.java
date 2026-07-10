@@ -1,7 +1,6 @@
 package com.cqutcm.biomed.service;
 
-import com.cqutcm.biomed.repository.GenericRecordRepository;
-import com.cqutcm.biomed.repository.GrowthRecordRepository;
+import com.cqutcm.biomed.mapper.GrowthRecordMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,43 +11,37 @@ import java.util.UUID;
 
 @Service
 public class GrowthRecordService {
-    private static final String STUDENT = "\u5b66\u751f";
-    private static final String CURRENT_STUDENT = "\u5f53\u524d\u5b66\u751f";
+    private static final String STUDENT = "学生";
 
-    private final GrowthRecordRepository growthRepository;
-    private final GenericRecordRepository genericRepository;
+    private final GrowthRecordMapper growthMapper;
     private final PermissionService permissionService;
 
-    public GrowthRecordService(GrowthRecordRepository growthRepository, GenericRecordRepository genericRepository, PermissionService permissionService) {
-        this.growthRepository = growthRepository;
-        this.genericRepository = genericRepository;
+    public GrowthRecordService(GrowthRecordMapper growthMapper, PermissionService permissionService) {
+        this.growthMapper = growthMapper;
         this.permissionService = permissionService;
     }
 
     public List<Map<String, Object>> list() {
-        seedFromGenericIfEmpty();
-        return growthRepository.findAll();
+        return growthMapper.findAllAsMap();
     }
 
     public Map<String, Object> create(Map<String, Object> payload) {
-        seedFromGenericIfEmpty();
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
         applyActorForCreate(cleaned, payload);
         LocalDateTime now = LocalDateTime.now();
-        growthRepository.insert(id, cleaned, now);
         cleaned.put("id", id);
         cleaned.put("createdAt", now.toString());
+        growthMapper.insertMap(cleaned);
         return cleaned;
     }
 
     public Map<String, Object> update(Map<String, Object> payload) {
-        seedFromGenericIfEmpty();
         String id = String.valueOf(payload.getOrDefault("id", ""));
         if (id.isBlank()) {
             throw new IllegalArgumentException("missing id for growth record update");
         }
-        Map<String, Object> existing = growthRepository.findById(id);
+        Map<String, Object> existing = growthMapper.findByIdAsMap(id);
         if (existing == null) {
             throw new IllegalArgumentException("growth record not found");
         }
@@ -60,39 +53,25 @@ public class GrowthRecordService {
         Map<String, Object> cleaned = clean(payload);
         cleaned.put("recorder", existing.getOrDefault("recorder", ""));
         cleaned.put("recorderRole", existing.getOrDefault("recorderRole", ""));
-        growthRepository.update(id, cleaned);
         cleaned.put("id", id);
+        growthMapper.updateMap(cleaned);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return cleaned;
     }
 
     public void delete(String id, String actorName, String actorRole) {
-        seedFromGenericIfEmpty();
-        Map<String, Object> existing = growthRepository.findById(id);
+        Map<String, Object> existing = growthMapper.findByIdAsMap(id);
         if (existing == null) {
             throw new IllegalArgumentException("growth record not found");
         }
         if (!permissionService.canDeleteOwnedRecord(existing, permissionService.actor(actorName, actorRole), "recorder")) {
             throw new IllegalArgumentException("current role cannot delete this growth record");
         }
-        growthRepository.delete(id);
+        growthMapper.deleteById(id);
     }
 
     public long count() {
-        seedFromGenericIfEmpty();
-        return growthRepository.count();
-    }
-
-    private void seedFromGenericIfEmpty() {
-        if (growthRepository.count() > 0) return;
-        genericRepository.findByResourceType("growth-records").forEach(record -> {
-            if (!growthRepository.exists(record.getId())) {
-                Map<String, Object> payload = new LinkedHashMap<>(record.getPayload());
-                payload.putIfAbsent("recorder", CURRENT_STUDENT);
-                payload.putIfAbsent("recorderRole", STUDENT);
-                growthRepository.insert(record.getId(), payload, record.getCreatedAt() == null ? LocalDateTime.now() : record.getCreatedAt());
-            }
-        });
+        return growthMapper.count();
     }
 
     private Map<String, Object> clean(Map<String, Object> payload) {

@@ -1,6 +1,6 @@
 package com.cqutcm.biomed.controller;
 
-import com.cqutcm.biomed.model.FileAsset;
+import com.cqutcm.biomed.entity.FileAsset;
 import com.cqutcm.biomed.service.FileAssetService;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -54,7 +54,7 @@ public class FileController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFileName(file))
-                .body(new FileSystemResource(Path.of(file.getPath())));
+                .body(new FileSystemResource(Path.of(file.getStoragePath())));
     }
 
     @GetMapping("/{id}/preview")
@@ -63,12 +63,12 @@ public class FileController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(detectContentType(file.getFileName())))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename*=UTF-8''" + encodedFileName(file))
-                .body(new FileSystemResource(Path.of(file.getPath())));
+                .body(new FileSystemResource(Path.of(file.getStoragePath())));
     }
 
     private FileAsset getExistingFile(String id) {
         FileAsset file = service.findById(id).orElseThrow(() -> new IllegalArgumentException("未找到文件"));
-        if (!new FileSystemResource(Path.of(file.getPath())).exists()) {
+        if (!new FileSystemResource(Path.of(file.getStoragePath())).exists()) {
             throw new IllegalArgumentException("文件不存在");
         }
         return file;

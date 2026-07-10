@@ -8,10 +8,22 @@ import java.util.stream.Collectors;
 
 @Service
 public class AssistantService {
-    private final GenericRecordService recordService;
+    private final StructuredRecordService structuredService;
+    private final GrowthRecordService growthService;
+    private final CourseRecordService courseService;
+    private final ProjectRecordService projectService;
+    private final ResearchDataService researchService;
+    private final TraceEventService traceService;
 
-    public AssistantService(GenericRecordService recordService) {
-        this.recordService = recordService;
+    public AssistantService(StructuredRecordService structuredService, GrowthRecordService growthService,
+                            CourseRecordService courseService, ProjectRecordService projectService,
+                            ResearchDataService researchService, TraceEventService traceService) {
+        this.structuredService = structuredService;
+        this.growthService = growthService;
+        this.courseService = courseService;
+        this.projectService = projectService;
+        this.researchService = researchService;
+        this.traceService = traceService;
     }
 
     public Map<String, Object> chat(String question) {
@@ -28,11 +40,11 @@ public class AssistantService {
         } else if (containsAny(text, "采集", "生长", "温度", "湿度", "PH", "ph")) {
             answer = buildGrowthAnswer();
         } else if (containsAny(text, "上传", "资料", "文件", "下载", "查看")) {
-            answer = "资料文件在“资料文件”模块管理。选择资料分类和文件后点击上传；上传后可直接“查看”图片、PDF、视频、文本等浏览器支持的文件，也可以点击“下载”保存到本地。";
+            answer = "资料文件在\u201C资料文件\u201D模块管理。选择资料分类和文件后点击上传；上传后可直接\u201C查看\u201D图片、PDF、视频、文本等浏览器支持的文件，也可以点击\u201C下载\u201D保存到本地。";
         } else if (containsAny(text, "备份", "恢复")) {
-            answer = "点击页面右上角“自动备份”即可生成当前数据备份文件，备份会保存在项目的 data 目录中。正式部署时可扩展为定时备份和数据库备份。";
+            answer = "点击页面右上角\u201C自动备份\u201D即可生成当前数据备份文件，备份会保存在项目的 data 目录中。正式部署时可扩展为定时备份和数据库备份。";
         } else if (containsAny(text, "课程", "教学", "视频")) {
-            answer = "试验课程模块用于存储课程名称、教师、学时、资料类型和发布状态；线上视频或课件可以先上传到“资料文件”，再在课程中记录资料类型和说明。";
+            answer = "试验课程模块用于存储课程名称、教师、学时、资料类型和发布状态；线上视频或课件可以先上传到\u201C资料文件\u201D，再在课程中记录资料类型和说明。";
         } else if (containsAny(text, "评价", "非遗", "申报")) {
             answer = "评价体系模块用于记录药材名称、评价指标、评分、评价结果和申报素材，可为非遗申请、品牌申报、产地证明等工作沉淀材料。";
         } else if (containsAny(text, "业绩", "审核", "认定", "标准")) {
@@ -47,17 +59,16 @@ public class AssistantService {
     }
 
     private String buildSummaryAnswer() {
-        Map<String, Object> summary = recordService.summary();
-        return "当前系统样本数据概况：药材品种 " + summary.get("herbCount")
-                + " 个，生长采集记录 " + summary.get("growthRecordCount")
-                + " 条，试验课程 " + summary.get("courseCount")
-                + " 门，研究课题 " + summary.get("projectCount")
-                + " 个，评价记录 " + summary.get("evaluationCount")
-                + " 条，业绩记录 " + summary.get("achievementCount") + " 条。";
+        return "当前系统样本数据概况：药材品种 " + structuredService.count("herbs")
+                + " 个，生长采集记录 " + growthService.count()
+                + " 条，试验课程 " + courseService.courseCount()
+                + " 门，研究课题 " + projectService.count()
+                + " 个，评价记录 " + structuredService.count("evaluations")
+                + " 条，业绩记录 " + structuredService.count("achievements") + " 条。";
     }
 
     private String buildHerbAnswer(String question) {
-        List<Map<String, Object>> herbs = recordService.list("herbs");
+        List<Map<String, Object>> herbs = structuredService.list("herbs");
         List<Map<String, Object>> matched = herbs.stream()
                 .filter(item -> question.contains(String.valueOf(item.getOrDefault("name", "")))
                         || question.contains(String.valueOf(item.getOrDefault("district", ""))))
@@ -73,7 +84,7 @@ public class AssistantService {
     }
 
     private String buildGrowthAnswer() {
-        List<Map<String, Object>> records = recordService.list("growth-records");
+        List<Map<String, Object>> records = growthService.list();
         String rows = records.stream()
                 .limit(5)
                 .map(item -> item.getOrDefault("herbName", "") + "（" + item.getOrDefault("district", "") + "）：温度 "

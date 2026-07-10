@@ -1,18 +1,11 @@
-CREATE TABLE IF NOT EXISTS generic_record (
-  id VARCHAR(64) PRIMARY KEY,
-  resource_type VARCHAR(64) NOT NULL,
-  payload TEXT NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
-);
-
 CREATE TABLE IF NOT EXISTS file_asset (
   id VARCHAR(64) PRIMARY KEY,
   file_name VARCHAR(255) NOT NULL,
   category VARCHAR(100),
   size_bytes BIGINT NOT NULL DEFAULT 0,
   storage_path VARCHAR(500) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_file_category (category)
 );
 
 CREATE TABLE IF NOT EXISTS sys_role (
@@ -31,14 +24,16 @@ CREATE TABLE IF NOT EXISTS sys_user (
   department VARCHAR(120),
   status VARCHAR(30) NOT NULL DEFAULT 'enabled',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_user_status (status)
 );
 
 CREATE TABLE IF NOT EXISTS sys_user_role (
   user_id VARCHAR(64) NOT NULL,
   role_id VARCHAR(64) NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (user_id, role_id)
+  PRIMARY KEY (user_id, role_id),
+  INDEX idx_ur_role (role_id)
 );
 
 CREATE TABLE IF NOT EXISTS herb (
@@ -51,7 +46,9 @@ CREATE TABLE IF NOT EXISTS herb (
   environment TEXT,
   trace_code VARCHAR(100),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_herb_name (name),
+  INDEX idx_herb_district (district)
 );
 
 CREATE TABLE IF NOT EXISTS growth_record (
@@ -67,7 +64,10 @@ CREATE TABLE IF NOT EXISTS growth_record (
   recorder_role VARCHAR(50),
   recorded_at TIMESTAMP NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_gr_herb (herb_name),
+  INDEX idx_gr_district (district),
+  INDEX idx_gr_recorded (recorded_at)
 );
 
 CREATE TABLE IF NOT EXISTS trace_event (
@@ -80,7 +80,10 @@ CREATE TABLE IF NOT EXISTS trace_event (
   event_time TIMESTAMP NULL,
   location VARCHAR(200),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_te_trace (trace_code),
+  INDEX idx_te_herb (herb_name),
+  INDEX idx_te_time (event_time)
 );
 
 CREATE TABLE IF NOT EXISTS spectrum_comparison (
@@ -96,7 +99,9 @@ CREATE TABLE IF NOT EXISTS spectrum_comparison (
   compared_at TIMESTAMP NULL,
   remark TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_sc_herb (herb_name),
+  INDEX idx_sc_sample (sample_code)
 );
 
 CREATE TABLE IF NOT EXISTS growth_analysis (
@@ -113,7 +118,9 @@ CREATE TABLE IF NOT EXISTS growth_analysis (
   analyst_name VARCHAR(100),
   analyzed_at TIMESTAMP NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_ga_herb (herb_name),
+  INDEX idx_ga_analyzed (analyzed_at)
 );
 
 CREATE TABLE IF NOT EXISTS research_project (
@@ -124,8 +131,13 @@ CREATE TABLE IF NOT EXISTS research_project (
   status VARCHAR(50) NOT NULL DEFAULT 'pending_review',
   stage VARCHAR(100),
   transformation TEXT,
+  applicant_requests TEXT,
+  approved_members TEXT,
+  rejected_applicants TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_rp_status (status),
+  INDEX idx_rp_leader (leader_name)
 );
 
 CREATE TABLE IF NOT EXISTS project_application (
@@ -136,7 +148,8 @@ CREATE TABLE IF NOT EXISTS project_application (
   apply_reason TEXT,
   review_comment TEXT,
   applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  reviewed_at TIMESTAMP NULL
+  reviewed_at TIMESTAMP NULL,
+  INDEX idx_pa_project (project_id)
 );
 
 CREATE TABLE IF NOT EXISTS project_member (
@@ -144,7 +157,8 @@ CREATE TABLE IF NOT EXISTS project_member (
   project_id VARCHAR(64) NOT NULL,
   member_name VARCHAR(100) NOT NULL,
   member_role VARCHAR(50) NOT NULL DEFAULT 'student',
-  joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_pm_project (project_id)
 );
 
 CREATE TABLE IF NOT EXISTS course (
@@ -155,7 +169,8 @@ CREATE TABLE IF NOT EXISTS course (
   material_type VARCHAR(100),
   status VARCHAR(50) NOT NULL DEFAULT 'pending_review',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_course_status (status)
 );
 
 CREATE TABLE IF NOT EXISTS teaching_resource (
@@ -173,7 +188,9 @@ CREATE TABLE IF NOT EXISTS teaching_resource (
   review_comment TEXT,
   published_at TIMESTAMP NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_tr_course (course_id),
+  INDEX idx_tr_status (status)
 );
 
 CREATE TABLE IF NOT EXISTS training_material (
@@ -194,7 +211,8 @@ CREATE TABLE IF NOT EXISTS evaluation_record (
   result VARCHAR(200),
   application_material TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_er_herb (herb_name)
 );
 
 CREATE TABLE IF NOT EXISTS achievement_record (
@@ -205,7 +223,9 @@ CREATE TABLE IF NOT EXISTS achievement_record (
   level_name VARCHAR(100),
   status VARCHAR(50) NOT NULL DEFAULT 'pending_review',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP NULL
+  updated_at TIMESTAMP NULL,
+  INDEX idx_ar_status (status),
+  INDEX idx_ar_category (category)
 );
 
 CREATE TABLE IF NOT EXISTS achievement_standard (

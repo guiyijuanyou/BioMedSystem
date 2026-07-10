@@ -5,9 +5,10 @@ spring:
   application:
     name: biomed-digital-system
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/biomed?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    # 请修改为你的 MySQL 连接信息
+    url: jdbc:mysql://localhost:3306/biomed?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: your_password
     driver-class-name: com.mysql.cj.jdbc.Driver
   sql:
     init:
