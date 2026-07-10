@@ -17,7 +17,7 @@ public interface SysUserMapper {
     @Select("SELECT * FROM sys_user WHERE username = #{username}")
     SysUser findByUsername(String username);
 
-    @Select("SELECT u.id, u.username, u.password_hash AS password, u.display_name AS name, " +
+    @Select("SELECT u.id, u.username, u.display_name AS name, " +
             "u.department, u.status, COALESCE(r.code, 'student') AS role, " +
             "CASE COALESCE(r.code, 'student') WHEN 'admin' THEN '一级' WHEN 'teacher' THEN '二级' WHEN 'researcher' THEN '二级' ELSE '三级' END AS level, " +
             "u.created_at AS createdAt, u.updated_at AS updatedAt " +
