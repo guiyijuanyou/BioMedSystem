@@ -115,7 +115,7 @@ public class PermissionService {
     private boolean isStudentRecord(Map<String, Object> record, String ownerField, String ownerRoleField) {
         String role = String.valueOf(record.getOrDefault(ownerRoleField, ""));
         String owner = String.valueOf(record.getOrDefault(ownerField, ""));
-        return role.equals(STUDENT_LABEL) || owner.contains(STUDENT_LABEL);
+        return role.equals(STUDENT_LABEL) || role.equals("student") || owner.contains(STUDENT_LABEL);
     }
 
     public record Actor(String name, String role) {}

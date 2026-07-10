@@ -96,7 +96,7 @@ onMounted(load);
         <article v-for="item in items" :key="item.id" class="file-row">
           <div>
             <strong :title="item.fileName">{{ item.fileName }}</strong>
-            <small>{{ item.category }} · {{ sizeText(item.size) }}</small>
+            <small>{{ item.category }} · {{ sizeText(item.sizeBytes) }}</small>
           </div>
           <div class="file-actions">
             <a :href="`/api/files/${item.id}/preview`" target="_blank" rel="noopener">

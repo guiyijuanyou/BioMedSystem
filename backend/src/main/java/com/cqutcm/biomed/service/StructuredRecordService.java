@@ -113,6 +113,13 @@ public class StructuredRecordService {
                 evaluationMapper.update(e); return evaluationToMap(e);
             }
             case "achievements": {
+                String actorRole = String.valueOf(payload.getOrDefault("_actorRole", "admin"));
+                if (!"admin".equals(actorRole)) {
+                    AchievementRecord existing = achievementMapper.findById(id);
+                    if (existing != null) {
+                        payload.put("status", existing.getStatus());
+                    }
+                }
                 AchievementRecord a = mapToAchievement(payload); a.setId(id);
                 achievementMapper.update(a); return achievementToMap(a);
             }
@@ -210,7 +217,8 @@ public class StructuredRecordService {
             rawPassword = passwordEncoder.encode(rawPassword);
         }
         u.setPasswordHash(rawPassword); u.setDepartment(str(m, "department"));
-        u.setStatus(str(m, "status"));
+        String status = str(m, "status");
+        u.setStatus(status != null && !status.isBlank() ? status : "enabled");
         return u;
     }
 
@@ -283,11 +291,20 @@ public class StructuredRecordService {
     }
 
     private void handleUserRoles(Map<String, Object> payload, String userId) {
+        List<String> roleCodes = new ArrayList<>();
         Object rolesObj = payload.get("roles");
-        if (!(rolesObj instanceof List<?> roles)) return;
+        if (rolesObj instanceof List<?> roles) {
+            for (Object role : roles) {
+                roleCodes.add(String.valueOf(role).trim());
+            }
+        }
+        Object roleObj = payload.get("role");
+        if (roleObj instanceof String roleStr && !roleStr.isBlank()) {
+            roleCodes.add(roleStr.trim());
+        }
+        if (roleCodes.isEmpty()) return;
         userRoleMapper.deleteByUserId(userId);
-        for (Object role : roles) {
-            String roleCode = String.valueOf(role).trim();
+        for (String roleCode : roleCodes) {
             SysRole sysRole = roleMapper.findByCode(roleCode);
             if (sysRole == null) {
                 sysRole = roleMapper.findByCode("student");

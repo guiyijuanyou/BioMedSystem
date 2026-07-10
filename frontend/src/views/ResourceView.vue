@@ -1,11 +1,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import {
-  ArrowLeft, BarChart3, ChevronLeft, ChevronRight, Clock3, Copy, Download, Eye, FileText,
-  Pencil, PlayCircle, Plus, Search, Trash2, X
+  ArrowLeft, BarChart3, Check, ChevronLeft, ChevronRight, Clock3, Copy, Download, Eye, FileText,
+  Pencil, PlayCircle, Plus, Search, Trash2, X, XCircle
 } from "lucide-vue-next";
 import MapPicker from "@/components/MapPicker.vue";
 import { api } from "@/services/api";
+import { roles as roleOptions } from "@/config";
 
 const props = defineProps({
   moduleKey: { type: String, required: true },
@@ -305,7 +306,46 @@ function isRestrictedAuditField(name) {
   if (props.moduleKey === "teaching-resources") {
     return ["status", "reviewComment", "publishedAt"].includes(name);
   }
+  if (props.moduleKey === "projects") {
+    return name === "status";
+  }
+  if (props.moduleKey === "achievements") {
+    return name === "status";
+  }
   return false;
+}
+
+const auditModules = ["teaching-resources", "courses", "projects", "achievements"];
+const isAuditModule = computed(() => auditModules.includes(props.moduleKey));
+
+function isPendingReview(item) {
+  return String(item?.status || "").includes("待审核");
+}
+
+async function quickAudit(item, action) {
+  const changes = {};
+  if (action === "approve") {
+    changes.status = "已通过";
+    if (props.moduleKey === "teaching-resources") {
+      changes.publishedAt = new Date().toISOString().slice(0, 19);
+    }
+  } else {
+    changes.status = "已驳回";
+  }
+  try {
+    const payload = {};
+    props.config.fields.forEach(([name]) => payload[name] = item[name] ?? "");
+    Object.assign(payload, changes, { id: item.id });
+    await api(`/api/${props.moduleKey}`, {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    });
+    emit("notify", action === "approve" ? "已通过审核" : "已驳回审核");
+    panelOpen.value = false;
+    await load();
+  } catch (error) {
+    emit("notify", error.message);
+  }
 }
 
 function toNumber(value) {
@@ -452,7 +492,8 @@ function ownerRole(item) {
 }
 
 function isStudentOwned(item) {
-  return ownerRole(item) === "学生" || String(ownerName(item)).includes("学生");
+  const role = ownerRole(item);
+  return role === "学生" || role === "student" || String(ownerName(item)).includes("学生");
 }
 
 function isOwnRecord(item) {
@@ -537,15 +578,16 @@ function projectRejectedApplicants(project) {
 }
 
 function hasApplied(project) {
-  return projectApplicants(project).includes("当前学生") || projectMembers(project).includes("当前学生");
+  const name = props.currentUser.name;
+  return projectApplicants(project).includes(name) || projectMembers(project).includes(name);
 }
 
 function isProjectMember(project) {
-  return projectMembers(project).includes("当前学生");
+  return projectMembers(project).includes(props.currentUser.name);
 }
 
 function isProjectRejected(project) {
-  return projectRejectedApplicants(project).includes("当前学生");
+  return projectRejectedApplicants(project).includes(props.currentUser.name);
 }
 
 async function updateProject(project, changes, message) {
@@ -579,7 +621,7 @@ async function applyProject(project) {
   }
   await updateProject(
     project,
-    { applicantRequests: joinNames([...projectApplicants(project), "当前学生"]) },
+    { applicantRequests: joinNames([...projectApplicants(project), props.currentUser.name]) },
     "加入课题申请已提交"
   );
 }
@@ -722,6 +764,9 @@ async function save() {
       payload.resourceType = payload.resourceType || fileResourceType(file);
       payload.videoUrl = "";
       payload.fileUrl = "";
+    }
+    if (props.moduleKey === "teaching-resources" && payload.status === "已发布" && !payload.publishedAt) {
+      payload.publishedAt = new Date().toISOString().slice(0, 19);
     }
     if (props.role !== "admin") {
       if (props.moduleKey === "growth-records") {
@@ -1206,6 +1251,8 @@ watch(() => props.editId, id => {
             </td>
             <td v-if="hasRowActions" class="sticky-action">
               <div class="row-actions">
+                <button v-if="role === 'admin' && isAuditModule && isPendingReview(item)" class="icon-button" type="button" title="通过审核" @click="quickAudit(item, 'approve')"><Check :size="16" /></button>
+                <button v-if="role === 'admin' && isAuditModule && isPendingReview(item)" class="icon-button danger" type="button" title="驳回审核" @click="quickAudit(item, 'reject')"><XCircle :size="16" /></button>
                 <button class="icon-button" type="button" title="查看详情" @click="openView(item)"><Eye :size="16" /></button>
                 <button v-if="canManageItem(item, 'edit')" class="icon-button" type="button" title="编辑记录" @click="openEdit(item)"><Pencil :size="16" /></button>
                 <button v-if="canDuplicate && canManageItem(item, 'edit')" class="icon-button" type="button" title="复制记录" @click="duplicate(item)"><Copy :size="16" /></button>
@@ -1309,6 +1356,7 @@ watch(() => props.editId, id => {
               <span class="field-label">{{ label }}</span>
               <textarea v-if="textareaFields.includes(name)" v-model="form[name]"></textarea>
               <select v-else-if="name === 'status'" v-model="form[name]"><option v-for="status in statuses" :key="status">{{ status }}</option></select>
+              <select v-else-if="name === 'role'" v-model="form[name]"><option v-for="(info, code) in roleOptions" :key="code" :value="code">{{ info.label }}</option></select>
               <select v-else-if="name === 'collector'" v-model="form[name]"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select>
               <select v-else-if="name === 'courseTitle' && moduleKey === 'teaching-resources'" v-model="form[name]">
                 <option value="">请选择试验课程</option>
@@ -1330,10 +1378,12 @@ watch(() => props.editId, id => {
 
         <footer class="drawer-footer">
           <template v-if="panelMode === 'view'">
+            <button v-if="role === 'admin' && isAuditModule && isPendingReview(form)" type="button" @click="quickAudit(form, 'approve')"><Check :size="16" />通过</button>
+            <button v-if="role === 'admin' && isAuditModule && isPendingReview(form)" class="danger-ghost" type="button" @click="quickAudit(form, 'reject')"><XCircle :size="16" />驳回</button>
             <button v-if="canManageItem(form, 'delete')" class="danger-ghost" type="button" @click="requestDelete([editingId])"><Trash2 :size="16" />删除</button>
             <button v-if="canDuplicate && canManageItem(form, 'edit')" class="button-secondary" type="button" @click="duplicate(form)"><Copy :size="16" />复制</button>
             <button v-if="canManageItem(form, 'edit')" type="button" @click="panelMode = 'edit'"><Pencil :size="16" />编辑记录</button>
-            <button v-if="!canManageItem(form, 'edit') && !(canDuplicate && canManageItem(form, 'edit')) && !canManageItem(form, 'delete')" class="button-secondary" type="button" @click="closePanel">关闭</button>
+            <button v-if="!canManageItem(form, 'edit') && !(canDuplicate && canManageItem(form, 'edit')) && !canManageItem(form, 'delete') && !(role === 'admin' && isAuditModule && isPendingReview(form))" class="button-secondary" type="button" @click="closePanel">关闭</button>
           </template>
           <template v-else>
             <button class="button-secondary" type="button" @click="closePanel">取消</button>

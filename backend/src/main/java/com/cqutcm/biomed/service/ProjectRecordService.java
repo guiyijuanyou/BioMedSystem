@@ -38,6 +38,13 @@ public class ProjectRecordService {
         if (id.isBlank()) {
             throw new IllegalArgumentException("missing id for project update");
         }
+        String actorRole = String.valueOf(payload.getOrDefault("_actorRole", "admin"));
+        if (!"admin".equals(actorRole)) {
+            var existing = projectMapper.findById(id);
+            if (existing != null) {
+                payload.put("status", existing.getStatus());
+            }
+        }
         Map<String, Object> cleaned = clean(payload);
         cleaned.put("id", id);
         projectMapper.updateMap(cleaned);
@@ -63,6 +70,8 @@ public class ProjectRecordService {
         cleaned.remove("id");
         cleaned.remove("createdAt");
         cleaned.remove("updatedAt");
+        cleaned.remove("_actorName");
+        cleaned.remove("_actorRole");
         cleaned.putIfAbsent("status", PENDING_REVIEW);
         cleaned.putIfAbsent("applicantRequests", "");
         cleaned.putIfAbsent("approvedMembers", "");
