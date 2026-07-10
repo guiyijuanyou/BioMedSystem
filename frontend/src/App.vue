@@ -1,59 +1,56 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, provide, ref } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { LogOut, Menu, RefreshCw, Save, ShieldCheck } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
-import DashboardView from "@/views/DashboardView.vue";
-import ResourceView from "@/views/ResourceView.vue";
-import FilesView from "@/views/FilesView.vue";
 import AiAssistant from "@/components/AiAssistant.vue";
 import { modules, roleMenus, roleModulePermissions, roles } from "@/config";
 import { api } from "@/services/api";
 
-const savedSession = localStorage.getItem("biomed-session");
-const sessionUser = ref(savedSession ? JSON.parse(savedSession) : null);
-const loginForm = ref({ username: "admin", password: "123456" });
-const loginLoading = ref(false);
-const currentRole = ref(sessionUser.value?.role || "admin");
-const active = ref("dashboard");
-const drawerOpen = ref(false);
-const summary = ref({});
-const herbs = ref([]);
-const editId = ref("");
-const toastText = ref("");
-const refreshing = ref(false);
-const backingUp = ref(false);
-let toastTimer;
-let touchStart = null;
+const router = useRouter();
+const route = useRoute();
 
-const demoProfiles = {
-  admin: { name: "系统管理员", roleLabel: "管理员" },
-  teacher: { name: "李老师", roleLabel: "教师" },
-  researcher: { name: "王老师", roleLabel: "科研人员" },
-  student: { name: "当前学生", roleLabel: "学生" }
-};
-
-const isAuthenticated = computed(() => !!sessionUser.value);
-const visibleNavItems = computed(() => roleMenus[currentRole.value] || roleMenus.admin);
-const currentNavLabel = computed(() => visibleNavItems.value.find(([key]) => key === active.value)?.[1] || "");
+const sessionUser = ref(JSON.parse(sessionStorage.getItem("biomed-session") || "null"));
+const currentRole = computed(() => sessionUser.value?.role || "admin");
 const currentRoleLabel = computed(() => sessionUser.value?.roleLabel || roles[currentRole.value]?.label || "管理员");
 const currentUser = computed(() => ({
   role: currentRole.value,
   roleLabel: currentRoleLabel.value,
   name: sessionUser.value?.name || "当前用户"
 }));
-const pageTitle = computed(() => {
-  if (active.value === "dashboard") return roles[currentRole.value]?.title || "工作台";
-  if (active.value === "files") return currentNavLabel.value || "资料上传下载";
-  return currentNavLabel.value || modules[active.value]?.title || "生物医药数字信息系统";
+const canEditMap = computed(() => currentRole.value !== "student");
+const isAuthenticated = computed(() => !!sessionUser.value);
+
+const summary = ref({});
+const herbs = ref([]);
+const drawerOpen = ref(false);
+const toastText = ref("");
+const refreshing = ref(false);
+const backingUp = ref(false);
+const refreshKey = ref(0);
+let toastTimer;
+let touchStart = null;
+
+const visibleNavItems = computed(() => roleMenus[currentRole.value] || roleMenus.admin);
+const modulePermissions = computed(() => {
+  const perms = roleModulePermissions[currentRole.value] || roleModulePermissions.admin;
+  const key = route.name === "files" ? "files" : route.params.moduleKey;
+  if (!key) return {};
+  return perms[key] || perms.default || {};
 });
 const activeModuleConfig = computed(() => {
-  const config = modules[active.value];
-  if (!config) return null;
-  return { ...config, title: currentNavLabel.value || config.title };
+  const key = route.params.moduleKey;
+  if (!key || !modules[key]) return null;
+  return { ...modules[key], title: modules[key].title };
 });
-const modulePermissions = computed(() => {
-  const rolePermissions = roleModulePermissions[currentRole.value] || roleModulePermissions.admin;
-  return rolePermissions[active.value] || rolePermissions.default || {};
+const pageTitle = computed(() => {
+  if (route.name === "dashboard") return roles[currentRole.value]?.title || "工作台";
+  if (route.name === "files") return "资料文件";
+  if (route.name === "module") {
+    const key = route.params.moduleKey;
+    return modules[key]?.title || "业务模块";
+  }
+  return "生物医药数字信息系统";
 });
 
 function notify(message) {
@@ -62,45 +59,17 @@ function notify(message) {
   toastTimer = setTimeout(() => toastText.value = "", 2800);
 }
 
-async function login() {
-  loginLoading.value = true;
-  try {
-    const user = await api("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify(loginForm.value)
-    });
-    sessionUser.value = user;
-    currentRole.value = user.role;
-    localStorage.setItem("biomed-session", JSON.stringify(user));
-    active.value = "dashboard";
-    await loadDashboard();
-    notify("登录成功");
-  } catch (error) {
-    notify(error.message);
-  } finally {
-    loginLoading.value = false;
-  }
+function appLogin(user) {
+  sessionStorage.setItem("biomed-session", JSON.stringify(user));
+  sessionUser.value = user;
+  loadDashboard();
 }
 
-async function logout() {
-  try {
-    await api("/api/auth/logout", { method: "POST" });
-  } catch {
-    // Local logout must still complete if the server session already expired.
-  }
-  clearLocalSession();
-}
-
-function clearLocalSession() {
+function appLogout() {
   sessionUser.value = null;
-  localStorage.removeItem("biomed-session");
-  active.value = "dashboard";
+  sessionStorage.removeItem("biomed-session");
   drawerOpen.value = false;
-}
-
-function handleLoginRequired() {
-  clearLocalSession();
-  notify("登录状态已失效，请重新登录");
+  router.push("/login");
 }
 
 async function loadDashboard() {
@@ -120,12 +89,8 @@ async function loadDashboard() {
 async function refresh() {
   refreshing.value = true;
   try {
-    if (active.value === "dashboard") await loadDashboard();
-    else {
-      const key = active.value;
-      active.value = "";
-      requestAnimationFrame(() => active.value = key);
-    }
+    if (route.name === "dashboard") await loadDashboard();
+    refreshKey.value++;
     notify("数据已刷新");
   } finally {
     refreshing.value = false;
@@ -144,27 +109,6 @@ async function backup() {
   }
 }
 
-function selectPage(key) {
-  active.value = key;
-  drawerOpen.value = false;
-  if (key === "dashboard") loadDashboard();
-}
-
-function selectRole() {
-  notify("请退出后使用对应账号重新登录");
-}
-
-function editMapRecord(item) {
-  if (currentRole.value === "student") return;
-  editId.value = item.id;
-  selectPage("herbs");
-}
-
-function openModuleRecord({ moduleKey, id }) {
-  editId.value = id;
-  selectPage(moduleKey);
-}
-
 async function submitGrowth(payload) {
   try {
     await api("/api/growth-records", {
@@ -180,6 +124,12 @@ async function submitGrowth(payload) {
   } catch (error) {
     notify(error.message);
   }
+}
+
+function handleLoginRequired() {
+  sessionUser.value = null;
+  sessionStorage.removeItem("biomed-session");
+  router.push("/login");
 }
 
 function updateAppHeight() {
@@ -205,22 +155,27 @@ function onTouchEnd(event) {
   touchStart = null;
 }
 
+provide("currentRole", currentRole);
+provide("currentUser", currentUser);
+provide("canEditMap", canEditMap);
+provide("summary", summary);
+provide("herbs", herbs);
+provide("notify", notify);
+provide("refreshKey", refreshKey);
+provide("appLogin", appLogin);
+provide("appLogout", appLogout);
+provide("loadDashboard", loadDashboard);
+provide("submitGrowth", submitGrowth);
+provide("modulePermissions", modulePermissions);
+provide("activeModuleConfig", activeModuleConfig);
+
 onMounted(() => {
   updateAppHeight();
-  loadDashboard();
+  if (isAuthenticated.value) loadDashboard();
   window.addEventListener("resize", updateAppHeight);
   window.addEventListener("touchstart", onTouchStart, { passive: true });
   window.addEventListener("touchend", onTouchEnd, { passive: true });
   window.addEventListener("biomed-login-required", handleLoginRequired);
-});
-
-watch(currentRole, () => {
-  if (!isAuthenticated.value) return;
-  const menu = visibleNavItems.value;
-  if (!menu.some(([key]) => key === active.value)) {
-    active.value = menu[0]?.[0] || "dashboard";
-  }
-  if (active.value === "dashboard") loadDashboard();
 });
 
 onBeforeUnmount(() => {
@@ -233,27 +188,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section v-if="!isAuthenticated" class="login-page">
-    <form class="login-panel" @submit.prevent="login">
-      <div class="login-brand">
-        <span>药</span>
-        <div>
-          <strong>生物医药数字信息系统</strong>
-          <small>重庆市中药材资源管理</small>
-        </div>
-      </div>
-      <label>
-        <span>账号</span>
-        <input v-model="loginForm.username" autocomplete="username" placeholder="admin / teacher / researcher / student">
-      </label>
-      <label>
-        <span>密码</span>
-        <input v-model="loginForm.password" type="password" autocomplete="current-password" placeholder="默认 123456">
-      </label>
-      <button type="submit" :disabled="loginLoading">{{ loginLoading ? "登录中..." : "登录系统" }}</button>
-      <p>演示账号：admin、teacher、researcher、student，密码均为 123456。</p>
-    </form>
-  </section>
+  <router-view v-if="!isAuthenticated" />
 
   <template v-else>
     <button class="mobile-menu-button" type="button" aria-label="打开导航菜单" @click="drawerOpen = true">
@@ -261,11 +196,9 @@ onBeforeUnmount(() => {
     </button>
     <div class="shell" :class="{ 'drawer-open': drawerOpen }">
       <SidebarNav
-        :active="active"
         :open="drawerOpen"
         :items="visibleNavItems"
         :role-label="currentRoleLabel"
-        @select="selectPage"
         @close="drawerOpen = false"
       />
       <div class="drawer-mask" @click="drawerOpen = false"></div>
@@ -284,35 +217,11 @@ onBeforeUnmount(() => {
             <span class="system-health"><ShieldCheck :size="15" />{{ currentUser.name }}</span>
             <button v-if="currentRole === 'admin'" class="button-secondary" type="button" :disabled="backingUp" @click="backup"><Save :size="16" />{{ backingUp ? "备份中..." : "自动备份" }}</button>
             <button type="button" :disabled="refreshing" @click="refresh"><RefreshCw :size="16" />{{ refreshing ? "刷新中..." : "刷新数据" }}</button>
-            <button class="button-secondary" type="button" @click="logout"><LogOut :size="16" />退出</button>
+            <button class="button-secondary" type="button" @click="appLogout"><LogOut :size="16" />退出</button>
           </div>
         </header>
 
-        <DashboardView
-          v-if="active === 'dashboard'"
-          :summary="summary"
-          :herbs="herbs"
-          :role="currentRole"
-          :current-user="currentUser"
-          :can-edit-map="currentRole !== 'student'"
-          @edit-record="editMapRecord"
-          @submit-growth="submitGrowth"
-          @notify="notify"
-        />
-        <ResourceView
-          v-else-if="modules[active]"
-          :key="active"
-          :module-key="active"
-          :config="activeModuleConfig"
-          :permissions="modulePermissions"
-          :role="currentRole"
-          :current-user="currentUser"
-          :edit-id="editId"
-          @edit-consumed="editId = ''"
-          @open-module-record="openModuleRecord"
-          @notify="notify"
-        />
-        <FilesView v-else-if="active === 'files'" :permissions="modulePermissions" :role="currentRole" @notify="notify" />
+        <router-view />
       </main>
     </div>
 

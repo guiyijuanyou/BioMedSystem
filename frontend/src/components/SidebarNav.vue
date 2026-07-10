@@ -1,17 +1,19 @@
 <script setup>
+import { useRouter, useRoute } from "vue-router";
 import {
   Activity, Award, BarChart3, BookOpen, Boxes, ClipboardCheck, FileArchive,
   FlaskConical, GitBranch, GraduationCap, LayoutDashboard, MapPinned, ShieldCheck, UsersRound
 } from "lucide-vue-next";
 
 defineProps({
-  active: { type: String, required: true },
   open: { type: Boolean, default: false },
   items: { type: Array, required: true },
   roleLabel: { type: String, default: "管理员" }
 });
 
-const emit = defineEmits(["select", "close"]);
+const emit = defineEmits(["close"]);
+const router = useRouter();
+const route = useRoute();
 
 const icons = {
   dashboard: LayoutDashboard,
@@ -30,6 +32,19 @@ const icons = {
   users: UsersRound,
   files: FileArchive
 };
+
+function isNavActive(key) {
+  if (key === "dashboard") return route.name === "dashboard";
+  if (key === "files") return route.name === "files";
+  return route.name === "module" && route.params.moduleKey === key;
+}
+
+function navigate(key) {
+  if (key === "dashboard") router.push("/dashboard");
+  else if (key === "files") router.push("/files");
+  else router.push(`/module/${key}`);
+  emit("close");
+}
 </script>
 
 <template>
@@ -46,9 +61,9 @@ const icons = {
         v-for="[key, label] in items"
         :key="key"
         class="nav-item"
-        :class="{ active: active === key }"
+        :class="{ active: isNavActive(key) }"
         type="button"
-        @click="emit('select', key); emit('close')"
+        @click="navigate(key)"
       >
         <component :is="icons[key]" :size="18" />
         {{ label }}
