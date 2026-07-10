@@ -18,7 +18,10 @@ export async function api(path, options = {}) {
     data = { error: text || `Request failed (${response.status})` };
   }
   if (!response.ok) {
-    if (data.error === "login required") {
+    const authenticationRequired = response.status === 401
+      || data.code === "AUTH_REQUIRED"
+      || data.error === "login required";
+    if (authenticationRequired) {
       sessionStorage.removeItem("biomed-session");
       window.dispatchEvent(new CustomEvent("biomed-login-required"));
     }
