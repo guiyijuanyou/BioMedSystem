@@ -5,6 +5,8 @@ import com.cqutcm.biomed.mapper.SysUserMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
-    private final Map<String, DemoUser> sessions = new ConcurrentHashMap<>();
+    private static final Duration SESSION_TTL = Duration.ofHours(8);
+
+    private final Map<String, UserSession> sessions = new ConcurrentHashMap<>();
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -27,12 +31,15 @@ public class AuthService {
         String password = String.valueOf(payload.getOrDefault("password", ""));
         DemoUser user = findUser(username);
         if (user == null || !passwordEncoder.matches(password, user.password())) {
-            throw new IllegalArgumentException("username or password is incorrect");
+            throw new AuthenticationRequiredException("username or password is incorrect");
         }
-        String token = username + ":" + UUID.randomUUID();
-        sessions.put(token, user);
+        removeExpiredSessions();
+        String token = UUID.randomUUID().toString();
+        Instant expiresAt = Instant.now().plus(SESSION_TTL);
+        sessions.put(token, new UserSession(user, expiresAt));
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("token", token);
+        result.put("expiresAt", expiresAt.toString());
         result.put("username", user.username());
         result.put("role", user.role());
         result.put("name", user.name());
@@ -59,25 +66,25 @@ public class AuthService {
 
     public PermissionService.Actor requireActor(String authorization) {
         String token = extractToken(authorization);
-        DemoUser user = sessions.get(token);
-        if (user == null) {
-            user = restoreUserFromToken(token);
+        UserSession session = sessions.get(token);
+        if (session == null || session.expiresAt().isBefore(Instant.now())) {
+            sessions.remove(token);
+            throw new AuthenticationRequiredException("login required");
         }
-        if (user == null) {
-            throw new IllegalArgumentException("login required");
-        }
+        DemoUser user = session.user();
         return new PermissionService.Actor(user.name(), user.role());
     }
 
-    private DemoUser restoreUserFromToken(String token) {
-        int separator = token == null ? -1 : token.indexOf(':');
-        if (separator <= 0) return null;
-        String username = token.substring(0, separator);
-        DemoUser user = findUser(username);
-        if (user != null) {
-            sessions.put(token, user);
+    public void logout(String authorization) {
+        String token = extractToken(authorization);
+        if (!token.isBlank()) {
+            sessions.remove(token);
         }
-        return user;
+    }
+
+    private void removeExpiredSessions() {
+        Instant now = Instant.now();
+        sessions.entrySet().removeIf(entry -> entry.getValue().expiresAt().isBefore(now));
     }
 
     private String extractToken(String authorization) {
@@ -99,4 +106,5 @@ public class AuthService {
     }
 
     private record DemoUser(String username, String password, String role, String name, String roleLabel) {}
+    private record UserSession(DemoUser user, Instant expiresAt) {}
 }

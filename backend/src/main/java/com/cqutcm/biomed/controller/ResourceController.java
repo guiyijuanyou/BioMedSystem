@@ -37,7 +37,10 @@ public class ResourceController {
     }
 
     @GetMapping("/summary")
-    public Map<String, Object> summary() {
+    public Map<String, Object> summary(
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        authService.requireActor(authorization);
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("courseCount", courseService.courseCount());
         summary.put("teachingResourceCount", courseService.resourceCount());
@@ -64,7 +67,12 @@ public class ResourceController {
     }
 
     @GetMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}")
-    public Map<String, Object> list(@PathVariable String resourceType) {
+    public Map<String, Object> list(
+            @PathVariable String resourceType,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        permissionService.assertCanRead(resourceType, actor);
         return switch (resourceType) {
             case "projects" -> Map.of("items", projectService.list());
             case "growth-records" -> Map.of("items", growthService.list());

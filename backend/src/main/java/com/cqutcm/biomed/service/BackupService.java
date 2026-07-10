@@ -1,5 +1,6 @@
 package com.cqutcm.biomed.service;
 
+import com.cqutcm.biomed.entity.SysUser;
 import com.cqutcm.biomed.mapper.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -98,7 +99,7 @@ public class BackupService {
             backup.put("evaluationsNormalized", evaluationMapper.findAll());
             backup.put("achievementsNormalized", achievementMapper.findAll());
             backup.put("standardsNormalized", standardMapper.findAll());
-            backup.put("usersNormalized", userMapper.findAll());
+            backup.put("usersNormalized", userMapper.findAll().stream().map(this::safeUserProfile).toList());
             backup.put("rolesNormalized", roleMapper.findAll());
             backup.put("userRolesNormalized", userRoleMapper.findAll());
             Files.writeString(target, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(backup),
@@ -107,5 +108,17 @@ public class BackupService {
         } catch (Exception ex) {
             throw new IllegalStateException("backup failed", ex);
         }
+    }
+
+    private Map<String, Object> safeUserProfile(SysUser user) {
+        Map<String, Object> profile = new LinkedHashMap<>();
+        profile.put("id", user.getId());
+        profile.put("username", user.getUsername());
+        profile.put("displayName", user.getDisplayName());
+        profile.put("department", user.getDepartment());
+        profile.put("status", user.getStatus());
+        profile.put("createdAt", user.getCreatedAt());
+        profile.put("updatedAt", user.getUpdatedAt());
+        return profile;
     }
 }

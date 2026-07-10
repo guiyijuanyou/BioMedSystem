@@ -1,5 +1,6 @@
 package com.cqutcm.biomed.controller;
 
+import com.cqutcm.biomed.service.AuthenticationRequiredException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -9,6 +10,12 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(AuthenticationRequiredException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, String> handleAuthenticationRequired(AuthenticationRequiredException ex) {
+        return Map.of("error", ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
@@ -21,4 +28,3 @@ public class ApiExceptionHandler {
         return Map.of("error", ex.getMessage());
     }
 }
-

@@ -14,6 +14,20 @@ public class PermissionService {
     private static final Set<String> TEACHER_BLOCKED = Set.of("users", "standards");
     private static final Set<String> RESEARCHER_BLOCKED = Set.of("trainings", "users", "standards", "courses");
     private static final Set<String> REVIEW_ONLY_CREATE_BLOCKED = Set.of("teaching-resources");
+    private static final Set<String> STUDENT_READABLE = Set.of(
+            "herbs", "growth-records", "trace-events", "teaching-resources",
+            "courses", "projects", "trainings"
+    );
+
+    public void assertCanRead(String resourceType, Actor actor) {
+        if ("admin".equals(actor.role())) return;
+        if ("users".equals(resourceType)) {
+            throw new IllegalArgumentException("only admin can read users");
+        }
+        if ("student".equals(actor.role()) && !STUDENT_READABLE.contains(resourceType)) {
+            throw new IllegalArgumentException("student cannot read " + resourceType);
+        }
+    }
 
     public Actor actor(Map<String, Object> payload) {
         return new Actor(

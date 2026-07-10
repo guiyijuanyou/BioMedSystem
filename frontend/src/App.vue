@@ -82,7 +82,16 @@ async function login() {
   }
 }
 
-function logout() {
+async function logout() {
+  try {
+    await api("/api/auth/logout", { method: "POST" });
+  } catch {
+    // Local logout must still complete if the server session already expired.
+  }
+  clearLocalSession();
+}
+
+function clearLocalSession() {
   sessionUser.value = null;
   localStorage.removeItem("biomed-session");
   active.value = "dashboard";
@@ -90,7 +99,7 @@ function logout() {
 }
 
 function handleLoginRequired() {
-  logout();
+  clearLocalSession();
   notify("登录状态已失效，请重新登录");
 }
 
