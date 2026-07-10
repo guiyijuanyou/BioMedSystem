@@ -10,7 +10,7 @@ public class PermissionService {
     private static final String STUDENT_LABEL = "\u5b66\u751f";
 
     private static final Set<String> STUDENT_CREATABLE = Set.of("growth-records");
-    private static final Set<String> STUDENT_EDITABLE = Set.of("growth-records", "projects");
+    private static final Set<String> STUDENT_EDITABLE = Set.of("growth-records");
     private static final Set<String> TEACHER_BLOCKED = Set.of("users", "standards");
     private static final Set<String> RESEARCHER_BLOCKED = Set.of("trainings", "users", "standards", "courses");
     private static final Set<String> REVIEW_ONLY_CREATE_BLOCKED = Set.of("teaching-resources");
@@ -22,65 +22,65 @@ public class PermissionService {
     public void assertCanRead(String resourceType, Actor actor) {
         if ("admin".equals(actor.role())) return;
         if ("users".equals(resourceType)) {
-            throw new IllegalArgumentException("only admin can read users");
+            throw new AuthorizationDeniedException("only admin can read users");
         }
         if ("student".equals(actor.role()) && !STUDENT_READABLE.contains(resourceType)) {
-            throw new IllegalArgumentException("student cannot read " + resourceType);
+            throw new AuthorizationDeniedException("student cannot read " + resourceType);
         }
     }
 
     public Actor actor(Map<String, Object> payload) {
         return new Actor(
                 String.valueOf(payload.getOrDefault("_actorName", "")),
-                String.valueOf(payload.getOrDefault("_actorRole", "admin"))
+                String.valueOf(payload.getOrDefault("_actorRole", ""))
         );
     }
 
     public Actor actor(String name, String role) {
-        return new Actor(name == null ? "" : name, role == null || role.isBlank() ? "admin" : role);
+        return new Actor(name == null ? "" : name, role == null ? "" : role);
     }
 
     public void assertCanCreate(String resourceType, Actor actor) {
         if ("admin".equals(actor.role())) {
             if (REVIEW_ONLY_CREATE_BLOCKED.contains(resourceType)) {
-                throw new IllegalArgumentException("admin reviews this resource instead of uploading it");
+                throw new AuthorizationDeniedException("admin reviews this resource instead of uploading it");
             }
             return;
         }
         if ("student".equals(actor.role()) && !STUDENT_CREATABLE.contains(resourceType)) {
-            throw new IllegalArgumentException("student cannot create " + resourceType);
+            throw new AuthorizationDeniedException("student cannot create " + resourceType);
         }
         if ("teacher".equals(actor.role()) && TEACHER_BLOCKED.contains(resourceType)) {
-            throw new IllegalArgumentException("teacher cannot create " + resourceType);
+            throw new AuthorizationDeniedException("teacher cannot create " + resourceType);
         }
         if ("researcher".equals(actor.role()) && RESEARCHER_BLOCKED.contains(resourceType)) {
-            throw new IllegalArgumentException("researcher cannot create " + resourceType);
+            throw new AuthorizationDeniedException("researcher cannot create " + resourceType);
         }
     }
 
     public void assertCanUpdate(String resourceType, Actor actor) {
         if ("admin".equals(actor.role())) return;
         if ("student".equals(actor.role()) && !STUDENT_EDITABLE.contains(resourceType)) {
-            throw new IllegalArgumentException("student cannot edit " + resourceType);
+            throw new AuthorizationDeniedException("student cannot edit " + resourceType);
         }
         if ("teacher".equals(actor.role()) && TEACHER_BLOCKED.contains(resourceType)) {
-            throw new IllegalArgumentException("teacher cannot edit " + resourceType);
+            throw new AuthorizationDeniedException("teacher cannot edit " + resourceType);
         }
         if ("researcher".equals(actor.role()) && RESEARCHER_BLOCKED.contains(resourceType)) {
-            throw new IllegalArgumentException("researcher cannot edit " + resourceType);
+            throw new AuthorizationDeniedException("researcher cannot edit " + resourceType);
         }
     }
 
     public void assertCanDelete(String resourceType, Actor actor) {
         if ("admin".equals(actor.role())) return;
         if ("student".equals(actor.role())) {
-            throw new IllegalArgumentException("student cannot delete records");
+            throw new AuthorizationDeniedException("student cannot delete records");
         }
         if ("teacher".equals(actor.role()) && TEACHER_BLOCKED.contains(resourceType)) {
-            throw new IllegalArgumentException("teacher cannot delete " + resourceType);
+            throw new AuthorizationDeniedException("teacher cannot delete " + resourceType);
         }
         if ("researcher".equals(actor.role()) && RESEARCHER_BLOCKED.contains(resourceType)) {
-            throw new IllegalArgumentException("researcher cannot delete " + resourceType);
+            throw new AuthorizationDeniedException("researcher cannot delete " + resourceType);
         }
     }
 
