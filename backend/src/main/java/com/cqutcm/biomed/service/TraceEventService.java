@@ -12,9 +12,11 @@ import java.util.UUID;
 @Service
 public class TraceEventService {
     private final TraceEventMapper traceMapper;
+    private final PermissionService permissionService;
 
-    public TraceEventService(TraceEventMapper traceMapper) {
+    public TraceEventService(TraceEventMapper traceMapper, PermissionService permissionService) {
         this.traceMapper = traceMapper;
+        this.permissionService = permissionService;
     }
 
     public List<Map<String, Object>> list() {
@@ -24,6 +26,11 @@ public class TraceEventService {
     public Map<String, Object> create(Map<String, Object> payload) {
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
+        // 操作人由登录会话强制确定
+        PermissionService.Actor actor = permissionService.actor(payload);
+        if (!permissionService.isAdmin(actor)) {
+            cleaned.put("operatorName", actor.name());
+        }
         LocalDateTime now = LocalDateTime.now();
         cleaned.put("id", id);
         cleaned.put("createdAt", now.toString());
@@ -36,14 +43,47 @@ public class TraceEventService {
         if (id.isBlank()) {
             throw new IllegalArgumentException("missing id for trace event update");
         }
+        Map<String, Object> existing = traceMapper.findByIdAsMap(id);
+        if (existing == null) {
+            throw new IllegalArgumentException("trace event not found");
+        }
+        // 非管理员仅可修改自身记录
+        PermissionService.Actor actor = permissionService.actor(payload);
+        if (!permissionService.isAdmin(actor)) {
+            String operator = String.valueOf(existing.getOrDefault("operatorName", ""));
+            if (!actor.name().equals(operator)) {
+                throw new AuthorizationDeniedException("仅可修改自身创建的溯源事件");
+            }
+        }
         Map<String, Object> cleaned = clean(payload);
+        if (!permissionService.isAdmin(actor)) {
+            cleaned.put("operatorName", existing.get("operatorName"));
+        }
         cleaned.put("id", id);
-        traceMapper.updateMap(cleaned);
+        cleaned.put("version", existing.getOrDefault("version", 0));
+        if (traceMapper.updateMap(cleaned) == 0) {
+            throw new StateConflictException("溯源事件已被其他用户修改，请刷新后重试");
+        }
+        cleaned.put("version", ((Number) cleaned.get("version")).intValue() + 1);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return cleaned;
     }
 
     public void delete(String id) {
+        if (traceMapper.deleteById(id) == 0) {
+            throw new IllegalArgumentException("trace event not found");
+        }
+    }
+
+    public void delete(String id, PermissionService.Actor actor) {
+        if (!permissionService.isAdmin(actor)) {
+            Map<String, Object> existing = traceMapper.findByIdAsMap(id);
+            if (existing == null) throw new IllegalArgumentException("trace event not found");
+            String operator = String.valueOf(existing.getOrDefault("operatorName", ""));
+            if (!actor.name().equals(operator)) {
+                throw new AuthorizationDeniedException("仅可删除自身创建的溯源事件");
+            }
+        }
         if (traceMapper.deleteById(id) == 0) {
             throw new IllegalArgumentException("trace event not found");
         }

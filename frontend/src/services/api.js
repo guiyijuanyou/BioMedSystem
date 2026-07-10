@@ -22,7 +22,7 @@ export async function api(path, options = {}) {
       sessionStorage.removeItem("biomed-session");
       window.dispatchEvent(new CustomEvent("biomed-login-required"));
     }
-    throw new Error(data.error || `Request failed (${response.status})`);
+    throw new Error(data.message || data.error || `Request failed (${response.status})`);
   }
   return data;
 }

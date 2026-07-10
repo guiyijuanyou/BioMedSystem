@@ -15,8 +15,8 @@ public interface TeachingResourceMapper extends BiomedBaseMapper<TeachingResourc
 
     @Select("SELECT tr.id, tr.course_id, tr.course_title, tr.title, " +
             "tr.resource_type, tr.file_id, tr.video_url, tr.file_url, " +
-            "tr.uploader_name AS uploader, tr.uploader_role, tr.status, " +
-            "tr.review_comment, tr.published_at, " +
+            "tr.uploader_name AS uploader, tr.uploader_role, tr.status, tr.reviewer_name, " +
+            "tr.review_comment, tr.reviewed_at, tr.published_at, tr.version, " +
             "tr.created_at, tr.updated_at, " +
             "fa.file_name, fa.storage_path FROM teaching_resource tr " +
             "LEFT JOIN file_asset fa ON tr.file_id = fa.id")

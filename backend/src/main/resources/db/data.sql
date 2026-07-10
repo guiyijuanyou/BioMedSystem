@@ -149,25 +149,25 @@ SELECT 'project-002-member-a', 'project-002', '学生A', '学生', CURRENT_TIMES
 WHERE NOT EXISTS (SELECT 1 FROM project_member WHERE id = 'project-002-member-a');
 
 -- ==================== training_material (培训素材) ====================
-INSERT INTO training_material (id, title, trainer_name, audience, tracking, created_at)
-SELECT 'training-001', '中药材规范化采收培训', '王老师', '基层技术人员', '签到、视频、考核记录完整', CURRENT_TIMESTAMP
+INSERT INTO training_material (id, title, trainer_name, audience, tracking, status, created_at)
+SELECT 'training-001', '中药材规范化采收培训', '王老师', '基层技术人员', '签到、视频、考核记录完整', '已发布', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM training_material WHERE id = 'training-001');
-INSERT INTO training_material (id, title, trainer_name, audience, tracking, created_at)
-SELECT 'training-002', '手机APP采集填报培训', '李老师', '学生与科研助理', '完成线上签到、实地采集和数据回传', CURRENT_TIMESTAMP
+INSERT INTO training_material (id, title, trainer_name, audience, tracking, status, created_at)
+SELECT 'training-002', '手机APP采集填报培训', '李老师', '学生与科研助理', '完成线上签到、实地采集和数据回传', '已发布', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM training_material WHERE id = 'training-002');
-INSERT INTO training_material (id, title, trainer_name, audience, tracking, created_at)
-SELECT 'training-003', '中药材评价指标解读', '张老师', '教师与培训人员', '已完成课件存储、试题考核和结果归档', CURRENT_TIMESTAMP
+INSERT INTO training_material (id, title, trainer_name, audience, tracking, status, created_at)
+SELECT 'training-003', '中药材评价指标解读', '张老师', '教师与培训人员', '已完成课件存储、试题考核和结果归档', '已发布', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM training_material WHERE id = 'training-003');
 
 -- ==================== evaluation_record (评价记录) ====================
-INSERT INTO evaluation_record (id, herb_name, indicator, score, result, application_material, created_at)
-SELECT 'evaluation-001', '黄连', '性状、含量、产地生态、传承工艺', 91, '优秀', '可用于非遗及品牌申报材料', CURRENT_TIMESTAMP
+INSERT INTO evaluation_record (id, herb_name, indicator, score, result, application_material, subject_owner_name, evaluator_name, evaluator_role, status, created_at)
+SELECT 'evaluation-001', '黄连', '性状、含量、产地生态、传承工艺', 91, '优秀', '可用于非遗及品牌申报材料', '黄连课题组', '张老师', '教师', '已发布', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM evaluation_record WHERE id = 'evaluation-001');
-INSERT INTO evaluation_record (id, herb_name, indicator, score, result, application_material, created_at)
-SELECT 'evaluation-002', '杜仲', '树皮性状、胶丝特征、采收年限、产地环境', 87, '良好', '可用于产地证明和培训素材', CURRENT_TIMESTAMP
+INSERT INTO evaluation_record (id, herb_name, indicator, score, result, application_material, subject_owner_name, evaluator_name, evaluator_role, status, created_at)
+SELECT 'evaluation-002', '杜仲', '树皮性状、胶丝特征、采收年限、产地环境', 87, '良好', '可用于产地证明和培训素材', '杜仲课题组', '李老师', '教师', '已发布', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM evaluation_record WHERE id = 'evaluation-002');
-INSERT INTO evaluation_record (id, herb_name, indicator, score, result, application_material, created_at)
-SELECT 'evaluation-003', '佛手', '果形、香气、有效成分、加工工艺', 93, '优秀', '可用于品牌建设和非遗申报', CURRENT_TIMESTAMP
+INSERT INTO evaluation_record (id, herb_name, indicator, score, result, application_material, subject_owner_name, evaluator_name, evaluator_role, status, created_at)
+SELECT 'evaluation-003', '佛手', '果形、香气、有效成分、加工工艺', 93, '优秀', '可用于品牌建设和非遗申报', '佛手课题组', '王老师', '科研人员', '已发布', CURRENT_TIMESTAMP
 WHERE NOT EXISTS (SELECT 1 FROM evaluation_record WHERE id = 'evaluation-003');
 
 -- ==================== achievement_record (业绩记录) ====================

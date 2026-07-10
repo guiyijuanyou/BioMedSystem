@@ -67,9 +67,10 @@ class ProjectRecordServiceTest {
 
     @Test
     void ownerCannotChangeLeaderOrReviewStatus() {
-        ResearchProject existing = project("project-1", "李老师", "已发布");
+        ResearchProject existing = project("project-1", "李老师", "草稿");
         existing.setApplicantRequests("学生A");
         when(projectMapper.findById("project-1")).thenReturn(existing);
+        when(projectMapper.updateMap(org.mockito.ArgumentMatchers.anyMap())).thenReturn(1);
         ArgumentCaptor<Map<String, Object>> captor = mapCaptor();
 
         service.update(Map.of(
@@ -84,7 +85,7 @@ class ProjectRecordServiceTest {
 
         verify(projectMapper).updateMap(captor.capture());
         assertEquals("李老师", captor.getValue().get("leader"));
-        assertEquals("已发布", captor.getValue().get("status"));
+        assertEquals("草稿", captor.getValue().get("status"));
         assertEquals("学生A", captor.getValue().get("applicantRequests"));
     }
 
@@ -141,6 +142,7 @@ class ProjectRecordServiceTest {
         project.setApplicantRequests("");
         project.setApprovedMembers("");
         project.setRejectedApplicants("");
+        project.setVersion(0);
         return project;
     }
 }

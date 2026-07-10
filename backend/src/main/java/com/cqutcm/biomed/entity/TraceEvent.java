@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 
 import java.time.LocalDateTime;
 
@@ -26,6 +27,9 @@ public class TraceEvent {
     private LocalDateTime eventTime;
     @TableField("location")
     private String location;
+    @Version
+    @TableField("version")
+    private Integer version;
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(value = "updated_at", fill = FieldFill.UPDATE)
@@ -47,6 +51,8 @@ public class TraceEvent {
     public void setEventTime(LocalDateTime eventTime) { this.eventTime = eventTime; }
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

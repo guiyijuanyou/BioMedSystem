@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,6 +28,9 @@ public class Herb {
     private String environment;
     @TableField("trace_code")
     private String traceCode;
+    @Version
+    @TableField("version")
+    private Integer version;
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(value = "updated_at", fill = FieldFill.UPDATE)
@@ -48,6 +52,8 @@ public class Herb {
     public void setEnvironment(String environment) { this.environment = environment; }
     public String getTraceCode() { return traceCode; }
     public void setTraceCode(String traceCode) { this.traceCode = traceCode; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

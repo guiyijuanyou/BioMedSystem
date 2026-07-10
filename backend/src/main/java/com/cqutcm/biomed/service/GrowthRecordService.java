@@ -11,7 +11,6 @@ import java.util.UUID;
 
 @Service
 public class GrowthRecordService {
-    private static final String STUDENT = "学生";
 
     private final GrowthRecordMapper growthMapper;
     private final PermissionService permissionService;
@@ -47,14 +46,19 @@ public class GrowthRecordService {
         }
         PermissionService.Actor actor = permissionService.actor(payload);
         if (!permissionService.canEditOwnedRecord(existing, actor, "recorder", "recorderRole")) {
-            throw new IllegalArgumentException("current role cannot edit this growth record");
+            throw new AuthorizationDeniedException("current role cannot edit this growth record");
         }
 
         Map<String, Object> cleaned = clean(payload);
+        // 保留记录人不被覆盖
         cleaned.put("recorder", existing.getOrDefault("recorder", ""));
         cleaned.put("recorderRole", existing.getOrDefault("recorderRole", ""));
         cleaned.put("id", id);
-        growthMapper.updateMap(cleaned);
+        cleaned.put("version", existing.getOrDefault("version", 0));
+        if (growthMapper.updateMap(cleaned) == 0) {
+            throw new StateConflictException("生长记录已被其他用户修改，请刷新后重试");
+        }
+        cleaned.put("version", ((Number) cleaned.get("version")).intValue() + 1);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return cleaned;
     }
@@ -64,8 +68,9 @@ public class GrowthRecordService {
         if (existing == null) {
             throw new IllegalArgumentException("growth record not found");
         }
-        if (!permissionService.canDeleteOwnedRecord(existing, permissionService.actor(actorName, actorRole), "recorder")) {
-            throw new IllegalArgumentException("current role cannot delete this growth record");
+        if (!permissionService.canDeleteOwnedRecord(existing,
+                permissionService.actor(actorName, actorRole), "recorder")) {
+            throw new AuthorizationDeniedException("current role cannot delete this growth record");
         }
         growthMapper.deleteById(id);
     }

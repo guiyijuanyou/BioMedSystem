@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import {
   ArrowLeft, BarChart3, Check, ChevronLeft, ChevronRight, Clock3, Copy, Download, Eye, FileText,
-  Pencil, PlayCircle, Plus, Search, Trash2, X, XCircle
+  Archive, Pencil, PlayCircle, Plus, Search, Send, Trash2, Upload, X, XCircle
 } from "lucide-vue-next";
 import MapPicker from "@/components/MapPicker.vue";
 import { api } from "@/services/api";
@@ -58,7 +58,10 @@ const canEdit = computed(() => props.permissions.edit !== false);
 const canDuplicate = computed(() => props.permissions.duplicate !== false);
 const canDelete = computed(() => props.permissions.delete !== false);
 const canExport = computed(() => props.permissions.export !== false);
-const hasOwnershipScope = computed(() => props.role !== "admin" && ["growth-records", "teaching-resources", "projects", "courses", "achievements"].includes(props.moduleKey));
+const hasOwnershipScope = computed(() => props.role !== "admin" && [
+  "growth-records", "teaching-resources", "projects", "courses", "achievements",
+  "trainings", "evaluations", "spectrum-comparisons", "growth-analysis"
+].includes(props.moduleKey));
 const canBatchDelete = computed(() => props.permissions.batchDelete !== false && canDelete.value && !hasOwnershipScope.value);
 const hasRowActions = computed(() => true);
 const panelTitle = computed(() => {
@@ -284,38 +287,32 @@ function defaultValue(name) {
     teacher: props.currentUser.name || "当前教师",
     leader: props.currentUser.name || "当前负责人",
     owner: props.currentUser.name || "当前用户",
-    status: "待审核",
+    status: "草稿",
     requirements: "面向对中药材研究感兴趣的学生，需具备基础实验记录能力，能够按要求参与数据采集和阶段汇报。",
     applicantRequests: "",
     approvedMembers: "",
     rejectedApplicants: "",
-    operator: "系统管理员",
+    operator: props.currentUser.name || "当前用户",
     spectrumType: "HPLC 指纹图谱",
     result: "待复核",
-    analyst: "系统管理员",
+    analyst: props.currentUser.name || "当前用户",
+    trainer: props.currentUser.name || "当前用户",
+    evaluator: props.currentUser.name || "当前用户",
     effectiveDate: new Date().toISOString().slice(0, 10)
   };
   return values[name] || "";
 }
 
 function isRestrictedAuditField(name) {
-  if (props.role === "admin") return false;
-  if (props.moduleKey === "courses") {
-    return name === "status";
-  }
-  if (props.moduleKey === "teaching-resources") {
-    return ["status", "reviewComment", "publishedAt"].includes(name);
-  }
-  if (props.moduleKey === "projects") {
-    return name === "status";
-  }
-  if (props.moduleKey === "achievements") {
-    return name === "status";
-  }
-  return false;
+  if (!workflowModules.includes(props.moduleKey)) return false;
+  return ["status", "reviewComment", "reviewerName", "reviewedAt", "publishedAt"].includes(name);
 }
 
-const auditModules = ["teaching-resources", "courses", "projects", "achievements"];
+const workflowModules = [
+  "teaching-resources", "courses", "projects", "spectrum-comparisons",
+  "growth-analysis", "trainings", "evaluations", "achievements"
+];
+const auditModules = workflowModules;
 const isAuditModule = computed(() => auditModules.includes(props.moduleKey));
 
 function isPendingReview(item) {
@@ -323,24 +320,29 @@ function isPendingReview(item) {
 }
 
 async function quickAudit(item, action) {
-  const changes = {};
-  if (action === "approve") {
-    changes.status = "已通过";
-    if (props.moduleKey === "teaching-resources") {
-      changes.publishedAt = new Date().toISOString().slice(0, 19);
-    }
-  } else {
-    changes.status = "已驳回";
+  const targets = { approve: "已通过", reject: "已驳回", publish: "已发布", archive: "已归档" };
+  const reviewComment = action === "reject"
+    ? window.prompt("请输入驳回原因", item.reviewComment || "")
+    : (item.reviewComment || "");
+  if (action === "reject" && reviewComment === null) return;
+  let category = item.category || "";
+  let level = item.level || "";
+  if (props.moduleKey === "achievements" && action === "approve") {
+    category = window.prompt("请确认业绩分类", category) ?? "";
+    if (!category) return;
+    level = window.prompt("请确认业绩级别", level) ?? "";
+    if (!level) return;
   }
   try {
-    const payload = {};
-    props.config.fields.forEach(([name]) => payload[name] = item[name] ?? "");
-    Object.assign(payload, changes, { id: item.id });
-    await api(`/api/${props.moduleKey}`, {
+    await api(`/api/${props.moduleKey}/${item.id}/review`, {
       method: "PUT",
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        status: targets[action], reviewComment,
+        category, level
+      })
     });
-    emit("notify", action === "approve" ? "已通过审核" : "已驳回审核");
+    const labels = { approve: "已通过审核", reject: "已驳回审核", publish: "已发布", archive: "已归档" };
+    emit("notify", labels[action]);
     panelOpen.value = false;
     await load();
   } catch (error) {
@@ -438,7 +440,7 @@ function formatCourseViews(index) {
 }
 
 function isPublished(status) {
-  return String(status || "").includes("已发布") || String(status || "").includes("已通过");
+  return String(status || "").includes("已发布");
 }
 
 function isVideoResource(resource) {
@@ -484,7 +486,8 @@ function applySelectedFile(fileId) {
 }
 
 function ownerName(item) {
-  return item.recorder || item.uploader || item.leader || item.teacher || item.owner || item.operator || "";
+  return item.recorder || item.uploader || item.leader || item.teacher || item.owner
+    || item.trainer || item.evaluator || item.operator || item.operatorName || item.analyst || item.analystName || "";
 }
 
 function ownerRole(item) {
@@ -501,9 +504,14 @@ function isOwnRecord(item) {
 }
 
 function canManageItem(item, action = "edit") {
-  if (props.role === "admin") return action === "delete" ? canDelete.value : canEdit.value;
+  if (props.role === "admin") {
+    if (action === "edit" && props.moduleKey === "teaching-resources") return false;
+    return action === "delete" ? canDelete.value : canEdit.value;
+  }
   if (action === "delete" && !canDelete.value) return false;
   if (action === "edit" && !canEdit.value) return false;
+  if (workflowModules.includes(props.moduleKey)
+      && !["草稿", "已驳回"].includes(String(item?.status || ""))) return false;
   if (!hasOwnershipScope.value) return action === "delete" ? canDelete.value : canEdit.value;
   if (action === "delete") return isOwnRecord(item);
   if (props.role === "student") return isOwnRecord(item);
@@ -619,6 +627,23 @@ async function applyProject(project) {
       body: JSON.stringify({ applyReason: "申请加入课题研究" })
     });
     emit("notify", "加入课题申请已提交");
+    await load();
+  } catch (error) {
+    emit("notify", error.message);
+  }
+}
+
+function canSubmit(item) {
+  return props.role !== "admin" && workflowModules.includes(props.moduleKey)
+    && ["草稿", "已驳回"].includes(String(item?.status || ""))
+    && canManageItem(item, "edit");
+}
+
+async function submitForReview(item) {
+  try {
+    await api(`/api/${props.moduleKey}/${item.id}/submit`, { method: "PUT", body: "{}" });
+    emit("notify", "已提交审核");
+    panelOpen.value = false;
     await load();
   } catch (error) {
     emit("notify", error.message);
@@ -756,7 +781,7 @@ async function save() {
       }
     }
     const payload = {};
-    props.config.fields.forEach(([name]) => payload[name] = form[name] ?? "");
+    editableFields.value.forEach(([name]) => payload[name] = form[name] ?? "");
     if (props.moduleKey === "teaching-resources" && !payload.courseTitle) {
       emit("notify", "请选择要发布到的试验课程");
       return;
@@ -1384,8 +1409,11 @@ watch(() => props.editId, id => {
 
         <footer class="drawer-footer">
           <template v-if="panelMode === 'view'">
+            <button v-if="canSubmit(form)" type="button" @click="submitForReview(form)"><Send :size="16" />提交审核</button>
             <button v-if="role === 'admin' && isAuditModule && isPendingReview(form)" type="button" @click="quickAudit(form, 'approve')"><Check :size="16" />通过</button>
             <button v-if="role === 'admin' && isAuditModule && isPendingReview(form)" class="danger-ghost" type="button" @click="quickAudit(form, 'reject')"><XCircle :size="16" />驳回</button>
+            <button v-if="role === 'admin' && isAuditModule && form.status === '已通过'" type="button" @click="quickAudit(form, 'publish')"><Upload :size="16" />发布</button>
+            <button v-if="role === 'admin' && isAuditModule && form.status === '已发布'" class="button-secondary" type="button" @click="quickAudit(form, 'archive')"><Archive :size="16" />归档</button>
             <button v-if="canManageItem(form, 'delete')" class="danger-ghost" type="button" @click="requestDelete([editingId])"><Trash2 :size="16" />删除</button>
             <button v-if="canDuplicate && canManageItem(form, 'edit')" class="button-secondary" type="button" @click="duplicate(form)"><Copy :size="16" />复制</button>
             <button v-if="canManageItem(form, 'edit')" type="button" @click="panelMode = 'edit'"><Pencil :size="16" />编辑记录</button>

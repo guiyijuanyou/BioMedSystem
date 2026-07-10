@@ -11,14 +11,14 @@ import java.util.Map;
 @Mapper
 public interface GrowthRecordMapper extends BiomedBaseMapper<GrowthRecord> {
     @Select("SELECT id, herb_name, district, temperature, humidity, soil_ph, " +
-            "growth_stage, collect_source AS collector, recorder_name AS recorder, " +
-            "recorder_role, recorded_at, created_at, updated_at " +
+            "growth_stage, collect_source, recorder_name AS recorder, " +
+            "recorder_role, recorded_at, version, created_at, updated_at " +
             "FROM growth_record ORDER BY recorded_at DESC")
     List<Map<String, Object>> findAllAsMap();
 
     @Select("SELECT id, herb_name, district, temperature, humidity, soil_ph, " +
-            "growth_stage, collect_source AS collector, recorder_name AS recorder, " +
-            "recorder_role, recorded_at, created_at, updated_at " +
+            "growth_stage, collect_source, recorder_name AS recorder, " +
+            "recorder_role, recorded_at, version, created_at, updated_at " +
             "FROM growth_record WHERE id = #{id}")
     Map<String, Object> findByIdAsMap(String id);
 
@@ -33,8 +33,8 @@ public interface GrowthRecordMapper extends BiomedBaseMapper<GrowthRecord> {
 
     @Update("UPDATE growth_record SET herb_name = #{herbName}, district = #{district}, temperature = #{temperature}, " +
             "humidity = #{humidity}, soil_ph = #{soilPh}, growth_stage = #{growthStage}, collect_source = #{collectSource}, " +
-            "recorder_name = #{recorder}, recorder_role = #{recorderRole}, recorded_at = #{recordedAt}, updated_at = NOW() " +
-            "WHERE id = #{id}")
+            "recorder_name = #{recorder}, recorder_role = #{recorderRole}, recorded_at = #{recordedAt}, updated_at = NOW(), " +
+            "version = version + 1 WHERE id = #{id} AND version = #{version}")
     int updateMap(Map<String, Object> record);
 
 }
