@@ -1,16 +1,31 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@TableName("course")
 public class Course {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("title")
     private String title;
+    @TableField("teacher_name")
     private String teacherName;
+    @TableField("hours")
     private BigDecimal hours;
+    @TableField("material_type")
     private String materialType;
+    @TableField("status")
     private String status;
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+    @TableField(value = "updated_at", fill = FieldFill.UPDATE)
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -30,3 +45,4 @@ public class Course {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+

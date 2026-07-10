@@ -1,12 +1,24 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.LocalDateTime;
 
+@TableName("project_member")
 public class ProjectMember {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("project_id")
     private String projectId;
+    @TableField("member_name")
     private String memberName;
+    @TableField("member_role")
     private String memberRole;
+    @TableField("joined_at")
     private LocalDateTime joinedAt;
 
     public String getId() { return id; }
@@ -20,3 +32,4 @@ public class ProjectMember {
     public LocalDateTime getJoinedAt() { return joinedAt; }
     public void setJoinedAt(LocalDateTime joinedAt) { this.joinedAt = joinedAt; }
 }
+

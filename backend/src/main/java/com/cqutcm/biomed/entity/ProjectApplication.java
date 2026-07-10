@@ -1,15 +1,30 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.LocalDateTime;
 
+@TableName("project_application")
 public class ProjectApplication {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("project_id")
     private String projectId;
+    @TableField("student_name")
     private String studentName;
+    @TableField("status")
     private String status;
+    @TableField("apply_reason")
     private String applyReason;
+    @TableField("review_comment")
     private String reviewComment;
+    @TableField("applied_at")
     private LocalDateTime appliedAt;
+    @TableField("reviewed_at")
     private LocalDateTime reviewedAt;
 
     public String getId() { return id; }
@@ -29,3 +44,4 @@ public class ProjectApplication {
     public LocalDateTime getReviewedAt() { return reviewedAt; }
     public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
 }
+

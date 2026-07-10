@@ -1,21 +1,41 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@TableName("spectrum_comparison")
 public class SpectrumComparison {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("herb_name")
     private String herbName;
+    @TableField("sample_code")
     private String sampleCode;
+    @TableField("district")
     private String district;
+    @TableField("spectrum_type")
     private String spectrumType;
+    @TableField("reference_name")
     private String referenceName;
+    @TableField("similarity")
     private BigDecimal similarity;
+    @TableField("result")
     private String result;
+    @TableField("operator_name")
     private String operatorName;
+    @TableField("compared_at")
     private LocalDateTime comparedAt;
+    @TableField("remark")
     private String remark;
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+    @TableField(value = "updated_at", fill = FieldFill.UPDATE)
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -45,3 +65,4 @@ public class SpectrumComparison {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+

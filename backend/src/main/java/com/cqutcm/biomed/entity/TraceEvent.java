@@ -1,17 +1,34 @@
 package com.cqutcm.biomed.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.LocalDateTime;
 
+@TableName("trace_event")
 public class TraceEvent {
+    @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("herb_name")
     private String herbName;
+    @TableField("trace_code")
     private String traceCode;
+    @TableField("event_type")
     private String eventType;
+    @TableField("event_content")
     private String eventContent;
+    @TableField("operator_name")
     private String operatorName;
+    @TableField("event_time")
     private LocalDateTime eventTime;
+    @TableField("location")
     private String location;
+    @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
+    @TableField(value = "updated_at", fill = FieldFill.UPDATE)
     private LocalDateTime updatedAt;
 
     public String getId() { return id; }
@@ -35,3 +52,4 @@ public class TraceEvent {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+
