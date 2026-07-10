@@ -2,14 +2,6 @@
 
 面向高校科研、中药材数据管理和教学培训场景的前后端分离项目。实现中药材分布地图、生长数据采集、图谱比对与数据分析、溯源管理、课程与课题管理、培训素材与过程跟踪、评价体系与申报素材、业绩管理与分级认定、文件上传下载、用户层级权限、SOAP 数据交换和 AI 助手。
 
-## 技术栈
-
-| 层级 | 技术 |
-|------|------|
-| 后端 | Spring Boot 3.3.6 + MyBatis 3.0.4 + MySQL |
-| 前端 | Vue 3.5 + Vite 6 + Leaflet |
-| 安全 | BCrypt 密码加密 |
-| 数据库 | MySQL 5.7+ / 8.0+（utf8mb4） |
 
 ## 项目结构
 
@@ -21,12 +13,12 @@ BioMedSystem/
 │     ├─ java/com/cqutcm/biomed/
 │     │  ├─ config/                 安全配置、数据初始化
 │     │  ├─ controller/             REST / 文件 / SOAP 接口
-│     │  ├─ entity/                 19 个数据实体
-│     │  ├─ mapper/                 19 个 MyBatis Mapper
-│     │  └─ service/                12 个业务服务
+│     │  ├─ entity/                 实体层
+│     │  ├─ mapper/                 MyBatis Mapper
+│     │  └─ service/                业务服务层
 │     └─ resources/
 │        ├─ db/                     schema.sql + data.sql
-│        ├─ application.yml         实际配置（不被 Git 追踪）
+│        ├─ application.yml         配置文件
 │        └─ application-example.yml 配置模板
 ├─ frontend/                        Vue 3 前端
 │  ├─ src/
