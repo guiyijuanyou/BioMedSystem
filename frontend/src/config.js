@@ -69,7 +69,8 @@ export const modules = {
       ["result", "比对结果"],
       ["operator", "操作人"],
       ["comparedAt", "比对时间"],
-      ["remark", "备注"]
+      ["remark", "备注"],
+      ["status", "审核状态"]
     ]
   },
   "growth-analysis": {
@@ -86,7 +87,8 @@ export const modules = {
       ["trend", "趋势判断"],
       ["conclusion", "分析结论"],
       ["analyst", "分析人"],
-      ["analyzedAt", "分析时间"]
+      ["analyzedAt", "分析时间"],
+      ["status", "审核状态"]
     ]
   },
   courses: {
@@ -122,7 +124,8 @@ export const modules = {
       ["title", "培训主题"],
       ["trainer", "培训人"],
       ["audience", "培训对象"],
-      ["tracking", "过程记录"]
+      ["tracking", "过程记录"],
+      ["status", "审核状态"]
     ]
   },
   evaluations: {
@@ -133,7 +136,10 @@ export const modules = {
       ["indicator", "评价指标"],
       ["score", "评分"],
       ["result", "评价结果"],
-      ["applicationMaterial", "申报素材"]
+      ["applicationMaterial", "申报素材"],
+      ["subjectOwner", "成果负责人"],
+      ["evaluator", "评价人"],
+      ["status", "审核状态"]
     ]
   },
   achievements: {

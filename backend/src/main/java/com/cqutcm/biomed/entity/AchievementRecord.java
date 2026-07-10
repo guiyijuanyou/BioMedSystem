@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +23,15 @@ public class AchievementRecord {
     private String levelName;
     @TableField("status")
     private String status;
+    @TableField("reviewer_name")
+    private String reviewerName;
+    @TableField("review_comment")
+    private String reviewComment;
+    @TableField("reviewed_at")
+    private LocalDateTime reviewedAt;
+    @Version
+    @TableField("version")
+    private Integer version;
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(value = "updated_at", fill = FieldFill.UPDATE)
@@ -39,6 +49,14 @@ public class AchievementRecord {
     public void setLevelName(String levelName) { this.levelName = levelName; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getReviewerName() { return reviewerName; }
+    public void setReviewerName(String reviewerName) { this.reviewerName = reviewerName; }
+    public String getReviewComment() { return reviewComment; }
+    public void setReviewComment(String reviewComment) { this.reviewComment = reviewComment; }
+    public LocalDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

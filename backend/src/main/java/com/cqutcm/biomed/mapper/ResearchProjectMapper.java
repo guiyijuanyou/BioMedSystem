@@ -11,8 +11,8 @@ import java.util.Map;
 @Mapper
 public interface ResearchProjectMapper extends BiomedBaseMapper<ResearchProject> {
     @Select("SELECT id, title, leader_name AS leader, requirements, status, stage, " +
-            "applicant_requests, approved_members, " +
-            "rejected_applicants, transformation, " +
+            "reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
+            "applicant_requests, approved_members, rejected_applicants, transformation, version, " +
             "created_at, updated_at " +
             "FROM research_project ORDER BY created_at DESC")
     List<Map<String, Object>> findAllAsMap();
@@ -26,7 +26,8 @@ public interface ResearchProjectMapper extends BiomedBaseMapper<ResearchProject>
     @Update("UPDATE research_project SET title = #{title}, leader_name = #{leader}, requirements = #{requirements}, " +
             "status = #{status}, stage = #{stage}, transformation = #{transformation}, " +
             "applicant_requests = #{applicantRequests}, approved_members = #{approvedMembers}, " +
-            "rejected_applicants = #{rejectedApplicants}, updated_at = NOW() WHERE id = #{id}")
+            "rejected_applicants = #{rejectedApplicants}, version = version + 1, updated_at = NOW() " +
+            "WHERE id = #{id} AND version = #{version}")
     int updateMap(Map<String, Object> record);
 
 }

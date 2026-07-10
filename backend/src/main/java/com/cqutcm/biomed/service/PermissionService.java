@@ -19,6 +19,8 @@ public class PermissionService {
             "courses", "projects", "trainings"
     );
 
+    // ---- 通用权限 ----
+
     public void assertCanRead(String resourceType, Actor actor) {
         if ("admin".equals(actor.role())) return;
         if ("users".equals(resourceType)) {
@@ -38,6 +40,22 @@ public class PermissionService {
 
     public Actor actor(String name, String role) {
         return new Actor(name == null ? "" : name, role == null ? "" : role);
+    }
+
+    public boolean isAdmin(Actor actor) {
+        return "admin".equals(actor.role());
+    }
+
+    public boolean isTeacher(Actor actor) {
+        return "teacher".equals(actor.role());
+    }
+
+    public boolean isResearcher(Actor actor) {
+        return "researcher".equals(actor.role());
+    }
+
+    public boolean isStudent(Actor actor) {
+        return "student".equals(actor.role());
     }
 
     public void assertCanCreate(String resourceType, Actor actor) {
@@ -81,6 +99,95 @@ public class PermissionService {
         }
         if ("researcher".equals(actor.role()) && RESEARCHER_BLOCKED.contains(resourceType)) {
             throw new AuthorizationDeniedException("researcher cannot delete " + resourceType);
+        }
+    }
+
+    // ---- 模块级所有权校验 ----
+
+    /** 课程：教师仅可编辑自身课程 */
+    public void assertCourseOwnership(Actor actor, String ownerField, String label) {
+        if (isAdmin(actor)) return;
+        if (!actor.name().equals(ownerField)) {
+            throw new AuthorizationDeniedException(
+                    String.format("%s 仅可编辑自身的%s", roleLabel(actor.role()), label));
+        }
+    }
+
+    /** 教学资源：上传者仅可编辑自身资源，管理员仅审核不可伪装上传者 */
+    public void assertResourceUploader(Actor actor, String uploaderName) {
+        if (isAdmin(actor)) {
+            throw new AuthorizationDeniedException("管理员仅负责审核教学资源，不可作为上传者创建");
+        }
+        // 非管理员强制使用当前用户作为上传者
+    }
+
+    /** 图谱比对/数据分析：创建人由登录会话强制确定 */
+    public void assertResearchDataOwnership(Actor actor, String operatorField) {
+        if (isAdmin(actor)) return;
+        if (!isTeacher(actor) && !isResearcher(actor)) {
+            throw new AuthorizationDeniedException("仅教师和科研人员可操作图谱与分析数据");
+        }
+        if (!actor.name().equals(operatorField)) {
+            throw new AuthorizationDeniedException("仅可修改自身创建的图谱与分析记录");
+        }
+    }
+
+    /** 培训：培训负责人仅维护自身培训 */
+    public void assertTrainingOwnership(Actor actor, String trainerField) {
+        if (isAdmin(actor)) return;
+        if (!isTeacher(actor) && !isResearcher(actor)) {
+            throw new AuthorizationDeniedException("仅教师和科研人员可维护培训材料");
+        }
+        if (!actor.name().equals(trainerField)) {
+            throw new AuthorizationDeniedException("仅可维护自身的培训材料");
+        }
+    }
+
+    public void assertEvaluationOwnership(Actor actor, String evaluatorName) {
+        if (isAdmin(actor)) return;
+        if (!actor.name().equals(evaluatorName)) {
+            throw new AuthorizationDeniedException("仅评价记录的创建人可以修改或删除");
+        }
+    }
+
+    public void assertAchievementOwnership(Actor actor, String ownerName) {
+        if (isAdmin(actor)) return;
+        if (!actor.name().equals(ownerName)) {
+            throw new AuthorizationDeniedException("仅业绩申报人可以修改或删除");
+        }
+    }
+
+    /** 评价：评价人员不可评价自身负责成果 */
+    public void assertEvaluationNotSelf(Actor actor, String ownerField) {
+        if (isAdmin(actor)) return;
+        if (actor.name().equals(ownerField)) {
+            throw new AuthorizationDeniedException("评价人员不可评价自身负责的成果");
+        }
+    }
+
+    /** 业绩：所属人不可自行认定级别 */
+    public void assertAchievementNotSelfCertify(Actor actor, String ownerField) {
+        if (isAdmin(actor)) return;
+        if (actor.name().equals(ownerField)) {
+            throw new AuthorizationDeniedException("业绩所属人不可自行认定级别/分类");
+        }
+    }
+
+    /** 审核操作：审计字段仅管理员可设置 */
+    public void assertReviewFieldsProtected(Actor actor) {
+        if (!isAdmin(actor)) {
+            throw new AuthorizationDeniedException("审核字段(status/reviewComment/reviewedAt)仅管理员可设置");
+        }
+    }
+
+    /** 通用：伪造 owner/status/reviewer 等字段一律无效，直接拒绝 */
+    public void assertNoFieldForgery(Map<String, Object> payload, Actor actor, String... protectedFields) {
+        if (isAdmin(actor)) return;
+        for (String field : protectedFields) {
+            if (payload.containsKey(field)) {
+                throw new AuthorizationDeniedException(
+                        String.format("字段 '%s' 不允许由当前角色直接提交", field));
+            }
         }
     }
 

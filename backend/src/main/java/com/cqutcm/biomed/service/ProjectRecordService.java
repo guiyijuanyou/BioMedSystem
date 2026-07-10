@@ -17,10 +17,10 @@ import java.util.UUID;
 
 @Service
 public class ProjectRecordService {
-    private static final String PENDING_REVIEW = "待审核";
+    private static final String PENDING_REVIEW = StatusMachine.PENDING_REVIEW;
     private static final String PENDING_APPROVAL = "待审批";
-    private static final String APPROVED = "已通过";
-    private static final String REJECTED = "已拒绝";
+    private static final String APPROVED = StatusMachine.APPROVED;
+    private static final String REJECTED = StatusMachine.REJECTED;
 
     private final ResearchProjectMapper projectMapper;
     private final ProjectApplicationMapper applicationMapper;
@@ -38,7 +38,10 @@ public class ProjectRecordService {
     }
 
     public List<Map<String, Object>> list(PermissionService.Actor actor) {
-        return projectMapper.findAllAsMap().stream().map(project -> decorate(project, actor)).toList();
+        return projectMapper.findAllAsMap().stream()
+                .filter(project -> !permissionService.isStudent(actor)
+                        || StatusMachine.isStudentVisible(text(project.get("status"))))
+                .map(project -> decorate(project, actor)).toList();
     }
 
     public Map<String, Object> create(Map<String, Object> payload) {
@@ -47,7 +50,9 @@ public class ProjectRecordService {
         requireText(cleaned, "title", "课题名称不能为空");
         if (!"admin".equals(actor.role())) {
             cleaned.put("leader", actor.name());
-            cleaned.put("status", PENDING_REVIEW);
+            cleaned.put("status", StatusMachine.DRAFT);
+        } else if (text(cleaned.get("status")).isBlank() || PENDING_REVIEW.equals(cleaned.get("status"))) {
+            cleaned.put("status", StatusMachine.APPROVED);
         }
         clearWorkflowFields(cleaned);
         String id = UUID.randomUUID().toString();
@@ -66,17 +71,18 @@ public class ProjectRecordService {
         }
         if (!"admin".equals(actor.role())) {
             requireProjectOwner(existing, actor);
+            StatusMachine.assertOwnerEditable(text(existing.get("status")), "研究课题");
         }
 
         Map<String, Object> cleaned = clean(payload);
         requireText(cleaned, "title", "课题名称不能为空");
         preserveWorkflowFields(cleaned, existing);
-        if (!"admin".equals(actor.role())) {
-            cleaned.put("leader", existing.get("leader"));
-            cleaned.put("status", existing.get("status"));
-        }
+        cleaned.put("leader", existing.get("leader"));
+        cleaned.put("status", existing.get("status"));
+        cleaned.put("version", existing.getOrDefault("version", 0));
         cleaned.put("id", id);
-        projectMapper.updateMap(cleaned);
+        if (projectMapper.updateMap(cleaned) == 0) throw conflict();
+        cleaned.put("version", ((Number) cleaned.get("version")).intValue() + 1);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return decorate(cleaned, actor);
     }
@@ -86,6 +92,7 @@ public class ProjectRecordService {
         Map<String, Object> existing = existingProject(id);
         if (!"admin".equals(actor.role())) {
             requireProjectOwner(existing, actor);
+            StatusMachine.assertOwnerEditable(text(existing.get("status")), "研究课题");
         }
         applicationMapper.deleteByProjectId(id);
         memberMapper.deleteByProjectId(id);
@@ -167,6 +174,28 @@ public class ProjectRecordService {
         return projectMapper.count();
     }
 
+    public Map<String, Object> submit(String id, PermissionService.Actor actor) {
+        ResearchProject project = requiredProject(id);
+        requireProjectOwner(entityToMap(project), actor);
+        StatusMachine.assertTransition(project.getStatus(), StatusMachine.PENDING_REVIEW, "研究课题");
+        project.setStatus(StatusMachine.PENDING_REVIEW);
+        if (projectMapper.update(project) == 0) throw conflict();
+        return decorate(entityToMap(project), actor);
+    }
+
+    public Map<String, Object> review(String id, PermissionService.Actor actor,
+                                      String targetStatus, String comment) {
+        StatusMachine.assertRequireAdmin(actor.role());
+        ResearchProject project = requiredProject(id);
+        StatusMachine.assertTransition(project.getStatus(), targetStatus, "研究课题");
+        project.setStatus(targetStatus);
+        project.setReviewerName(actor.name());
+        project.setReviewComment(comment);
+        project.setReviewedAt(LocalDateTime.now());
+        if (projectMapper.update(project) == 0) throw conflict();
+        return decorate(entityToMap(project), actor);
+    }
+
     private Map<String, Object> decorate(Map<String, Object> source, PermissionService.Actor actor) {
         Map<String, Object> project = new LinkedHashMap<>(source);
         String projectId = text(project.get("id"));
@@ -207,6 +236,9 @@ public class ProjectRecordService {
         result.put("leader", project.getLeaderName());
         result.put("requirements", project.getRequirements());
         result.put("status", project.getStatus());
+        result.put("reviewerName", project.getReviewerName());
+        result.put("reviewComment", project.getReviewComment());
+        result.put("reviewedAt", project.getReviewedAt());
         result.put("stage", project.getStage());
         result.put("transformation", project.getTransformation());
         result.put("applicantRequests", project.getApplicantRequests());
@@ -214,7 +246,22 @@ public class ProjectRecordService {
         result.put("rejectedApplicants", project.getRejectedApplicants());
         result.put("createdAt", project.getCreatedAt());
         result.put("updatedAt", project.getUpdatedAt());
+        result.put("version", project.getVersion());
         return result;
+    }
+
+    private ResearchProject requiredProject(String id) {
+        ResearchProject project = projectMapper.findById(id);
+        if (project == null) throw new IllegalArgumentException("project not found");
+        return project;
+    }
+
+    private Map<String, Object> entityToMap(ResearchProject project) {
+        return existingProject(project.getId());
+    }
+
+    private StateConflictException conflict() {
+        return new StateConflictException("研究课题已被其他用户修改，请刷新后重试");
     }
 
     private void requireProjectOwner(Map<String, Object> project, PermissionService.Actor actor) {
