@@ -561,10 +561,6 @@ function splitNames(value) {
     .filter(Boolean);
 }
 
-function joinNames(values) {
-  return [...new Set(values.map(item => item.trim()).filter(Boolean))].join("、");
-}
-
 function projectApplicants(project) {
   return splitNames(project.applicantRequests);
 }
@@ -577,33 +573,31 @@ function projectRejectedApplicants(project) {
   return splitNames(project.rejectedApplicants);
 }
 
+function currentStudentName() {
+  return props.currentUser.name || "当前学生";
+}
+
+function projectApplication(project, studentName) {
+  return (project.applications || []).find(application =>
+    application.studentName === studentName && application.status === "待审批"
+  );
+}
+
+function isProjectOwner(project) {
+  return props.role === "admin" || project.leader === props.currentUser.name;
+}
+
 function hasApplied(project) {
-  const name = props.currentUser.name;
+  const name = currentStudentName();
   return projectApplicants(project).includes(name) || projectMembers(project).includes(name);
 }
 
 function isProjectMember(project) {
-  return projectMembers(project).includes(props.currentUser.name);
+  return projectMembers(project).includes(currentStudentName());
 }
 
 function isProjectRejected(project) {
-  return projectRejectedApplicants(project).includes(props.currentUser.name);
-}
-
-async function updateProject(project, changes, message) {
-  try {
-    const payload = {};
-    props.config.fields.forEach(([name]) => payload[name] = project[name] ?? "");
-    Object.assign(payload, changes, { id: project.id });
-    await api(`/api/${props.moduleKey}`, {
-      method: "PUT",
-      body: JSON.stringify(payload)
-    });
-    emit("notify", message);
-    await load();
-  } catch (error) {
-    emit("notify", error.message);
-  }
+  return projectRejectedApplicants(project).includes(currentStudentName());
 }
 
 async function applyProject(project) {
@@ -619,33 +613,42 @@ async function applyProject(project) {
     emit("notify", "你的申请已被拒绝，请联系课题负责人后再处理");
     return;
   }
-  await updateProject(
-    project,
-    { applicantRequests: joinNames([...projectApplicants(project), props.currentUser.name]) },
-    "加入课题申请已提交"
-  );
+  try {
+    await api(`/api/projects/${project.id}/applications`, {
+      method: "POST",
+      body: JSON.stringify({ applyReason: "申请加入课题研究" })
+    });
+    emit("notify", "加入课题申请已提交");
+    await load();
+  } catch (error) {
+    emit("notify", error.message);
+  }
 }
 
 async function approveProjectApplicant(project, studentName) {
-  await updateProject(
-    project,
-    {
-      applicantRequests: joinNames(projectApplicants(project).filter(name => name !== studentName)),
-      approvedMembers: joinNames([...projectMembers(project), studentName])
-    },
-    `已同意 ${studentName} 加入课题`
-  );
+  await reviewProjectApplicant(project, studentName, "approve", `已同意 ${studentName} 加入课题`);
 }
 
 async function rejectProjectApplicant(project, studentName) {
-  await updateProject(
-    project,
-    {
-      applicantRequests: joinNames(projectApplicants(project).filter(name => name !== studentName)),
-      rejectedApplicants: joinNames([...projectRejectedApplicants(project), studentName])
-    },
-    `已拒绝 ${studentName} 的加入申请`
-  );
+  await reviewProjectApplicant(project, studentName, "reject", `已拒绝 ${studentName} 的加入申请`);
+}
+
+async function reviewProjectApplicant(project, studentName, action, message) {
+  const application = projectApplication(project, studentName);
+  if (!application) {
+    emit("notify", "未找到待审批申请，请刷新后重试");
+    return;
+  }
+  try {
+    await api(`/api/projects/${project.id}/applications/${application.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ action })
+    });
+    emit("notify", message);
+    await load();
+  } catch (error) {
+    emit("notify", error.message);
+  }
 }
 
 function openCourseLearning(course) {
@@ -1195,7 +1198,7 @@ watch(() => props.editId, id => {
           <button v-else-if="hasApplied(project)" class="button-secondary" type="button" disabled>申请待审批</button>
           <button v-else type="button" @click="applyProject(project)">申请加入</button>
         </footer>
-        <footer v-else-if="isProjectOwnerModule" class="project-applicant-actions">
+        <footer v-else-if="isProjectOwnerModule && isProjectOwner(project)" class="project-applicant-actions">
           <template v-if="projectApplicants(project).length">
             <div
               v-for="studentName in projectApplicants(project)"
@@ -1209,6 +1212,9 @@ watch(() => props.editId, id => {
           </template>
           <button v-else class="button-secondary" type="button" disabled>暂无学生申请</button>
           <button class="button-secondary" type="button" @click="openView(project)">查看详情</button>
+        </footer>
+        <footer v-else-if="isProjectOwnerModule">
+          <button class="button-secondary" type="button" @click="openView(project)">查看课题</button>
         </footer>
       </article>
       <p v-if="!projectCards.length" class="empty-state">{{ isStudentProjectModule ? "暂无已发布课题" : "暂无课题记录" }}</p>

@@ -66,6 +66,27 @@ public class ResourceController {
         return Map.of("message", "backup completed", "file", target.toString());
     }
 
+    @PostMapping("/projects/{projectId}/applications")
+    public Map<String, Object> applyToProject(
+            @PathVariable String projectId,
+            @RequestBody(required = false) Map<String, Object> payload,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        return projectService.apply(projectId, actor, payload == null ? Map.of() : payload);
+    }
+
+    @PutMapping("/projects/{projectId}/applications/{applicationId}")
+    public Map<String, Object> reviewProjectApplication(
+            @PathVariable String projectId,
+            @PathVariable String applicationId,
+            @RequestBody Map<String, Object> payload,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        return projectService.reviewApplication(projectId, applicationId, actor, payload);
+    }
+
     @GetMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}")
     public Map<String, Object> list(
             @PathVariable String resourceType,
@@ -74,7 +95,7 @@ public class ResourceController {
         PermissionService.Actor actor = authService.requireActor(authorization);
         permissionService.assertCanRead(resourceType, actor);
         return switch (resourceType) {
-            case "projects" -> Map.of("items", projectService.list());
+            case "projects" -> Map.of("items", projectService.list(actor));
             case "growth-records" -> Map.of("items", growthService.list());
             case "trace-events" -> Map.of("items", traceService.list());
             case "spectrum-comparisons" -> Map.of("items", researchService.listSpectrum());
@@ -151,7 +172,7 @@ public class ResourceController {
         PermissionService.Actor actor = authService.requireActor(authorization);
         permissionService.assertCanDelete(resourceType, actor);
         return switch (resourceType) {
-            case "projects" -> { projectService.delete(id); yield Map.of("message", "project deleted", "id", id); }
+            case "projects" -> { projectService.delete(id, actor); yield Map.of("message", "project deleted", "id", id); }
             case "growth-records" -> { growthService.delete(id, actor.name(), actor.role()); yield Map.of("message", "growth record deleted", "id", id); }
             case "trace-events" -> { traceService.delete(id); yield Map.of("message", "trace event deleted", "id", id); }
             case "spectrum-comparisons" -> { researchService.deleteSpectrum(id); yield Map.of("message", "spectrum comparison deleted", "id", id); }
