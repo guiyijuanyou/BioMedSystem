@@ -9,6 +9,7 @@ frontend/dist/
 .env
 .env.*
 *.log
+backend/src/main/resources/application.yml
 data/*.jsonl
 data/*.mv.db
 data/*.trace.db

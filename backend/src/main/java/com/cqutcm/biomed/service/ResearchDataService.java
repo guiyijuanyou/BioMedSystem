@@ -1,7 +1,7 @@
 package com.cqutcm.biomed.service;
 
-import com.cqutcm.biomed.repository.GenericRecordRepository;
-import com.cqutcm.biomed.repository.ResearchDataRepository;
+import com.cqutcm.biomed.mapper.GrowthAnalysisMapper;
+import com.cqutcm.biomed.mapper.SpectrumComparisonMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,110 +12,78 @@ import java.util.UUID;
 
 @Service
 public class ResearchDataService {
-    private final ResearchDataRepository researchRepository;
-    private final GenericRecordRepository genericRepository;
+    private final SpectrumComparisonMapper spectrumMapper;
+    private final GrowthAnalysisMapper analysisMapper;
 
-    public ResearchDataService(ResearchDataRepository researchRepository, GenericRecordRepository genericRepository) {
-        this.researchRepository = researchRepository;
-        this.genericRepository = genericRepository;
+    public ResearchDataService(SpectrumComparisonMapper spectrumMapper, GrowthAnalysisMapper analysisMapper) {
+        this.spectrumMapper = spectrumMapper;
+        this.analysisMapper = analysisMapper;
     }
 
     public List<Map<String, Object>> listSpectrum() {
-        seedSpectrumIfEmpty();
-        return researchRepository.findSpectrum();
+        return spectrumMapper.findAllAsMap();
     }
 
     public List<Map<String, Object>> listAnalysis() {
-        seedAnalysisIfEmpty();
-        return researchRepository.findAnalysis();
+        return analysisMapper.findAllAsMap();
     }
 
     public Map<String, Object> createSpectrum(Map<String, Object> payload) {
-        seedSpectrumIfEmpty();
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
         LocalDateTime now = LocalDateTime.now();
-        researchRepository.insertSpectrum(id, cleaned, now);
         cleaned.put("id", id);
         cleaned.put("createdAt", now.toString());
+        spectrumMapper.insertMap(cleaned);
         return cleaned;
     }
 
     public Map<String, Object> createAnalysis(Map<String, Object> payload) {
-        seedAnalysisIfEmpty();
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
         LocalDateTime now = LocalDateTime.now();
-        researchRepository.insertAnalysis(id, cleaned, now);
         cleaned.put("id", id);
         cleaned.put("createdAt", now.toString());
+        analysisMapper.insertMap(cleaned);
         return cleaned;
     }
 
     public Map<String, Object> updateSpectrum(Map<String, Object> payload) {
-        seedSpectrumIfEmpty();
         String id = id(payload, "spectrum comparison");
         Map<String, Object> cleaned = clean(payload);
-        if (researchRepository.updateSpectrum(id, cleaned) == 0) {
-            throw new IllegalArgumentException("spectrum comparison not found");
-        }
         cleaned.put("id", id);
+        spectrumMapper.updateMap(cleaned);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return cleaned;
     }
 
     public Map<String, Object> updateAnalysis(Map<String, Object> payload) {
-        seedAnalysisIfEmpty();
         String id = id(payload, "growth analysis");
         Map<String, Object> cleaned = clean(payload);
-        if (researchRepository.updateAnalysis(id, cleaned) == 0) {
-            throw new IllegalArgumentException("growth analysis not found");
-        }
         cleaned.put("id", id);
+        analysisMapper.updateMap(cleaned);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return cleaned;
     }
 
     public void deleteSpectrum(String id) {
-        seedSpectrumIfEmpty();
-        if (researchRepository.deleteSpectrum(id) == 0) {
+        if (spectrumMapper.deleteById(id) == 0) {
             throw new IllegalArgumentException("spectrum comparison not found");
         }
     }
 
     public void deleteAnalysis(String id) {
-        seedAnalysisIfEmpty();
-        if (researchRepository.deleteAnalysis(id) == 0) {
+        if (analysisMapper.deleteById(id) == 0) {
             throw new IllegalArgumentException("growth analysis not found");
         }
     }
 
     public long spectrumCount() {
-        seedSpectrumIfEmpty();
-        return researchRepository.countSpectrum();
+        return spectrumMapper.count();
     }
 
     public long analysisCount() {
-        seedAnalysisIfEmpty();
-        return researchRepository.countAnalysis();
-    }
-
-    private void seedSpectrumIfEmpty() {
-        if (researchRepository.countSpectrum() > 0) return;
-        genericRepository.findByResourceType("spectrum-comparisons").forEach(record -> {
-            if (!researchRepository.spectrumExists(record.getId())) {
-                researchRepository.insertSpectrum(record.getId(), record.getPayload(), record.getCreatedAt() == null ? LocalDateTime.now() : record.getCreatedAt());
-            }
-        });
-    }
-
-    private void seedAnalysisIfEmpty() {
-        if (researchRepository.countAnalysis() > 0) return;
-        genericRepository.findByResourceType("growth-analysis").forEach(record -> {
-            if (!researchRepository.analysisExists(record.getId())) {
-                researchRepository.insertAnalysis(record.getId(), record.getPayload(), record.getCreatedAt() == null ? LocalDateTime.now() : record.getCreatedAt());
-            }
-        });
+        return analysisMapper.count();
     }
 
     private String id(Map<String, Object> payload, String label) {

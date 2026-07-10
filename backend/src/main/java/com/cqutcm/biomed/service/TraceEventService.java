@@ -1,7 +1,6 @@
 package com.cqutcm.biomed.service;
 
-import com.cqutcm.biomed.repository.GenericRecordRepository;
-import com.cqutcm.biomed.repository.TraceEventRepository;
+import com.cqutcm.biomed.mapper.TraceEventMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,64 +11,46 @@ import java.util.UUID;
 
 @Service
 public class TraceEventService {
-    private final TraceEventRepository traceRepository;
-    private final GenericRecordRepository genericRepository;
+    private final TraceEventMapper traceMapper;
 
-    public TraceEventService(TraceEventRepository traceRepository, GenericRecordRepository genericRepository) {
-        this.traceRepository = traceRepository;
-        this.genericRepository = genericRepository;
+    public TraceEventService(TraceEventMapper traceMapper) {
+        this.traceMapper = traceMapper;
     }
 
     public List<Map<String, Object>> list() {
-        seedFromGenericIfEmpty();
-        return traceRepository.findAll();
+        return traceMapper.findAllAsMap();
     }
 
     public Map<String, Object> create(Map<String, Object> payload) {
-        seedFromGenericIfEmpty();
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
         LocalDateTime now = LocalDateTime.now();
-        traceRepository.insert(id, cleaned, now);
         cleaned.put("id", id);
         cleaned.put("createdAt", now.toString());
+        traceMapper.insertMap(cleaned);
         return cleaned;
     }
 
     public Map<String, Object> update(Map<String, Object> payload) {
-        seedFromGenericIfEmpty();
         String id = String.valueOf(payload.getOrDefault("id", ""));
         if (id.isBlank()) {
             throw new IllegalArgumentException("missing id for trace event update");
         }
         Map<String, Object> cleaned = clean(payload);
-        if (traceRepository.update(id, cleaned) == 0) {
-            throw new IllegalArgumentException("trace event not found");
-        }
         cleaned.put("id", id);
+        traceMapper.updateMap(cleaned);
         cleaned.put("updatedAt", LocalDateTime.now().toString());
         return cleaned;
     }
 
     public void delete(String id) {
-        seedFromGenericIfEmpty();
-        if (traceRepository.delete(id) == 0) {
+        if (traceMapper.deleteById(id) == 0) {
             throw new IllegalArgumentException("trace event not found");
         }
     }
 
     public long count() {
-        seedFromGenericIfEmpty();
-        return traceRepository.count();
-    }
-
-    private void seedFromGenericIfEmpty() {
-        if (traceRepository.count() > 0) return;
-        genericRepository.findByResourceType("trace-events").forEach(record -> {
-            if (!traceRepository.exists(record.getId())) {
-                traceRepository.insert(record.getId(), record.getPayload(), record.getCreatedAt() == null ? LocalDateTime.now() : record.getCreatedAt());
-            }
-        });
+        return traceMapper.count();
     }
 
     private Map<String, Object> clean(Map<String, Object> payload) {

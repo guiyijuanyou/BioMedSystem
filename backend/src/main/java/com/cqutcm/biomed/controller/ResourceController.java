@@ -1,34 +1,20 @@
 package com.cqutcm.biomed.controller;
 
-import com.cqutcm.biomed.service.CourseRecordService;
-import com.cqutcm.biomed.service.AuthService;
-import com.cqutcm.biomed.service.GenericRecordService;
-import com.cqutcm.biomed.service.GrowthRecordService;
-import com.cqutcm.biomed.service.PermissionService;
-import com.cqutcm.biomed.service.ProjectRecordService;
-import com.cqutcm.biomed.service.ResearchDataService;
-import com.cqutcm.biomed.service.StructuredRecordService;
-import com.cqutcm.biomed.service.TraceEventService;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.cqutcm.biomed.mapper.*;
+import com.cqutcm.biomed.service.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
 public class ResourceController {
     private final AuthService authService;
-    private final GenericRecordService service;
     private final CourseRecordService courseService;
     private final GrowthRecordService growthService;
     private final PermissionService permissionService;
@@ -37,9 +23,36 @@ public class ResourceController {
     private final StructuredRecordService structuredService;
     private final TraceEventService traceService;
 
-    public ResourceController(AuthService authService, GenericRecordService service, CourseRecordService courseService, GrowthRecordService growthService, PermissionService permissionService, ProjectRecordService projectService, ResearchDataService researchService, StructuredRecordService structuredService, TraceEventService traceService) {
+    private final HerbMapper herbMapper;
+    private final GrowthRecordMapper growthMapper;
+    private final TraceEventMapper traceMapper;
+    private final CourseMapper courseMapper;
+    private final TeachingResourceMapper resourceMapper;
+    private final ResearchProjectMapper projectMapper;
+    private final SpectrumComparisonMapper spectrumMapper;
+    private final GrowthAnalysisMapper analysisMapper;
+    private final TrainingMaterialMapper trainingMapper;
+    private final EvaluationRecordMapper evaluationMapper;
+    private final AchievementRecordMapper achievementMapper;
+    private final AchievementStandardMapper standardMapper;
+    private final SysUserMapper userMapper;
+    private final SysRoleMapper roleMapper;
+    private final SysUserRoleMapper userRoleMapper;
+    private final ObjectMapper objectMapper;
+
+    public ResourceController(AuthService authService, CourseRecordService courseService,
+                              GrowthRecordService growthService, PermissionService permissionService,
+                              ProjectRecordService projectService, ResearchDataService researchService,
+                              StructuredRecordService structuredService, TraceEventService traceService,
+                              HerbMapper herbMapper, GrowthRecordMapper growthMapper,
+                              TraceEventMapper traceMapper, CourseMapper courseMapper,
+                              TeachingResourceMapper resourceMapper, ResearchProjectMapper projectMapper,
+                              SpectrumComparisonMapper spectrumMapper, GrowthAnalysisMapper analysisMapper,
+                              TrainingMaterialMapper trainingMapper, EvaluationRecordMapper evaluationMapper,
+                              AchievementRecordMapper achievementMapper, AchievementStandardMapper standardMapper,
+                              SysUserMapper userMapper, SysRoleMapper roleMapper,
+                              SysUserRoleMapper userRoleMapper, ObjectMapper objectMapper) {
         this.authService = authService;
-        this.service = service;
         this.courseService = courseService;
         this.growthService = growthService;
         this.permissionService = permissionService;
@@ -47,6 +60,22 @@ public class ResourceController {
         this.researchService = researchService;
         this.structuredService = structuredService;
         this.traceService = traceService;
+        this.herbMapper = herbMapper;
+        this.growthMapper = growthMapper;
+        this.traceMapper = traceMapper;
+        this.courseMapper = courseMapper;
+        this.resourceMapper = resourceMapper;
+        this.projectMapper = projectMapper;
+        this.spectrumMapper = spectrumMapper;
+        this.analysisMapper = analysisMapper;
+        this.trainingMapper = trainingMapper;
+        this.evaluationMapper = evaluationMapper;
+        this.achievementMapper = achievementMapper;
+        this.standardMapper = standardMapper;
+        this.userMapper = userMapper;
+        this.roleMapper = roleMapper;
+        this.userRoleMapper = userRoleMapper;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/summary")
@@ -72,8 +101,34 @@ public class ResourceController {
         if (!"admin".equals(actor.role())) {
             throw new IllegalArgumentException("only admin can backup");
         }
-        Path backup = service.backup();
-        return Map.of("message", "backup completed", "file", backup.toString());
+        Path target = doBackup();
+        return Map.of("message", "backup completed", "file", target.toString());
+    }
+
+    private Path doBackup() {
+        try {
+            Files.createDirectories(Path.of("data"));
+            Path target = Path.of("data", "backup-" + System.currentTimeMillis() + ".json");
+            Map<String, Object> backup = new LinkedHashMap<>();
+            backup.put("herbsNormalized", herbMapper.findAll());
+            backup.put("growthRecords", growthMapper.findAll());
+            backup.put("traceEvents", traceMapper.findAll());
+            backup.put("spectrumComparisons", spectrumMapper.findAll());
+            backup.put("growthAnalyses", analysisMapper.findAll());
+            backup.put("coursesNormalized", courseMapper.findAll());
+            backup.put("teachingResourcesNormalized", resourceMapper.findAll());
+            backup.put("researchProjects", projectMapper.findAll());
+            backup.put("trainingsNormalized", trainingMapper.findAll());
+            backup.put("evaluationsNormalized", evaluationMapper.findAll());
+            backup.put("achievementsNormalized", achievementMapper.findAll());
+            backup.put("standardsNormalized", standardMapper.findAll());
+            backup.put("usersNormalized", userMapper.findAll());
+            backup.put("rolesNormalized", roleMapper.findAll());
+            Files.writeString(target, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(backup), StandardCharsets.UTF_8);
+            return target;
+        } catch (Exception ex) {
+            throw new IllegalStateException("backup failed", ex);
+        }
     }
 
     @GetMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}")
@@ -102,7 +157,7 @@ public class ResourceController {
         if (structuredService.supports(resourceType)) {
             return Map.of("items", structuredService.list(resourceType));
         }
-        return Map.of("items", service.list(resourceType));
+        throw new IllegalArgumentException("unsupported resource type: " + resourceType);
     }
 
     @PostMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}")
@@ -138,7 +193,7 @@ public class ResourceController {
         if (structuredService.supports(resourceType)) {
             return structuredService.create(resourceType, payload);
         }
-        return service.create(resourceType, payload);
+        throw new IllegalArgumentException("unsupported resource type: " + resourceType);
     }
 
     @PutMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}")
@@ -174,7 +229,7 @@ public class ResourceController {
         if (structuredService.supports(resourceType)) {
             return structuredService.update(resourceType, payload);
         }
-        return service.update(resourceType, payload);
+        throw new IllegalArgumentException("unsupported resource type: " + resourceType);
     }
 
     @DeleteMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}/{id}")
@@ -217,8 +272,7 @@ public class ResourceController {
             structuredService.delete(resourceType, id);
             return Map.of("message", "structured record deleted", "id", id);
         }
-        service.delete(resourceType, id);
-        return Map.of("message", "record deleted", "id", id);
+        throw new IllegalArgumentException("unsupported resource type: " + resourceType);
     }
 
     private void attachActor(Map<String, Object> payload, PermissionService.Actor actor) {
