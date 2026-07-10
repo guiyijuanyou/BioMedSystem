@@ -221,7 +221,12 @@ onBeforeUnmount(() => {
           </div>
         </header>
 
-        <router-view />
+        <router-view
+          :config="activeModuleConfig"
+          :permissions="modulePermissions"
+          :role="currentRole"
+          :current-user="currentUser"
+        />
       </main>
     </div>
 
