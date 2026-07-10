@@ -69,8 +69,8 @@ const panelTitle = computed(() => {
   if (panelMode.value === "duplicate") return "创建记录副本";
   return editingId.value ? "编辑记录" : "新增记录";
 });
-const primaryField = computed(() => props.config.fields[0]?.[0]);
-const primaryLabel = computed(() => props.config.fields[0]?.[1] || "记录");
+const primaryField = computed(() => props.config?.fields?.[0]?.[0]);
+const primaryLabel = computed(() => props.config?.fields?.[0]?.[1] || "记录");
 const primaryValue = computed(() => display(form[primaryField.value]));
 const isGrowthModule = computed(() => props.moduleKey === "growth-records");
 const isTraceModule = computed(() => props.moduleKey === "trace-events");
