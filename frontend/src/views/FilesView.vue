@@ -1,14 +1,12 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { inject, onMounted, ref } from "vue";
 import { Download, Eye, Upload } from "lucide-vue-next";
 import { api } from "@/services/api";
 
-defineProps({
-  permissions: { type: Object, default: () => ({ create: true }) },
-  role: { type: String, default: "admin" }
-});
+const permissions = inject("modulePermissions");
+const currentRole = inject("currentRole");
+const notify = inject("notify");
 
-const emit = defineEmits(["notify"]);
 const items = ref([]);
 const category = ref("教学视频");
 const file = ref(null);
@@ -36,13 +34,13 @@ async function upload() {
       method: "POST",
       body: formData
     });
-    emit("notify", "文件上传完成，可在教学视频与资料中发布到课程");
+    notify("文件上传完成，可在教学视频与资料中发布到课程");
     file.value = null;
     const input = document.querySelector("#vue-file-input");
     if (input) input.value = "";
     await load();
   } catch (error) {
-    emit("notify", error.message);
+    notify(error.message);
   } finally {
     uploading.value = false;
   }
@@ -89,7 +87,7 @@ onMounted(load);
       <div class="panel-head">
         <div>
           <h2>已上传资料</h2>
-          <span>这些文件可以在“教学视频与资料”中选择并发布到课程</span>
+          <span>这些文件可以在"教学视频与资料"中选择并发布到课程</span>
         </div>
       </div>
       <div class="file-list">

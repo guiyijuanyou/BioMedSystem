@@ -1,5 +1,6 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 import L from "leaflet";
 import "leaflet.markercluster";
 import {
@@ -7,15 +8,14 @@ import {
   GitBranch, RotateCcw, Search, X, ZoomIn, ZoomOut
 } from "lucide-vue-next";
 
-const props = defineProps({
-  summary: { type: Object, required: true },
-  herbs: { type: Array, default: () => [] },
-  role: { type: String, default: "admin" },
-  currentUser: { type: Object, default: () => ({ name: "当前用户", role: "student", roleLabel: "学生" }) },
-  canEditMap: { type: Boolean, default: true }
-});
-
-const emit = defineEmits(["edit-record", "submit-growth", "notify"]);
+const router = useRouter();
+const summary = inject("summary");
+const herbs = inject("herbs");
+const currentRole = inject("currentRole");
+const currentUser = inject("currentUser");
+const canEditMap = inject("canEditMap");
+const notify = inject("notify");
+const submitGrowthHandler = inject("submitGrowth");
 const mapElement = ref();
 const search = ref("");
 const herbFilter = ref("");
@@ -54,21 +54,21 @@ const tileSources = [
 ];
 
 const metrics = computed(() => [
-  { label: "药材品种", value: props.summary.herbCount || 0, icon: Leaf, tone: "green" },
-  { label: "采集记录", value: props.summary.growthRecordCount || 0, icon: Activity, tone: "blue" },
-  { label: "溯源事件", value: props.summary.traceEventCount || 0, icon: GitBranch, tone: "green" },
-  { label: "教学资源", value: props.summary.teachingResourceCount || 0, icon: BookOpen, tone: "amber" },
-  { label: "图谱比对", value: props.summary.spectrumComparisonCount || 0, icon: FlaskConical, tone: "violet" },
-  { label: "数据分析", value: props.summary.growthAnalysisCount || 0, icon: ClipboardCheck, tone: "cyan" },
-  { label: "试验课程", value: props.summary.courseCount || 0, icon: BookOpen, tone: "amber" },
-  { label: "研究课题", value: props.summary.projectCount || 0, icon: FlaskConical, tone: "violet" },
-  { label: "评价记录", value: props.summary.evaluationCount || 0, icon: ClipboardCheck, tone: "cyan" },
-  { label: "业绩记录", value: props.summary.achievementCount || 0, icon: Award, tone: "red" }
+  { label: "药材品种", value: summary.value.herbCount || 0, icon: Leaf, tone: "green" },
+  { label: "采集记录", value: summary.value.growthRecordCount || 0, icon: Activity, tone: "blue" },
+  { label: "溯源事件", value: summary.value.traceEventCount || 0, icon: GitBranch, tone: "green" },
+  { label: "教学资源", value: summary.value.teachingResourceCount || 0, icon: BookOpen, tone: "amber" },
+  { label: "图谱比对", value: summary.value.spectrumComparisonCount || 0, icon: FlaskConical, tone: "violet" },
+  { label: "数据分析", value: summary.value.growthAnalysisCount || 0, icon: ClipboardCheck, tone: "cyan" },
+  { label: "试验课程", value: summary.value.courseCount || 0, icon: BookOpen, tone: "amber" },
+  { label: "研究课题", value: summary.value.projectCount || 0, icon: FlaskConical, tone: "violet" },
+  { label: "评价记录", value: summary.value.evaluationCount || 0, icon: ClipboardCheck, tone: "cyan" },
+  { label: "业绩记录", value: summary.value.achievementCount || 0, icon: Award, tone: "red" }
 ]);
 
-const herbOptions = computed(() => [...new Set(props.herbs.map(item => item.name).filter(Boolean))].sort());
-const districtOptions = computed(() => [...new Set(props.herbs.map(item => item.district).filter(Boolean))].sort());
-const filtered = computed(() => props.herbs.filter(item => {
+const herbOptions = computed(() => [...new Set(herbs.value.map(item => item.name).filter(Boolean))].sort());
+const districtOptions = computed(() => [...new Set(herbs.value.map(item => item.district).filter(Boolean))].sort());
+const filtered = computed(() => herbs.value.filter(item => {
   const text = `${item.name || ""} ${item.district || ""}`.toLowerCase();
   return (!search.value || text.includes(search.value.trim().toLowerCase()))
     && (!herbFilter.value || item.name === herbFilter.value)
@@ -176,7 +176,7 @@ function resetMap() {
 }
 
 async function submitGrowth() {
-  await emit("submit-growth", { ...growth });
+  await submitGrowthHandler({ ...growth });
   growth.herbName = "";
   growth.district = "";
   growth.recordedAt = new Date().toISOString().slice(0, 19);
@@ -257,7 +257,7 @@ onBeforeUnmount(() => map?.remove());
                 <div><dt>溯源码</dt><dd>{{ selected.traceCode || "-" }}</dd></div>
                 <div><dt>记录时间</dt><dd>{{ selected.createdAt || selected.recordedAt || "-" }}</dd></div>
               </dl>
-              <button v-if="canEditMap" type="button" @click="emit('edit-record', selected)">查看并编辑记录</button>
+              <button v-if="canEditMap" type="button" @click="router.push({ path: '/module/herbs', query: { editId: selected.id } })">查看并编辑记录</button>
             </template>
           </aside>
         </div>
