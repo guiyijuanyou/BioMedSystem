@@ -15,7 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class AuthService {
-    private static final Duration SESSION_TTL = Duration.ofHours(8);
+    public static final String SESSION_COOKIE = "BIOMED_SESSION";
+    public static final Duration SESSION_TTL = Duration.ofHours(8);
 
     private final Map<String, UserSession> sessions = new ConcurrentHashMap<>();
     private final SysUserMapper sysUserMapper;
@@ -65,7 +66,11 @@ public class AuthService {
     }
 
     public PermissionService.Actor requireActor(String authorization) {
-        String token = extractToken(authorization);
+        return requireActor(authorization, null);
+    }
+
+    public PermissionService.Actor requireActor(String authorization, String sessionCookie) {
+        String token = resolveToken(authorization, sessionCookie);
         UserSession session = sessions.get(token);
         if (session == null || session.expiresAt().isBefore(Instant.now())) {
             sessions.remove(token);
@@ -76,10 +81,20 @@ public class AuthService {
     }
 
     public void logout(String authorization) {
-        String token = extractToken(authorization);
+        logout(authorization, null);
+    }
+
+    public void logout(String authorization, String sessionCookie) {
+        String token = resolveToken(authorization, sessionCookie);
         if (!token.isBlank()) {
             sessions.remove(token);
         }
+    }
+
+    private String resolveToken(String authorization, String sessionCookie) {
+        String headerToken = extractToken(authorization);
+        if (!headerToken.isBlank()) return headerToken;
+        return sessionCookie == null ? "" : sessionCookie.trim();
     }
 
     private void removeExpiredSessions() {
