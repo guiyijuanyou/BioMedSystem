@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import gsap from "gsap";
 import {
   Activity, Award, BarChart3, BookOpen, Boxes, ChevronDown, ChevronsLeft,
   ClipboardCheck, FileArchive, FlaskConical, FolderKanban, GitBranch,
@@ -51,6 +52,8 @@ const activeKey = computed(() => {
 });
 const activeGroup = computed(() => groups.value.find(group => group.members.includes(activeKey.value))?.key || "");
 const expandedGroup = ref(localStorage.getItem("biomed-nav-group") || activeGroup.value || groups.value[0]?.key || "");
+const desktopGroup = ref("");
+let desktopCloseTimer;
 
 watch(activeGroup, value => {
   if (!value) return;
@@ -69,18 +72,104 @@ function toggleCollapsed() {
   emit("collapsed", collapsed.value);
 }
 
+function openDesktopGroup(key) {
+  clearTimeout(desktopCloseTimer);
+  desktopGroup.value = key;
+}
+
+function scheduleDesktopGroupClose() {
+  clearTimeout(desktopCloseTimer);
+  desktopCloseTimer = setTimeout(() => {
+    desktopGroup.value = "";
+  }, 160);
+}
+
+function closeDesktopGroup() {
+  clearTimeout(desktopCloseTimer);
+  desktopGroup.value = "";
+}
+
+function onDesktopMenuEnter(element, done) {
+  gsap.fromTo(element, { autoAlpha: 0, y: -8 }, {
+    autoAlpha: 1,
+    y: 0,
+    duration: 0.22,
+    ease: "power2.out",
+    onComplete: done
+  });
+}
+
+function onDesktopMenuLeave(element, done) {
+  gsap.to(element, {
+    autoAlpha: 0,
+    y: -6,
+    duration: 0.16,
+    ease: "power2.in",
+    onComplete: done
+  });
+}
+
 function navigate(key) {
   if (key === "dashboard") router.push("/dashboard");
   else if (key === "files") router.push("/files");
   else if (key === "improvement") router.push("/improvement");
   else router.push(`/module/${key}`);
+  closeDesktopGroup();
   emit("close");
 }
 
 emit("collapsed", collapsed.value);
+onBeforeUnmount(() => clearTimeout(desktopCloseTimer));
 </script>
 
 <template>
+  <header class="desktop-nav-shell">
+    <div class="desktop-primary-nav">
+      <button class="desktop-brand" type="button" data-nav-key="dashboard" @click="navigate('dashboard')">
+        <span class="desktop-brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>BioMed Cloud</strong><small>生物医药数字信息系统</small></span>
+      </button>
+
+      <nav class="desktop-nav-links" aria-label="桌面主导航">
+        <button class="desktop-nav-home" :class="{ active: activeKey === 'dashboard' }" type="button" data-nav-key="dashboard" @click="navigate('dashboard')">工作台</button>
+        <section
+          v-for="group in groups"
+          :key="group.key"
+          class="desktop-nav-group"
+          :class="{ active: activeGroup === group.key, open: desktopGroup === group.key }"
+          @mouseenter="openDesktopGroup(group.key)"
+          @mouseleave="scheduleDesktopGroupClose"
+          @focusin="openDesktopGroup(group.key)"
+          @focusout="scheduleDesktopGroupClose"
+          @keydown.esc="closeDesktopGroup"
+        >
+          <button class="desktop-nav-trigger" type="button" :aria-expanded="desktopGroup === group.key">
+            <span>{{ group.label }}</span><ChevronDown :size="14" />
+          </button>
+          <Transition :css="false" @enter="onDesktopMenuEnter" @leave="onDesktopMenuLeave">
+            <div v-if="desktopGroup === group.key" class="desktop-nav-dropdown">
+              <div class="desktop-nav-dropdown-head"><component :is="group.icon" :size="18" /><strong>{{ group.label }}</strong></div>
+              <button
+                v-for="[key, label] in group.items"
+                :key="key"
+                class="desktop-nav-option"
+                :class="{ active: activeKey === key }"
+                type="button"
+                :data-nav-key="key"
+                @click="navigate(key)"
+              >
+                <span class="desktop-nav-option-icon"><component :is="icons[key]" :size="17" /></span>
+                <span><strong>{{ label }}</strong><small>进入{{ label }}模块</small></span>
+              </button>
+            </div>
+          </Transition>
+        </section>
+      </nav>
+
+      <div class="desktop-nav-status"><span>{{ roleLabel }}</span><small><i></i>系统服务正常</small></div>
+    </div>
+  </header>
+
   <aside class="sidebar" :class="{ open, collapsed }">
     <div class="brand">
       <span class="brand-mark">药</span>
@@ -88,7 +177,7 @@ emit("collapsed", collapsed.value);
     </div>
 
     <nav class="grouped-nav" aria-label="主导航">
-      <button class="nav-item nav-home" :class="{ active: activeKey === 'dashboard' }" type="button" title="工作台" @click="navigate('dashboard')">
+      <button class="nav-item nav-home" :class="{ active: activeKey === 'dashboard' }" type="button" title="工作台" data-nav-key="dashboard" @click="navigate('dashboard')">
         <LayoutDashboard :size="18" /><span>工作台</span>
       </button>
 
@@ -97,7 +186,7 @@ emit("collapsed", collapsed.value);
           <component :is="group.icon" :size="18" /><span>{{ group.label }}</span><ChevronDown class="nav-chevron" :size="15" />
         </button>
         <div class="nav-children">
-          <button v-for="[key, label] in group.items" :key="key" class="nav-item nav-child" :class="{ active: activeKey === key }" type="button" :title="label" @click="navigate(key)">
+          <button v-for="[key, label] in group.items" :key="key" class="nav-item nav-child" :class="{ active: activeKey === key }" type="button" :title="label" :data-nav-key="key" @click="navigate(key)">
             <component :is="icons[key]" :size="16" /><span>{{ label }}</span>
           </button>
         </div>
