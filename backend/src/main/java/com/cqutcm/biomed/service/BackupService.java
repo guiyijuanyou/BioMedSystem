@@ -5,9 +5,9 @@ import com.cqutcm.biomed.mapper.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -125,6 +125,18 @@ public class BackupService {
             backup.put("usersNormalized", userMapper.findAll().stream().map(this::safeUserProfile).toList());
             backup.put("rolesNormalized", roleMapper.findAll());
             backup.put("userRolesNormalized", userRoleMapper.findAll());
+            backup.put("qualityMetricDefinitions", jdbc.queryForList("SELECT * FROM quality_metric_definition"));
+            backup.put("batchMetricResults", jdbc.queryForList("SELECT * FROM batch_metric_result"));
+            backup.put("evaluationSchemes", jdbc.queryForList("SELECT * FROM evaluation_scheme"));
+            backup.put("evaluationSchemeItems", jdbc.queryForList("SELECT * FROM evaluation_scheme_item"));
+            backup.put("multiMetricEvaluations", jdbc.queryForList("SELECT * FROM multi_metric_evaluation"));
+            backup.put("multiMetricEvaluationDetails", jdbc.queryForList("SELECT * FROM multi_metric_evaluation_detail"));
+            backup.put("trainingMaterialTags", jdbc.queryForList("SELECT * FROM training_material_tag"));
+            backup.put("improvementRecommendations", jdbc.queryForList("SELECT * FROM improvement_recommendation"));
+            backup.put("achievementScoringRules", jdbc.queryForList("SELECT * FROM achievement_scoring_rule"));
+            backup.put("achievementQuantifications", jdbc.queryForList("SELECT * FROM achievement_quantification"));
+            backup.put("mobileCollectionDevices", jdbc.queryForList("SELECT id,device_code,device_name,owner_name,platform_name,status,last_seen_at,created_by,created_at FROM mobile_collection_device"));
+            backup.put("mobileSyncRecords", jdbc.queryForList("SELECT * FROM mobile_sync_record"));
             Files.writeString(target, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(backup),
                     StandardCharsets.UTF_8);
             return target;

@@ -56,6 +56,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/map/tiles/**").permitAll()
+                .requestMatchers("/api/mobile/growth-records/batch", "/api/mobile/sync/status").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )

@@ -52,6 +52,7 @@ public class ImprovementWorkflowController {
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         return workflow.createRecheck(issueId, body, auth.requireActor(authorization));
     }
+    @PostMapping("/issues/{issueId}/auto-recheck") public Map<String,Object> autoRecheck(@PathVariable String issueId,@RequestHeader(value="Authorization",required=false)String authorization){return workflow.autoRecheck(issueId,auth.requireActor(authorization));}
 
     @PutMapping("/issues/{issueId}/close")
     public Map<String, Object> closeIssue(@PathVariable String issueId,
@@ -65,4 +66,5 @@ public class ImprovementWorkflowController {
             @RequestHeader(value = "Authorization", required = false) String authorization) {
         return workflow.addEvidence(achievementId, body, auth.requireActor(authorization));
     }
+    @PutMapping("/evidence/{evidenceId}/confirm-points") public Map<String,Object> confirmPoints(@PathVariable String evidenceId,@RequestBody Map<String,Object>body,@RequestHeader(value="Authorization",required=false)String authorization){workflow.confirmPoints(evidenceId,new java.math.BigDecimal(String.valueOf(body.get("points"))),auth.requireActor(authorization));return Map.of("message","points confirmed");}
 }

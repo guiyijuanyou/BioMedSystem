@@ -44,9 +44,27 @@ const routes = [
   },
   {
     path: "/profile",
-    name: "profile",
-    component: () => import("@/views/ProfileView.vue"),
+      name: "profile",
+      component: () => import("@/views/ProfileView.vue"),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: "/quality-metrics",
+    name: "quality-metrics",
+    component: () => import("@/views/QualityMetricView.vue"),
     meta: { requiresAuth: true }
+  },
+  {
+    path: "/mobile-devices",
+    name: "mobile-devices",
+    component: () => import("@/views/MobileDeviceView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/multi-evaluations",
+      name: "multi-evaluations",
+      component: () => import("@/views/MultiEvaluationView.vue"),
+      meta: { requiresAuth: true }
   },
   {
     path: "/:pathMatch(.*)*",
