@@ -5,6 +5,7 @@ import com.cqutcm.biomed.mapper.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,8 @@ public class BackupService {
     private static final DateTimeFormatter FILE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final HerbMapper herbMapper;
+    private final HerbBatchMapper batchMapper;
+    private final LabSampleMapper sampleMapper;
     private final GrowthRecordMapper growthMapper;
     private final TraceEventMapper traceMapper;
     private final SpectrumComparisonMapper spectrumMapper;
@@ -30,6 +33,8 @@ public class BackupService {
     private final CourseMapper courseMapper;
     private final TeachingResourceMapper resourceMapper;
     private final ResearchProjectMapper projectMapper;
+    private final ProjectApplicationMapper projectApplicationMapper;
+    private final ProjectMemberMapper projectMemberMapper;
     private final TrainingMaterialMapper trainingMapper;
     private final EvaluationRecordMapper evaluationMapper;
     private final AchievementRecordMapper achievementMapper;
@@ -37,17 +42,25 @@ public class BackupService {
     private final SysUserMapper userMapper;
     private final SysRoleMapper roleMapper;
     private final SysUserRoleMapper userRoleMapper;
+    private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
 
-    public BackupService(HerbMapper herbMapper, GrowthRecordMapper growthMapper,
+    public BackupService(HerbMapper herbMapper, HerbBatchMapper batchMapper,
+                         LabSampleMapper sampleMapper,
+                         GrowthRecordMapper growthMapper,
                          TraceEventMapper traceMapper, SpectrumComparisonMapper spectrumMapper,
                          GrowthAnalysisMapper analysisMapper, CourseMapper courseMapper,
                          TeachingResourceMapper resourceMapper, ResearchProjectMapper projectMapper,
+                         ProjectApplicationMapper projectApplicationMapper,
+                         ProjectMemberMapper projectMemberMapper,
                          TrainingMaterialMapper trainingMapper, EvaluationRecordMapper evaluationMapper,
                          AchievementRecordMapper achievementMapper, AchievementStandardMapper standardMapper,
                          SysUserMapper userMapper, SysRoleMapper roleMapper,
-                         SysUserRoleMapper userRoleMapper, ObjectMapper objectMapper) {
+                         SysUserRoleMapper userRoleMapper, JdbcTemplate jdbc,
+                         ObjectMapper objectMapper) {
         this.herbMapper = herbMapper;
+        this.batchMapper = batchMapper;
+        this.sampleMapper = sampleMapper;
         this.growthMapper = growthMapper;
         this.traceMapper = traceMapper;
         this.spectrumMapper = spectrumMapper;
@@ -55,6 +68,8 @@ public class BackupService {
         this.courseMapper = courseMapper;
         this.resourceMapper = resourceMapper;
         this.projectMapper = projectMapper;
+        this.projectApplicationMapper = projectApplicationMapper;
+        this.projectMemberMapper = projectMemberMapper;
         this.trainingMapper = trainingMapper;
         this.evaluationMapper = evaluationMapper;
         this.achievementMapper = achievementMapper;
@@ -62,6 +77,7 @@ public class BackupService {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.userRoleMapper = userRoleMapper;
+        this.jdbc = jdbc;
         this.objectMapper = objectMapper;
     }
 
@@ -88,6 +104,8 @@ public class BackupService {
             Path target = Path.of("data", "backup-" + timestamp + ".json");
             Map<String, Object> backup = new LinkedHashMap<>();
             backup.put("herbsNormalized", herbMapper.findAll());
+            backup.put("herbBatchesNormalized", batchMapper.findAll());
+            backup.put("labSamplesNormalized", sampleMapper.findAll());
             backup.put("growthRecords", growthMapper.findAll());
             backup.put("traceEvents", traceMapper.findAll());
             backup.put("spectrumComparisons", spectrumMapper.findAll());
@@ -95,10 +113,15 @@ public class BackupService {
             backup.put("coursesNormalized", courseMapper.findAll());
             backup.put("teachingResourcesNormalized", resourceMapper.findAll());
             backup.put("researchProjects", projectMapper.findAll());
+            backup.put("projectApplications", projectApplicationMapper.findAll());
+            backup.put("projectMembers", projectMemberMapper.findAll());
             backup.put("trainingsNormalized", trainingMapper.findAll());
             backup.put("evaluationsNormalized", evaluationMapper.findAll());
             backup.put("achievementsNormalized", achievementMapper.findAll());
             backup.put("standardsNormalized", standardMapper.findAll());
+            backup.put("evaluationIssues", jdbc.queryForList("SELECT * FROM evaluation_issue"));
+            backup.put("improvementTrainingTasks", jdbc.queryForList("SELECT * FROM improvement_training_task"));
+            backup.put("achievementEvidences", jdbc.queryForList("SELECT * FROM achievement_evidence"));
             backup.put("usersNormalized", userMapper.findAll().stream().map(this::safeUserProfile).toList());
             backup.put("rolesNormalized", roleMapper.findAll());
             backup.put("userRolesNormalized", userRoleMapper.findAll());

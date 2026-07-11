@@ -12,8 +12,9 @@ import java.util.Map;
 public interface ResearchProjectMapper extends BiomedBaseMapper<ResearchProject> {
     @Select("SELECT id, title, leader_name AS leader, requirements, status, stage, " +
             "reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
-            "applicant_requests, approved_members, rejected_applicants, transformation, version, " +
-            "created_at, updated_at " +
+            "applicant_requests AS applicantRequests, approved_members AS approvedMembers, " +
+            "rejected_applicants AS rejectedApplicants, transformation, version, " +
+            "created_at AS createdAt, updated_at AS updatedAt " +
             "FROM research_project ORDER BY created_at DESC")
     List<Map<String, Object>> findAllAsMap();
 
