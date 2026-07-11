@@ -1,8 +1,14 @@
+/** 生成包含 Bearer token 的 headers 对象，供 fetch+Blob 下载等场景使用 */
+export function authHeader() {
+  const session = JSON.parse(sessionStorage.getItem("biomed-session") || "null");
+  return session?.token ? { Authorization: `Bearer ${session.token}` } : {};
+}
+
 export async function api(path, options = {}) {
   const session = JSON.parse(sessionStorage.getItem("biomed-session") || "null");
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers = {
-    ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
+    ...authHeader(),
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers || {})
   };

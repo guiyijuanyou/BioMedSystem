@@ -410,7 +410,7 @@ public class ResourceController {
 
     // ==================== SUBMIT / REVIEW (with cache eviction) ====================
 
-    @PutMapping("/{resourceType:^(?!files$|summary$|backup$|soap$).+}/{id}/submit")
+    @PutMapping("/{resourceType:^(?!files$|summary$|backup$|soap$|herb-batches$|lab-samples$).+}/{id}/submit")
     public Map<String, Object> submit(@PathVariable String resourceType, @PathVariable String id,
                                        @RequestHeader(value = "Authorization", required = false) String authorization) {
         PermissionService.Actor a = authService.requireActor(authorization);

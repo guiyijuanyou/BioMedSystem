@@ -257,6 +257,25 @@ public class AuthService {
         return authorization.trim();
     }
 
+    // ==================== CHANGE PASSWORD ====================
+
+    public void changePassword(String authorization, String oldPassword, String newPassword) {
+        PermissionService.Actor actor = requireActor(authorization);
+        String username = actor.name();
+        // 从数据库查用户的密码哈希
+        SysUser sysUser = sysUserMapper.findByUsername(username);
+        if (sysUser == null || sysUser.getPasswordHash() == null) {
+            throw new AuthenticationRequiredException("用户不存在");
+        }
+        if (!passwordEncoder.matches(oldPassword, sysUser.getPasswordHash())) {
+            throw new AuthenticationRequiredException("原密码错误");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new IllegalArgumentException("新密码长度不能少于6位");
+        }
+        sysUserMapper.updatePasswordHash(sysUser.getId(), passwordEncoder.encode(newPassword));
+    }
+
     // ==================== USER LOOKUP ====================
 
     private DemoUser findUser(String username) {

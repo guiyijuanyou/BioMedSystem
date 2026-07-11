@@ -97,6 +97,17 @@ public class FileAssetService {
         }
     }
 
+    public void deleteFile(String id) {
+        FileAsset file = findById(id).orElseThrow(() -> new IllegalArgumentException("未找到文件"));
+        try {
+            Path target = requireStoredFile(file);
+            Files.deleteIfExists(target);
+        } catch (Exception e) {
+            // 物理文件删除失败不阻断数据库删除
+        }
+        mapper.deleteById(id);
+    }
+
     public Path requireStoredFile(FileAsset file) {
         if (file == null || file.getStoragePath() == null || file.getStoragePath().isBlank()) {
             throw new IllegalArgumentException("文件不存在");
