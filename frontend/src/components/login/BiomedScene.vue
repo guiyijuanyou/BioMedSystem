@@ -19,11 +19,11 @@ function movePointer(event) {
 
 <template>
   <div class="biomed-scene" aria-label="交互式 DNA 双螺旋数据模型" @pointermove="movePointer" @pointerleave="pointer = { x: 0, y: 0 }">
-    <TresCanvas clear-color="#050816" :dpr="[1, 1.6]" :alpha="true" :antialias="true">
+    <TresCanvas clear-color="#f6f9fc" :dpr="[1, 1.6]" :alpha="true" :antialias="true">
       <TresPerspectiveCamera :position="[0, 0, sceneState.cameraZ]" :fov="44" />
-      <TresAmbientLight :intensity="1.1" color="#7dd3fc" />
-      <TresDirectionalLight :position="[4, 5, 6]" :intensity="3.2" color="#38bdf8" />
-      <TresPointLight :position="[-4, -2, 3]" :intensity="28" color="#8b5cf6" />
+      <TresAmbientLight :intensity="1.1" color="#d8e9ff" />
+      <TresDirectionalLight :position="[4, 5, 6]" :intensity="3.2" color="#8ec5ff" />
+      <TresPointLight :position="[-4, -2, 3]" :intensity="28" color="#ff8a5c" />
       <DnaHelix v-bind="sceneState" :pointer-x="pointer.x" :pointer-y="pointer.y" />
     </TresCanvas>
     <div class="biomed-scene__fallback" aria-hidden="true">

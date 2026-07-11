@@ -108,3 +108,193 @@ html.immersive-scroll::-webkit-scrollbar {
 @media (prefers-reduced-motion: reduce) {
   .login-experience *, .login-dialog * { scroll-behavior: auto!important; animation-duration: .01ms!important; animation-iteration-count: 1!important; transition-duration: .01ms!important; }
 }
+
+/* Stripe-inspired light palette. Layout and motion remain unchanged. */
+.login-experience {
+  --lx-bg: #f6f9fc;
+  --lx-panel: rgba(255, 255, 255, 0.72);
+  --lx-panel-strong: rgba(255, 255, 255, 0.92);
+  --lx-line: rgba(10, 37, 64, 0.11);
+  --lx-cyan: #0073e6;
+  --lx-blue: #635bff;
+  --lx-purple: #7a5cff;
+  --lx-white: #0a2540;
+  --lx-muted: #53657d;
+  color: #0a2540;
+  background:
+    radial-gradient(circle at 82% 5%, rgba(255, 132, 67, 0.28), transparent 28%),
+    radial-gradient(circle at 68% 15%, rgba(255, 93, 174, 0.22), transparent 31%),
+    radial-gradient(circle at 53% 8%, rgba(99, 91, 255, 0.2), transparent 31%),
+    radial-gradient(circle at 24% 34%, rgba(112, 210, 255, 0.17), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f6f9fc 52%, #edf4ff 100%);
+}
+
+.login-experience__noise { opacity: .025; }
+.login-nav {
+  border-color: rgba(10, 37, 64, .09);
+  background: rgba(255, 255, 255, .74);
+  box-shadow: 0 16px 44px rgba(50, 50, 93, .08);
+  backdrop-filter: blur(24px) saturate(150%);
+}
+.login-nav__brand { color: #0a2540!important; }
+.login-nav__brand small { color: #697386; }
+.login-nav__mark i { background: #635bff; box-shadow: 0 0 14px rgba(99, 91, 255, .42); }
+.login-nav__mark::before { border-color: rgba(0, 115, 230, .66); }
+.login-nav__mark::after { border-color: rgba(255, 122, 89, .72); }
+.login-nav__links button { color: #697386; }
+.login-nav__links button:hover, .login-nav__links button.is-active { color: #0a2540; }
+.login-nav__links button::after { background: linear-gradient(90deg, #635bff, #00a7e1); box-shadow: 0 2px 9px rgba(99, 91, 255, .24); }
+.login-nav__login {
+  color: #fff!important;
+  border-color: rgba(99, 91, 255, .15)!important;
+  background: linear-gradient(115deg, #635bff, #7a5cff)!important;
+  box-shadow: 0 10px 26px rgba(99, 91, 255, .22)!important;
+}
+.login-nav__login:hover { box-shadow: 0 13px 34px rgba(99, 91, 255, .3)!important; }
+.login-nav__menu { color: #0a2540!important; }
+.login-nav__links { color: #0a2540; }
+
+.scroll-progress__line { background: linear-gradient(to bottom, #635bff var(--scroll-progress), rgba(99, 91, 255, .15) var(--scroll-progress)); }
+.scroll-progress button { color: #8793a5!important; }
+.scroll-progress button > span { border-color: #c9d2e2; background: rgba(255,255,255,.92); }
+.scroll-progress button.is-active { color: #635bff!important; }
+.scroll-progress button.is-active > span { border-color: #635bff; box-shadow: 0 0 14px rgba(99,91,255,.28); }
+
+.biomed-scene::after {
+  background:
+    radial-gradient(ellipse at 83% 8%, rgba(255, 133, 66, .24), transparent 28%),
+    radial-gradient(ellipse at 70% 17%, rgba(255, 83, 168, .18), transparent 32%),
+    radial-gradient(ellipse at 58% 13%, rgba(99, 91, 255, .17), transparent 35%),
+    radial-gradient(circle at 28% 40%, rgba(104, 207, 255, .13), transparent 30%),
+    linear-gradient(90deg, rgba(255,255,255,.88) 0%, rgba(246,249,252,.38) 48%, rgba(255,255,255,.25) 100%);
+}
+.section-index, .section-kicker { color: #635bff; }
+.section-copy h1, .section-copy h2, .roles-heading h2 { color: #0a2540; }
+.section-copy h1 em, .section-copy h2 em, .roles-heading h2 em {
+  background: linear-gradient(105deg, #0073e6 5%, #635bff 48%, #ff5ca8 76%, #ff8a4c 100%);
+  background-clip: text;
+}
+.section-copy > p, .role-summary p { color: #53657d; }
+.hero-primary, .role-summary button {
+  color: #fff!important;
+  border-color: rgba(99,91,255,.16)!important;
+  background: linear-gradient(115deg, #635bff, #7a5cff)!important;
+  box-shadow: 0 12px 28px rgba(99,91,255,.2)!important;
+}
+.hero-actions > span { color: #697386; }
+.hero-actions > span i { background: #00a67e; box-shadow: 0 0 10px rgba(0,166,126,.3); }
+.hero-proof svg { color: #635bff; }
+.hero-proof strong { color: #0a2540; }
+.hero-proof span { color: #697386; }
+
+.data-float,
+.collection-console,
+.spectrum-panel,
+.login-map-detail,
+.similarity {
+  border-color: rgba(10,37,64,.1);
+  background: rgba(255,255,255,.76);
+  box-shadow: 0 24px 64px rgba(50,50,93,.1);
+  backdrop-filter: blur(20px) saturate(145%);
+}
+.data-float span, .data-float > small, .collection-console > header, .spectrum-panel > header { color: #697386; }
+.data-float strong, .metric-grid strong, .similarity strong { color: #0a2540; }
+.data-float strong small { color: #635bff; }
+.data-float--temperature i { background: linear-gradient(90deg,#635bff 76%,#e4e9f2 76%); }
+.data-float--spectrum path { stroke: #635bff; filter: drop-shadow(0 0 4px rgba(99,91,255,.28)); }
+
+.metric-grid article, .data-pipeline, .login-map-detail dl div {
+  border-color: rgba(10,37,64,.08);
+  background: rgba(246,249,252,.86);
+}
+.metric-grid svg { color: #635bff; }
+.metric-grid article > span, .metric-grid strong small { color: #697386; }
+.metric-grid em, .collection-console header span i { color: #008f72; }
+.collection-console header span i { background: #00b894; box-shadow: 0 0 9px rgba(0,184,148,.24); }
+.data-pipeline span { background: #635bff; box-shadow: 0 0 11px rgba(99,91,255,.28); }
+.data-pipeline strong { color: #635bff; border-color: rgba(99,91,255,.2); background: rgba(255,255,255,.9); }
+.source-tags span { color: #53657d; background: rgba(255,255,255,.56); }
+
+.distribution-map {
+  border-color: rgba(10,37,64,.09);
+  background: radial-gradient(circle at 60% 40%,rgba(99,91,255,.1),transparent 38%),rgba(255,255,255,.58);
+  box-shadow: 0 36px 90px rgba(50,50,93,.1);
+}
+.map-grid { opacity: .34; background-image: linear-gradient(rgba(99,91,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(99,91,255,.12) 1px,transparent 1px); }
+.map-outline > path:first-child { fill: rgba(104,207,255,.12); stroke: rgba(0,115,230,.58); filter: drop-shadow(0 0 11px rgba(0,115,230,.16)); }
+.network-line { stroke: rgba(99,91,255,.35); }
+.map-node { color: #53657d!important; }
+.map-node span { border-color: #635bff; background: #fff; box-shadow: 0 0 0 6px rgba(99,91,255,.08),0 0 18px rgba(99,91,255,.24); }
+.map-node.is-active span { background: #635bff; }
+.map-coordinates, .login-map-detail span, .login-map-detail dt { color: #697386; }
+.login-map-detail strong, .login-map-detail dd { color: #0a2540; }
+.login-map-detail > svg { color: #635bff; }
+.login-map-detail > p { color: #008f72; }
+
+.similarity svg { color: #635bff; }
+.similarity span, .spectrum-chart label { color: #697386; }
+.spectrum-chart {
+  background: linear-gradient(rgba(99,91,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(99,91,255,.07) 1px,transparent 1px),rgba(246,249,252,.76);
+}
+.spectrum-chart .standard { stroke: #ff7a59; }
+.spectrum-chart .sample { stroke: #635bff; filter: drop-shadow(0 0 4px rgba(99,91,255,.25)); }
+.spectrum-chart input { accent-color: #635bff; }
+.trace-chain li::after { background: linear-gradient(90deg,#635bff,rgba(99,91,255,.1)); }
+.trace-chain li > span { color: #fff; border-color: #635bff; background: #635bff; box-shadow: 0 0 16px rgba(99,91,255,.2); }
+.trace-chain strong { color: #0a2540; }
+.trace-chain small { color: #697386; }
+
+.role-orbit, .role-orbit::before, .role-orbit::after { border-color: rgba(99,91,255,.15); }
+.role-orbit button {
+  color: #53657d!important;
+  border-color: rgba(10,37,64,.1)!important;
+  background: rgba(255,255,255,.78)!important;
+  box-shadow: 0 12px 28px rgba(50,50,93,.08)!important;
+}
+.role-orbit button.is-active {
+  color: #fff!important;
+  border-color: #635bff!important;
+  background: linear-gradient(115deg,#635bff,#7a5cff)!important;
+  box-shadow: 0 16px 36px rgba(99,91,255,.22)!important;
+}
+.role-core {
+  border-color: rgba(99,91,255,.22);
+  background: radial-gradient(circle,rgba(255,255,255,.95),rgba(226,231,255,.84) 66%);
+  box-shadow: 0 0 70px rgba(99,91,255,.12);
+}
+.role-core span, .role-core small, .roles-section footer { color: #697386; }
+.role-core strong, .role-summary > span { color: #635bff; }
+.role-summary h3 { color: #0a2540; }
+
+.login-dialog { color: #0a2540; }
+.login-dialog__backdrop, .login-dialog__backdrop:hover { background: rgba(49,56,75,.28); backdrop-filter: blur(18px) saturate(85%); }
+.login-dialog__panel {
+  border-color: rgba(10,37,64,.11);
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 42px 110px rgba(50,50,93,.2);
+}
+.login-dialog__panel::before { background: radial-gradient(circle at 80% 0,rgba(99,91,255,.12),transparent 38%); }
+.login-dialog__close { color: #697386; border-color: rgba(10,37,64,.1); background: #f6f9fc; }
+.login-dialog__close:hover { color: #0a2540; border-color: rgba(99,91,255,.25); background: #eef1ff; }
+.login-dialog__eyebrow { color: #635bff; }
+.login-dialog h2 { color: #0a2540; }
+.login-dialog header p, .login-field { color: #697386; }
+.login-field > input, .login-field__password { color: #0a2540; border-color: rgba(10,37,64,.13); background: #f6f9fc; }
+.login-field > input:focus, .login-field__password:focus-within { border-color: #635bff; box-shadow: 0 0 0 3px rgba(99,91,255,.1); }
+.login-dialog__submit, .login-dialog__submit:hover { color: #fff; background: linear-gradient(115deg,#635bff,#7a5cff); box-shadow: 0 12px 28px rgba(99,91,255,.2); }
+.login-dialog__demo-toggle { color: #697386; }
+.login-dialog__demo-toggle:hover, .login-field__password button:hover { color: #635bff; }
+.login-dialog__demo { background: #f6f9fc; }
+.login-dialog__demo code { color: #635bff; background: rgba(99,91,255,.08); }
+.login-dialog__demo span { color: #697386; }
+.login-dialog__orb, .login-dialog__orb span { border-color: rgba(99,91,255,.14); }
+
+@media (max-width: 900px) {
+  .login-nav__links { background: rgba(255,255,255,.96); }
+  .biomed-scene::after {
+    background:
+      radial-gradient(ellipse at 76% 8%, rgba(255,122,89,.2), transparent 32%),
+      radial-gradient(ellipse at 58% 16%, rgba(99,91,255,.15), transparent 38%),
+      linear-gradient(180deg,rgba(255,255,255,.28),rgba(246,249,252,.62) 55%,rgba(246,249,252,.94));
+  }
+}
