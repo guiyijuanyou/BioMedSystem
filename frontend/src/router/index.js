@@ -55,6 +55,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: "/profile/:userId",
+    name: "user-profile",
+    component: () => import("@/views/UserPublicView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
     path: "/mobile-devices",
     name: "mobile-devices",
     component: () => import("@/views/MobileDeviceView.vue"),
@@ -62,9 +68,9 @@ const routes = [
   },
   {
     path: "/multi-evaluations",
-      name: "multi-evaluations",
-      component: () => import("@/views/MultiEvaluationView.vue"),
-      meta: { requiresAuth: true }
+    name: "multi-evaluations",
+    component: () => import("@/views/MultiEvaluationView.vue"),
+    meta: { requiresAuth: true }
   },
   {
     path: "/:pathMatch(.*)*",

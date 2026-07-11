@@ -834,6 +834,14 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 7px;
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.metric:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand);
 }
 
 .metric::before {
@@ -2336,6 +2344,19 @@ td {
   text-align: left;
   vertical-align: middle;
   font-size: 13px;
+}
+
+.field-link {
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.field-link:hover {
+  color: #0d5e3a;
+  text-decoration: underline;
 }
 
 th {
