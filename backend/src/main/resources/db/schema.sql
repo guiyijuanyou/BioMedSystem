@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS sys_user (
   password_hash VARCHAR(255),
   department VARCHAR(120),
   status VARCHAR(30) NOT NULL DEFAULT 'enabled',
+  phone VARCHAR(30),
+  email VARCHAR(150),
+  avatar_url VARCHAR(500),
+  title VARCHAR(100),
+  research_area VARCHAR(300),
+  bio TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL,
   INDEX idx_user_status (status)

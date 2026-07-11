@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, provide, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { ClipboardList, Grid2X2, Home, LogOut, Menu, RefreshCw, Save, ShieldCheck, Sprout } from "lucide-vue-next";
+import { ChevronDown, ClipboardList, Grid2X2, Home, LogOut, Menu, RefreshCw, Save, ShieldCheck, Sprout, User, KeyRound } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
 import AiAssistant from "@/components/AiAssistant.vue";
 import { modules, roleMenus, roleModulePermissions, roles } from "@/config";
@@ -30,6 +30,7 @@ const toastText = ref("");
 const refreshing = ref(false);
 const backingUp = ref(false);
 const refreshKey = ref(0);
+const userMenuOpen = ref(false);
 let toastTimer;
 let touchStart = null;
 
@@ -51,6 +52,7 @@ const pageTitle = computed(() => {
   if (route.name === "files") return "资料文件";
   if (route.name === "batch-detail") return "药材批次档案";
   if (route.name === "improvement") return "专业改进闭环";
+  if (route.name === "profile") return "个人中心";
   if (route.name === "module") {
     const key = route.params.moduleKey;
     return modules[key]?.title || "业务模块";
@@ -74,7 +76,26 @@ function appLogout() {
   sessionUser.value = null;
   sessionStorage.removeItem("biomed-session");
   drawerOpen.value = false;
+  userMenuOpen.value = false;
   router.push("/login");
+}
+
+function toggleUserMenu() {
+  userMenuOpen.value = !userMenuOpen.value;
+}
+
+function closeUserMenu() {
+  userMenuOpen.value = false;
+}
+
+function goProfile() {
+  userMenuOpen.value = false;
+  router.push("/profile");
+}
+
+function goChangePassword() {
+  userMenuOpen.value = false;
+  router.push({ path: "/profile", query: { action: "changePassword" } });
 }
 
 function openModuleRecord({ moduleKey, id }) {
@@ -252,10 +273,28 @@ onBeforeUnmount(() => {
               <span>当前角色</span>
               <strong>{{ currentRoleLabel }}</strong>
             </label>
-            <span class="system-health"><ShieldCheck :size="15" />{{ currentUser.name }}</span>
             <button v-if="currentRole === 'admin'" class="button-secondary" type="button" :disabled="backingUp" @click="backup"><Save :size="16" />{{ backingUp ? "备份中..." : "自动备份" }}</button>
             <button type="button" :disabled="refreshing" @click="refresh"><RefreshCw :size="16" />{{ refreshing ? "刷新中..." : "刷新数据" }}</button>
-            <button class="button-secondary" type="button" @click="appLogout"><LogOut :size="16" />退出</button>
+            <div class="user-menu-wrapper">
+              <button class="user-trigger" type="button" @click="toggleUserMenu">
+                <span class="user-dot">{{ (currentUser.name || "?").charAt(0) }}</span>
+                <span class="user-label">{{ currentUser.name }}</span>
+                <ChevronDown :size="14" :class="{ 'chevron-up': userMenuOpen }" />
+              </button>
+              <Transition name="menu-fade">
+                <div class="user-dropdown" v-if="userMenuOpen" @mouseleave="closeUserMenu">
+                  <div class="dropdown-user">
+                    <span class="drop-avatar">{{ (currentUser.name || "?").charAt(0) }}</span>
+                    <span class="drop-name">{{ currentUser.name }}</span>
+                  </div>
+                  <div class="dropdown-divider"></div>
+                  <button class="dropdown-item" @click="goProfile"><User :size="15" />个人中心</button>
+                  <button class="dropdown-item" @click="goChangePassword"><KeyRound :size="15" />修改密码</button>
+                  <div class="dropdown-divider"></div>
+                  <button class="dropdown-item danger" @click="appLogout"><LogOut :size="15" />退出登录</button>
+                </div>
+              </Transition>
+            </div>
           </div>
         </header>
 

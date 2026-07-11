@@ -441,6 +441,12 @@ public class StructuredRecordService {
         u.setPasswordHash(rawPassword); u.setDepartment(str(m, "department"));
         String status = str(m, "status");
         u.setStatus(status != null && !status.isBlank() ? status : "enabled");
+        u.setPhone(str(m, "phone"));
+        u.setEmail(str(m, "email"));
+        u.setAvatarUrl(str(m, "avatarUrl"));
+        u.setTitle(str(m, "title"));
+        u.setResearchArea(str(m, "researchArea"));
+        u.setBio(str(m, "bio"));
         return u;
     }
 
@@ -519,6 +525,12 @@ public class StructuredRecordService {
         m.put("id", u.getId()); m.put("username", u.getUsername()); m.put("name", u.getDisplayName());
         m.put("password", ""); m.put("department", u.getDepartment());
         m.put("status", u.getStatus());
+        m.put("phone", u.getPhone());
+        m.put("email", u.getEmail());
+        m.put("avatarUrl", u.getAvatarUrl());
+        m.put("title", u.getTitle());
+        m.put("researchArea", u.getResearchArea());
+        m.put("bio", u.getBio());
         if (u.getCreatedAt() != null) m.put("createdAt", u.getCreatedAt().toString());
         if (u.getUpdatedAt() != null) m.put("updatedAt", u.getUpdatedAt().toString());
         return m;
@@ -529,6 +541,13 @@ public class StructuredRecordService {
         sanitized.remove("password");
         sanitized.remove("passwordHash");
         sanitized.put("password", "");
+        // 保留资料字段
+        sanitized.putIfAbsent("phone", null);
+        sanitized.putIfAbsent("email", null);
+        sanitized.putIfAbsent("avatarUrl", null);
+        sanitized.putIfAbsent("title", null);
+        sanitized.putIfAbsent("researchArea", null);
+        sanitized.putIfAbsent("bio", null);
         return sanitized;
     }
 

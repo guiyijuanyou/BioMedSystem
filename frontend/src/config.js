@@ -213,7 +213,12 @@ export const modules = {
       ["name", "用户名称"],
       ["role", "角色"],
       ["department", "部门"],
-      ["level", "权限层级"]
+      ["level", "权限层级"],
+      ["phone", "手机号"],
+      ["email", "邮箱"],
+      ["title", "职称"],
+      ["researchArea", "研究方向"],
+      ["bio", "个人简介"]
     ]
   }
 };
