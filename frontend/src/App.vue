@@ -45,6 +45,7 @@ const activeModuleConfig = computed(() => {
   if (!key || !modules[key]) return null;
   return { ...modules[key], title: modules[key].title };
 });
+const requestedEditId = computed(() => String(route.query.editId || ""));
 const pageTitle = computed(() => {
   if (route.name === "dashboard") return roles[currentRole.value]?.title || "工作台";
   if (route.name === "files") return "资料文件";
@@ -74,6 +75,10 @@ function appLogout() {
   sessionStorage.removeItem("biomed-session");
   drawerOpen.value = false;
   router.push("/login");
+}
+
+function openModuleRecord({ moduleKey, id }) {
+  router.push({ path: `/module/${moduleKey}`, query: { editId: id } });
 }
 
 async function loadDashboard() {
@@ -254,18 +259,25 @@ onBeforeUnmount(() => {
           </div>
         </header>
 
-        <router-view
-          :config="activeModuleConfig"
-          :permissions="modulePermissions"
-          :role="currentRole"
-          :current-user="currentUser"
-          :edit-id="String(route.query.editId || '')"
-          :open-create-on-load="route.query.create === '1'"
-          :prefill-batch-id="String(route.query.batchId || '')"
-          @edit-consumed="consumeResourceQuery('editId')"
-          @create-consumed="consumeCreateQuery"
-          @resource-saved="handleResourceSaved"
-        />
+        <router-view v-slot="{ Component, route: viewRoute }">
+          <component
+            :is="Component"
+            :key="viewRoute.name === 'module' ? viewRoute.params.moduleKey : viewRoute.name"
+            :module-key="viewRoute.params.moduleKey"
+            :config="activeModuleConfig"
+            :permissions="modulePermissions"
+            :role="currentRole"
+            :current-user="currentUser"
+            :edit-id="requestedEditId"
+            :open-create-on-load="route.query.create === '1'"
+            :prefill-batch-id="String(route.query.batchId || '')"
+            @edit-consumed="consumeResourceQuery('editId')"
+            @create-consumed="consumeCreateQuery"
+            @resource-saved="handleResourceSaved"
+            @open-module-record="openModuleRecord"
+            @notify="notify"
+          />
+        </router-view>
       </main>
     </div>
 

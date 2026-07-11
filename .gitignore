@@ -2,6 +2,8 @@ backend/target/
 frontend/node_modules/
 frontend/dist/
 .idea/
+.claude/
+docs/
 .vscode/
 .settings/
 .project
