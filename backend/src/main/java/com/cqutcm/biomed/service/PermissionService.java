@@ -15,7 +15,7 @@ public class PermissionService {
     private static final Set<String> RESEARCHER_BLOCKED = Set.of("trainings", "users", "standards", "courses");
     private static final Set<String> REVIEW_ONLY_CREATE_BLOCKED = Set.of("teaching-resources");
     private static final Set<String> STUDENT_READABLE = Set.of(
-            "herbs", "growth-records", "trace-events", "teaching-resources",
+            "herbs", "herb-batches", "lab-samples", "growth-records", "trace-events", "teaching-resources",
             "courses", "projects", "trainings"
     );
 

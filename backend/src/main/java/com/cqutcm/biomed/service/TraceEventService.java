@@ -13,10 +13,13 @@ import java.util.UUID;
 public class TraceEventService {
     private final TraceEventMapper traceMapper;
     private final PermissionService permissionService;
+    private final BatchCatalogService batchCatalogService;
 
-    public TraceEventService(TraceEventMapper traceMapper, PermissionService permissionService) {
+    public TraceEventService(TraceEventMapper traceMapper, PermissionService permissionService,
+                             BatchCatalogService batchCatalogService) {
         this.traceMapper = traceMapper;
         this.permissionService = permissionService;
+        this.batchCatalogService = batchCatalogService;
     }
 
     public List<Map<String, Object>> list() {
@@ -26,6 +29,7 @@ public class TraceEventService {
     public Map<String, Object> create(Map<String, Object> payload) {
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
+        batchCatalogService.applyBatchContext(cleaned);
         // 操作人由登录会话强制确定
         PermissionService.Actor actor = permissionService.actor(payload);
         if (!permissionService.isAdmin(actor)) {
@@ -56,6 +60,8 @@ public class TraceEventService {
             }
         }
         Map<String, Object> cleaned = clean(payload);
+        cleaned.putIfAbsent("batchId", existing.get("batchId"));
+        batchCatalogService.applyBatchContext(cleaned);
         if (!permissionService.isAdmin(actor)) {
             cleaned.put("operatorName", existing.get("operatorName"));
         }

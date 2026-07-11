@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 
 public class EvaluationRecordDTOs {
     public static class Create {
+        public String batchId;
         @NotBlank @Size(max = 100) public String herbName;
         @Size(max = 200) public String indicator;
         @DecimalMin("0.00") @DecimalMax("100.00") public BigDecimal score;
@@ -14,6 +15,7 @@ public class EvaluationRecordDTOs {
     }
     public static class Update {
         @NotBlank public String id;
+        public String batchId;
         @NotBlank @Size(max = 100) public String herbName;
         @Size(max = 200) public String indicator;
         @DecimalMin("0.00") @DecimalMax("100.00") public BigDecimal score;

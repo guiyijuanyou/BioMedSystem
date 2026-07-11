@@ -14,10 +14,13 @@ public class GrowthRecordService {
 
     private final GrowthRecordMapper growthMapper;
     private final PermissionService permissionService;
+    private final BatchCatalogService batchCatalogService;
 
-    public GrowthRecordService(GrowthRecordMapper growthMapper, PermissionService permissionService) {
+    public GrowthRecordService(GrowthRecordMapper growthMapper, PermissionService permissionService,
+                               BatchCatalogService batchCatalogService) {
         this.growthMapper = growthMapper;
         this.permissionService = permissionService;
+        this.batchCatalogService = batchCatalogService;
     }
 
     public List<Map<String, Object>> list() {
@@ -27,6 +30,7 @@ public class GrowthRecordService {
     public Map<String, Object> create(Map<String, Object> payload) {
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
+        batchCatalogService.applyBatchContext(cleaned);
         applyActorForCreate(cleaned, payload);
         LocalDateTime now = LocalDateTime.now();
         cleaned.put("id", id);
@@ -50,6 +54,8 @@ public class GrowthRecordService {
         }
 
         Map<String, Object> cleaned = clean(payload);
+        cleaned.putIfAbsent("batchId", existing.get("batchId"));
+        batchCatalogService.applyBatchContext(cleaned);
         // 保留记录人不被覆盖
         cleaned.put("recorder", existing.getOrDefault("recorder", ""));
         cleaned.put("recorderRole", existing.getOrDefault("recorderRole", ""));

@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 public class GrowthAnalysis {
     @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("batch_id")
+    private String batchId;
     @TableField("analysis_name")
     private String analysisName;
     @TableField("herb_name")
@@ -53,6 +55,8 @@ public class GrowthAnalysis {
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+    public String getBatchId() { return batchId; }
+    public void setBatchId(String batchId) { this.batchId = batchId; }
     public String getAnalysisName() { return analysisName; }
     public void setAnalysisName(String analysisName) { this.analysisName = analysisName; }
     public String getHerbName() { return herbName; }

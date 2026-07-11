@@ -28,6 +28,7 @@ public class StructuredRecordService {
     private final SysUserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
     private final PermissionService permissionService;
+    private final BatchCatalogService batchCatalogService;
 
     public StructuredRecordService(HerbMapper herbMapper, TrainingMaterialMapper trainingMapper,
                                    EvaluationRecordMapper evaluationMapper,
@@ -36,7 +37,8 @@ public class StructuredRecordService {
                                    SysUserMapper userMapper, SysRoleMapper roleMapper,
                                    SysUserRoleMapper userRoleMapper,
                                    PasswordEncoder passwordEncoder,
-                                   PermissionService permissionService) {
+                                   PermissionService permissionService,
+                                   BatchCatalogService batchCatalogService) {
         this.herbMapper = herbMapper;
         this.trainingMapper = trainingMapper;
         this.evaluationMapper = evaluationMapper;
@@ -47,6 +49,7 @@ public class StructuredRecordService {
         this.userRoleMapper = userRoleMapper;
         this.passwordEncoder = passwordEncoder;
         this.permissionService = permissionService;
+        this.batchCatalogService = batchCatalogService;
     }
 
     public boolean supports(String resourceType) {
@@ -100,6 +103,7 @@ public class StructuredRecordService {
                 trainingMapper.insert(t); return trainingToMap(t);
             }
             case "evaluations": {
+                batchCatalogService.applyBatchContext(payload);
                 EvaluationRecord e = mapToEvaluation(payload, actor); e.setId(id); e.setCreatedAt(now);
                 requireEvaluationSubject(e, actor);
                 evaluationMapper.insert(e); return evaluationToMap(e);
@@ -154,6 +158,8 @@ public class StructuredRecordService {
                 if (existing == null) throw new IllegalArgumentException("evaluation record not found");
                 permissionService.assertEvaluationOwnership(actor, existing.getEvaluatorName());
                 StatusMachine.assertOwnerEditable(existing.getStatus(), "评价记录");
+                payload.putIfAbsent("batchId", existing.getBatchId());
+                batchCatalogService.applyBatchContext(payload);
                 EvaluationRecord e = mapToEvaluation(payload, actor);
                 e.setId(id);
                 requireEvaluationSubject(e, actor);
@@ -374,6 +380,7 @@ public class StructuredRecordService {
 
     private EvaluationRecord mapToEvaluation(Map<String, Object> m, PermissionService.Actor actor) {
         EvaluationRecord e = new EvaluationRecord();
+        e.setBatchId(str(m, "batchId"));
         e.setHerbName(str(m, "herbName")); e.setIndicator(str(m, "indicator"));
         e.setScore(toBigDecimal(m, "score")); e.setResult(str(m, "result"));
         e.setApplicationMaterial(str(m, "applicationMaterial"));
@@ -466,7 +473,8 @@ public class StructuredRecordService {
 
     private Map<String, Object> evaluationToMap(EvaluationRecord e) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", e.getId()); m.put("herbName", e.getHerbName()); m.put("indicator", e.getIndicator());
+        m.put("id", e.getId()); m.put("batchId", e.getBatchId());
+        m.put("herbName", e.getHerbName()); m.put("indicator", e.getIndicator());
         m.put("score", e.getScore()); m.put("result", e.getResult());
         m.put("applicationMaterial", e.getApplicationMaterial());
         m.put("subjectOwner", e.getSubjectOwnerName());

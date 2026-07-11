@@ -55,8 +55,53 @@ CREATE TABLE IF NOT EXISTS herb (
   INDEX idx_herb_district (district)
 );
 
+CREATE TABLE IF NOT EXISTS herb_batch (
+  id VARCHAR(64) PRIMARY KEY,
+  herb_id VARCHAR(64) NOT NULL,
+  batch_code VARCHAR(100) NOT NULL UNIQUE,
+  batch_name VARCHAR(200) NOT NULL,
+  trace_code VARCHAR(100),
+  plot_name VARCHAR(200),
+  district VARCHAR(100),
+  longitude DECIMAL(10,6),
+  latitude DECIMAL(10,6),
+  scale_desc VARCHAR(100),
+  environment TEXT,
+  planting_date DATE,
+  expected_harvest_date DATE,
+  responsible_person VARCHAR(100),
+  current_stage VARCHAR(50) NOT NULL DEFAULT '未开始',
+  status VARCHAR(30) NOT NULL DEFAULT 'active',
+  version INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL,
+  INDEX idx_hb_herb (herb_id),
+  INDEX idx_hb_district (district),
+  INDEX idx_hb_trace (trace_code),
+  INDEX idx_hb_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS lab_sample (
+  id VARCHAR(64) PRIMARY KEY,
+  batch_id VARCHAR(64) NOT NULL,
+  sample_code VARCHAR(100) NOT NULL UNIQUE,
+  sample_type VARCHAR(100),
+  collected_at TIMESTAMP NULL,
+  collector_name VARCHAR(100),
+  sample_location VARCHAR(200),
+  storage_condition VARCHAR(300),
+  status VARCHAR(30) NOT NULL DEFAULT 'collected',
+  version INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL,
+  INDEX idx_ls_batch (batch_id),
+  INDEX idx_ls_status (status),
+  INDEX idx_ls_collected (collected_at)
+);
+
 CREATE TABLE IF NOT EXISTS growth_record (
   id VARCHAR(64) PRIMARY KEY,
+  batch_id VARCHAR(64),
   herb_name VARCHAR(100) NOT NULL,
   district VARCHAR(100),
   temperature DECIMAL(6,2),
@@ -71,12 +116,14 @@ CREATE TABLE IF NOT EXISTS growth_record (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL,
   INDEX idx_gr_herb (herb_name),
+  INDEX idx_gr_batch (batch_id),
   INDEX idx_gr_district (district),
   INDEX idx_gr_recorded (recorded_at)
 );
 
 CREATE TABLE IF NOT EXISTS trace_event (
   id VARCHAR(64) PRIMARY KEY,
+  batch_id VARCHAR(64),
   herb_name VARCHAR(100) NOT NULL,
   trace_code VARCHAR(100) NOT NULL,
   event_type VARCHAR(80) NOT NULL,
@@ -88,12 +135,15 @@ CREATE TABLE IF NOT EXISTS trace_event (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL,
   INDEX idx_te_trace (trace_code),
+  INDEX idx_te_batch (batch_id),
   INDEX idx_te_herb (herb_name),
   INDEX idx_te_time (event_time)
 );
 
 CREATE TABLE IF NOT EXISTS spectrum_comparison (
   id VARCHAR(64) PRIMARY KEY,
+  batch_id VARCHAR(64),
+  sample_id VARCHAR(64),
   herb_name VARCHAR(100) NOT NULL,
   sample_code VARCHAR(100),
   district VARCHAR(100),
@@ -112,12 +162,15 @@ CREATE TABLE IF NOT EXISTS spectrum_comparison (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL,
   INDEX idx_sc_herb (herb_name),
+  INDEX idx_sc_batch (batch_id),
+  INDEX idx_sc_sample_id (sample_id),
   INDEX idx_sc_sample (sample_code),
   INDEX idx_sc_status (status)
 );
 
 CREATE TABLE IF NOT EXISTS growth_analysis (
   id VARCHAR(64) PRIMARY KEY,
+  batch_id VARCHAR(64),
   analysis_name VARCHAR(200) NOT NULL,
   herb_name VARCHAR(100),
   district VARCHAR(100),
@@ -137,6 +190,7 @@ CREATE TABLE IF NOT EXISTS growth_analysis (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL,
   INDEX idx_ga_herb (herb_name),
+  INDEX idx_ga_batch (batch_id),
   INDEX idx_ga_analyzed (analyzed_at),
   INDEX idx_ga_status (status)
 );
@@ -239,6 +293,7 @@ CREATE TABLE IF NOT EXISTS training_material (
 
 CREATE TABLE IF NOT EXISTS evaluation_record (
   id VARCHAR(64) PRIMARY KEY,
+  batch_id VARCHAR(64),
   herb_name VARCHAR(100) NOT NULL,
   indicator VARCHAR(200),
   score DECIMAL(8,2),
@@ -255,6 +310,7 @@ CREATE TABLE IF NOT EXISTS evaluation_record (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL,
   INDEX idx_er_herb (herb_name),
+  INDEX idx_er_batch (batch_id),
   INDEX idx_er_status (status)
 );
 

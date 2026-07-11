@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 public class GrowthRecord {
     @TableId(value = "id", type = IdType.INPUT)
     private String id;
+    @TableField("batch_id")
+    private String batchId;
     @TableField("herb_name")
     private String herbName;
     @TableField("district")
@@ -44,6 +46,8 @@ public class GrowthRecord {
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
+    public String getBatchId() { return batchId; }
+    public void setBatchId(String batchId) { this.batchId = batchId; }
     public String getHerbName() { return herbName; }
     public void setHerbName(String herbName) { this.herbName = herbName; }
     public String getDistrict() { return district; }

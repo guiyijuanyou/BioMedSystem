@@ -23,6 +23,7 @@ const isAuthenticated = computed(() => !!sessionUser.value);
 
 const summary = ref({});
 const herbs = ref([]);
+const batches = ref([]);
 const drawerOpen = ref(false);
 const toastText = ref("");
 const refreshing = ref(false);
@@ -75,12 +76,14 @@ function appLogout() {
 async function loadDashboard() {
   if (!isAuthenticated.value) return;
   try {
-    const [summaryResult, herbsResult] = await Promise.all([
+    const [summaryResult, herbsResult, batchResult] = await Promise.all([
       api("/api/summary"),
-      api("/api/herbs")
+      api("/api/herbs"),
+      api("/api/herb-batches")
     ]);
     summary.value = summaryResult;
     herbs.value = herbsResult.items || [];
+    batches.value = batchResult.items || [];
   } catch (error) {
     notify(`数据加载失败：${error.message}`);
   }
@@ -132,6 +135,17 @@ function handleLoginRequired() {
   router.push("/login");
 }
 
+function consumeResourceQuery(name) {
+  if (!route.query[name]) return;
+  const query = { ...route.query };
+  delete query[name];
+  router.replace({ path: route.path, query });
+}
+
+async function handleResourceSaved(event) {
+  if (event?.moduleKey === "herbs") await loadDashboard();
+}
+
 function updateAppHeight() {
   document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
 }
@@ -160,6 +174,7 @@ provide("currentUser", currentUser);
 provide("canEditMap", canEditMap);
 provide("summary", summary);
 provide("herbs", herbs);
+provide("batches", batches);
 provide("notify", notify);
 provide("refreshKey", refreshKey);
 provide("appLogin", appLogin);
@@ -226,6 +241,11 @@ onBeforeUnmount(() => {
           :permissions="modulePermissions"
           :role="currentRole"
           :current-user="currentUser"
+          :edit-id="String(route.query.editId || '')"
+          :open-create-on-load="route.query.create === '1'"
+          @edit-consumed="consumeResourceQuery('editId')"
+          @create-consumed="consumeResourceQuery('create')"
+          @resource-saved="handleResourceSaved"
         />
       </main>
     </div>

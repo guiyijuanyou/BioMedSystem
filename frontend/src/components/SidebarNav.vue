@@ -18,6 +18,8 @@ const route = useRoute();
 const icons = {
   dashboard: LayoutDashboard,
   herbs: MapPinned,
+  "herb-batches": Boxes,
+  "lab-samples": FlaskConical,
   "growth-records": Activity,
   "trace-events": GitBranch,
   "teaching-resources": ShieldCheck,

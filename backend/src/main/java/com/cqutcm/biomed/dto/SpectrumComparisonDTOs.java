@@ -2,9 +2,12 @@ package com.cqutcm.biomed.dto;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 public class SpectrumComparisonDTOs {
     public static class Create {
+        public String batchId;
+        public String sampleId;
         @NotBlank @Size(max = 100) public String herbName;
         @Size(max = 100) public String sampleCode;
         @Size(max = 100) public String district;
@@ -13,9 +16,13 @@ public class SpectrumComparisonDTOs {
         @DecimalMin("0.00") @DecimalMax("100.00") public BigDecimal similarity;
         @Size(max = 100) public String result;
         @Size(max = 500) public String remark;
+        @Size(max = 100) public String operator;
+        public LocalDateTime comparedAt;
     }
     public static class Update {
         @NotBlank public String id;
+        public String batchId;
+        public String sampleId;
         @NotBlank @Size(max = 100) public String herbName;
         @Size(max = 100) public String sampleCode;
         @Size(max = 100) public String district;
@@ -24,6 +31,8 @@ public class SpectrumComparisonDTOs {
         @DecimalMin("0.00") @DecimalMax("100.00") public BigDecimal similarity;
         @Size(max = 100) public String result;
         @Size(max = 500) public String remark;
+        @Size(max = 100) public String operator;
+        public LocalDateTime comparedAt;
         @NotNull public Integer version;
     }
     public static class Review {

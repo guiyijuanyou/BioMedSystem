@@ -461,6 +461,14 @@ h2 {
   gap: 5px;
 }
 
+.map-tools .map-add-point {
+  width: auto;
+  padding-inline: 12px;
+  color: #fff;
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
 .map-tools button {
   width: 34px;
   height: 34px;
@@ -3166,6 +3174,13 @@ thead .sticky-action {
 
 .drawer-form .field-wide {
   grid-column: 1 / -1;
+}
+
+.drawer-form .linked-readonly,
+.drawer-form select:disabled {
+  color: #52645a;
+  background: #eef3f0;
+  cursor: not-allowed;
 }
 
 .drawer-form label {
