@@ -183,10 +183,10 @@ const traceStats = computed(() => {
 const growthSeriesGroups = computed(() => {
   const groups = {};
   items.value.forEach(item => {
-    const herbName = item.herbName || "未填写药材";
-    const district = item.district || "未填写地区";
-    const key = item.batchId || `legacy__${district}__${herbName}`;
+    const key = item.batchId || `legacy__${item.district || "未填写地区"}__${item.herbName || "未填写药材"}`;
     const batch = findBatch(item.batchId);
+    const herbName = batch?.herbName || item.herbName || "未填写药材";
+    const district = batch?.district || item.district || "未填写地区";
     if (!groups[key]) groups[key] = {
       key, herbName, district, batchName: batch?.batchName || `${district} / ${herbName}`, rows: []
     };
@@ -1116,8 +1116,8 @@ watch(() => props.editId, id => {
       <section v-if="isGrowthModule" class="growth-trend-card">
         <div class="trend-toolbar">
           <div>
-            <strong>地区药材生长档案</strong>
-            <small>同一地区、同一药材可连续记录多次，并与上一条记录自动对比</small>
+              <strong>药材批次生长档案</strong>
+              <small>同一批次的生长数据按时间排列，自动与上一条记录对比趋势</small>
           </div>
           <select :value="selectedGrowthGroup?.key || ''" @change="selectGrowthGroup($event.target.value)">
             <option v-for="group in growthSeriesGroups" :key="group.key" :value="group.key">
