@@ -18,13 +18,16 @@ public class ResearchDataService {
     private final SpectrumComparisonMapper spectrumMapper;
     private final GrowthAnalysisMapper analysisMapper;
     private final PermissionService permissionService;
+    private final BatchCatalogService batchCatalogService;
 
     public ResearchDataService(SpectrumComparisonMapper spectrumMapper,
                                GrowthAnalysisMapper analysisMapper,
-                               PermissionService permissionService) {
+                               PermissionService permissionService,
+                               BatchCatalogService batchCatalogService) {
         this.spectrumMapper = spectrumMapper;
         this.analysisMapper = analysisMapper;
         this.permissionService = permissionService;
+        this.batchCatalogService = batchCatalogService;
     }
 
     // ---- 列表 ----
@@ -62,6 +65,7 @@ public class ResearchDataService {
     public Map<String, Object> createSpectrum(Map<String, Object> payload, PermissionService.Actor actor) {
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
+        batchCatalogService.applySampleContext(cleaned);
         // 创建人由登录会话强制确定，防伪造
         if (!permissionService.isAdmin(actor)) {
             cleaned.put("operatorName", actor.name());
@@ -79,6 +83,7 @@ public class ResearchDataService {
     public Map<String, Object> createAnalysis(Map<String, Object> payload, PermissionService.Actor actor) {
         String id = UUID.randomUUID().toString();
         Map<String, Object> cleaned = clean(payload);
+        batchCatalogService.applyBatchContext(cleaned);
         // 分析人由登录会话强制确定
         if (!permissionService.isAdmin(actor)) {
             cleaned.put("analystName", actor.name());
@@ -110,6 +115,9 @@ public class ResearchDataService {
         }
 
         Map<String, Object> cleaned = clean(payload);
+        cleaned.putIfAbsent("batchId", existing.get("batchId"));
+        cleaned.putIfAbsent("sampleId", existing.get("sampleId"));
+        batchCatalogService.applySampleContext(cleaned);
         cleaned.put("status", existing.get("status"));
         if (!permissionService.isAdmin(actor)) {
             // 保留操作人和状态
@@ -153,6 +161,8 @@ public class ResearchDataService {
         }
 
         Map<String, Object> cleaned = clean(payload);
+        cleaned.putIfAbsent("batchId", existing.get("batchId"));
+        batchCatalogService.applyBatchContext(cleaned);
         cleaned.put("status", existing.get("status"));
         if (!permissionService.isAdmin(actor)) {
             cleaned.put("analystName", existing.get("analystName"));

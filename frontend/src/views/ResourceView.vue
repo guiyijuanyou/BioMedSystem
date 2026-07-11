@@ -14,14 +14,18 @@ const props = defineProps({
   permissions: { type: Object, default: () => ({}) },
   role: { type: String, default: "admin" },
   currentUser: { type: Object, default: () => ({ name: "当前用户", role: "student", roleLabel: "学生" }) },
-  editId: String
+  editId: String,
+  openCreateOnLoad: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(["notify", "edit-consumed", "open-module-record"]);
+const emit = defineEmits(["notify", "edit-consumed", "create-consumed", "open-module-record", "resource-saved"]);
 const items = ref([]);
 const teachingResources = ref([]);
 const uploadedFiles = ref([]);
 const courseOptions = ref([]);
+const herbRecords = ref([]);
+const batchOptions = ref([]);
+const sampleOptions = ref([]);
 const search = ref("");
 const editingId = ref(null);
 const selectedIds = ref([]);
@@ -38,6 +42,9 @@ const page = ref(1);
 const pageSize = ref(8);
 const confirmState = reactive({ open: false, ids: [] });
 const form = reactive({});
+const batchLinkedModules = new Set([
+  "lab-samples", "growth-records", "trace-events", "spectrum-comparisons", "growth-analysis", "evaluations"
+]);
 
 const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion", "eventContent", "reviewComment", "requirements", "applicantRequests", "approvedMembers", "rejectedApplicants"];
 const statuses = ["待审核", "已通过", "已发布", "已驳回", "数据采集中", "已归档"];
@@ -60,7 +67,8 @@ const canDelete = computed(() => props.permissions.delete !== false);
 const canExport = computed(() => props.permissions.export !== false);
 const hasOwnershipScope = computed(() => props.role !== "admin" && [
   "growth-records", "teaching-resources", "projects", "courses", "achievements",
-  "trainings", "evaluations", "spectrum-comparisons", "growth-analysis"
+  "trainings", "evaluations", "spectrum-comparisons", "growth-analysis",
+  "herb-batches", "lab-samples"
 ].includes(props.moduleKey));
 const canBatchDelete = computed(() => props.permissions.batchDelete !== false && canDelete.value && !hasOwnershipScope.value);
 const hasRowActions = computed(() => true);
@@ -71,7 +79,7 @@ const panelTitle = computed(() => {
 });
 const primaryField = computed(() => props.config?.fields?.[0]?.[0]);
 const primaryLabel = computed(() => props.config?.fields?.[0]?.[1] || "记录");
-const primaryValue = computed(() => display(form[primaryField.value]));
+const primaryValue = computed(() => relationDisplay(form, primaryField.value));
 const isGrowthModule = computed(() => props.moduleKey === "growth-records");
 const isTraceModule = computed(() => props.moduleKey === "trace-events");
 const isCourseModule = computed(() => props.moduleKey === "courses");
@@ -100,7 +108,7 @@ const growthStats = computed(() => {
   const temps = numericValues(rows, "temperature");
   const humidity = numericValues(rows, "humidity");
   const ph = numericValues(rows, "soilPh");
-  const sources = countBy(rows, "collector");
+  const sources = countBy(rows, "collectSource");
   const districts = countBy(rows, "district");
   const warnings = rows.filter(item =>
     toNumber(item.temperature) > 28 || toNumber(item.humidity) < 55 || toNumber(item.soilPh) < 5.8 || toNumber(item.soilPh) > 7.5
@@ -140,9 +148,14 @@ const traceGroups = computed(() => {
   const groups = {};
   items.value.forEach(item => {
     const traceCode = item.traceCode || "未填写溯源码";
-    if (!groups[traceCode]) groups[traceCode] = { key: traceCode, traceCode, herbName: item.herbName || "未填写药材", rows: [] };
-    groups[traceCode].rows.push(item);
-    if (item.herbName) groups[traceCode].herbName = item.herbName;
+    const key = item.batchId || `legacy__${traceCode}`;
+    const batch = findBatch(item.batchId);
+    if (!groups[key]) groups[key] = {
+      key, traceCode, batchName: batch?.batchName || "历史溯源档案",
+      herbName: item.herbName || batch?.herbName || "未填写药材", rows: []
+    };
+    groups[key].rows.push(item);
+    if (item.herbName) groups[key].herbName = item.herbName;
   });
   return Object.values(groups)
     .map(group => ({
@@ -169,8 +182,11 @@ const growthSeriesGroups = computed(() => {
   items.value.forEach(item => {
     const herbName = item.herbName || "未填写药材";
     const district = item.district || "未填写地区";
-    const key = `${district}__${herbName}`;
-    if (!groups[key]) groups[key] = { key, herbName, district, rows: [] };
+    const key = item.batchId || `legacy__${district}__${herbName}`;
+    const batch = findBatch(item.batchId);
+    if (!groups[key]) groups[key] = {
+      key, herbName, district, batchName: batch?.batchName || `${district} / ${herbName}`, rows: []
+    };
     groups[key].rows.push(item);
   });
   return Object.values(groups)
@@ -273,7 +289,7 @@ function defaultValue(name) {
     eventTime: new Date().toISOString().slice(0, 19),
     comparedAt: new Date().toISOString().slice(0, 19),
     analyzedAt: new Date().toISOString().slice(0, 19),
-    collector: "电脑终端录入",
+    collectSource: "电脑终端录入",
     recorder: props.currentUser.name || "当前用户",
     recorderRole: props.currentUser.roleLabel || "当前角色",
     temperature: "20.0",
@@ -293,14 +309,92 @@ function defaultValue(name) {
     approvedMembers: "",
     rejectedApplicants: "",
     operator: props.currentUser.name || "当前用户",
+    operatorName: props.currentUser.name || "当前用户",
     spectrumType: "HPLC 指纹图谱",
     result: "待复核",
     analyst: props.currentUser.name || "当前用户",
     trainer: props.currentUser.name || "当前用户",
     evaluator: props.currentUser.name || "当前用户",
+    responsiblePerson: props.currentUser.name || "当前用户",
+    collector: props.currentUser.name || "当前用户",
+    currentStage: "未开始",
     effectiveDate: new Date().toISOString().slice(0, 10)
   };
+  if (name === "status" && props.moduleKey === "herb-batches") return "active";
+  if (name === "status" && props.moduleKey === "lab-samples") return "collected";
   return values[name] || "";
+}
+
+function findHerb(id) {
+  return herbRecords.value.find(item => item.id === id);
+}
+
+function findBatch(id) {
+  return batchOptions.value.find(item => item.id === id);
+}
+
+function findSample(id) {
+  return sampleOptions.value.find(item => item.id === id);
+}
+
+function applySelectedHerb(herbId) {
+  const herb = findHerb(herbId);
+  if (!herb) return;
+  form.district = herb.district || "";
+  form.longitude = herb.longitude ?? "";
+  form.latitude = herb.latitude ?? "";
+  form.scale = herb.scale || "";
+  form.environment = herb.environment || "";
+  form.traceCode = herb.traceCode || "";
+  if (!form.plotName) form.plotName = herb.district || "";
+  if (!form.batchName) form.batchName = `${herb.name} / ${herb.district || "未填写地区"} 新批次`;
+}
+
+function applySelectedBatch(batchId) {
+  const batch = findBatch(batchId);
+  if (!batch) return;
+  form.batchId = batch.id;
+  form.herbName = batch.herbName || "";
+  form.district = batch.district || "";
+  if (Object.hasOwn(form, "traceCode")) form.traceCode = batch.traceCode || "";
+}
+
+function applySelectedSample(sampleId) {
+  const sample = findSample(sampleId);
+  if (!sample) return;
+  form.sampleId = sample.id;
+  form.sampleCode = sample.sampleCode || "";
+  applySelectedBatch(sample.batchId);
+}
+
+function relationDisplay(item, name) {
+  const value = item?.[name];
+  if (name === "status" && props.moduleKey === "herb-batches") {
+    return { active: "使用中", archived: "已归档" }[value] || display(value);
+  }
+  if (name === "status" && props.moduleKey === "lab-samples") {
+    return { collected: "已采样", tested: "已检测", consumed: "已耗用", archived: "已归档" }[value] || display(value);
+  }
+  if (name === "batchId" && value) {
+    const batch = findBatch(value);
+    return batch ? `${batch.batchName}（${batch.batchCode}）` : value;
+  }
+  if (name === "sampleId" && value) {
+    const sample = findSample(value);
+    return sample ? `${sample.sampleCode} / ${sample.herbName}` : value;
+  }
+  if (name === "herbId" && value) {
+    const herb = findHerb(value);
+    return herb ? `${herb.name} / ${herb.district}` : (item.herbName || value);
+  }
+  return display(value);
+}
+
+function isLinkedReadonly(name) {
+  if (props.role !== "admin" && props.moduleKey === "herb-batches" && name === "responsiblePerson") return true;
+  if (props.role !== "admin" && props.moduleKey === "lab-samples" && name === "collector") return true;
+  if (form.sampleId && name === "sampleCode") return true;
+  return Boolean(form.batchId) && ["herbName", "district", "traceCode"].includes(name);
 }
 
 function isRestrictedAuditField(name) {
@@ -487,7 +581,8 @@ function applySelectedFile(fileId) {
 
 function ownerName(item) {
   return item.recorder || item.uploader || item.leader || item.teacher || item.owner
-    || item.trainer || item.evaluator || item.operator || item.operatorName || item.analyst || item.analystName || "";
+    || item.trainer || item.evaluator || item.responsiblePerson || item.collector
+    || item.operator || item.operatorName || item.analyst || item.analystName || "";
 }
 
 function ownerRole(item) {
@@ -737,6 +832,9 @@ function duplicate(item) {
   delete form.updatedAt;
   const nameField = props.config.fields[0]?.[0];
   if (nameField && form[nameField]) form[nameField] = `${form[nameField]}（副本）`;
+  const suffix = Date.now().toString().slice(-6);
+  if (props.moduleKey === "herb-batches") form.batchCode = `${item.batchCode}-COPY-${suffix}`;
+  if (props.moduleKey === "lab-samples") form.sampleCode = `${item.sampleCode}-COPY-${suffix}`;
   panelMode.value = "duplicate";
   panelOpen.value = true;
 }
@@ -748,22 +846,31 @@ function closePanel() {
 
 async function load() {
   try {
-    const [result, resourceResult, fileResult, courseResult] = await Promise.all([
+    const [result, resourceResult, fileResult, courseResult, herbResult, batchResult, sampleResult] = await Promise.all([
       api(`/api/${props.moduleKey}`),
       props.moduleKey === "courses" ? api("/api/teaching-resources") : Promise.resolve({ items: [] }),
       ["teaching-resources", "courses"].includes(props.moduleKey) ? api("/api/files") : Promise.resolve({ items: [] }),
-      props.moduleKey === "teaching-resources" ? api("/api/courses") : Promise.resolve({ items: [] })
+      props.moduleKey === "teaching-resources" ? api("/api/courses") : Promise.resolve({ items: [] }),
+      props.moduleKey === "herb-batches" ? api("/api/herbs") : Promise.resolve({ items: [] }),
+      batchLinkedModules.has(props.moduleKey) ? api("/api/herb-batches") : Promise.resolve({ items: [] }),
+      props.moduleKey === "spectrum-comparisons" ? api("/api/lab-samples") : Promise.resolve({ items: [] })
     ]);
     items.value = result.items || [];
     teachingResources.value = resourceResult.items || [];
     uploadedFiles.value = fileResult.items || [];
     courseOptions.value = props.moduleKey === "courses" ? items.value : (courseResult.items || []);
+    herbRecords.value = herbResult.items || [];
+    batchOptions.value = props.moduleKey === "herb-batches" ? items.value : (batchResult.items || []);
+    sampleOptions.value = sampleResult.items || [];
     selectedIds.value = selectedIds.value.filter(id => items.value.some(item => item.id === id));
     if (page.value > totalPages.value) page.value = totalPages.value;
     if (props.editId) {
       const row = items.value.find(item => item.id === props.editId);
       if (row) openEdit(row);
       emit("edit-consumed");
+    } else if (props.openCreateOnLoad && canCreate.value) {
+      openCreate();
+      emit("create-consumed");
     }
   } catch (error) {
     emit("notify", `数据加载失败：${error.message}`);
@@ -782,6 +889,18 @@ async function save() {
     }
     const payload = {};
     editableFields.value.forEach(([name]) => payload[name] = form[name] ?? "");
+    if (batchLinkedModules.has(props.moduleKey) && !payload.batchId) {
+      emit("notify", "请选择药材批次后再保存");
+      return;
+    }
+    if (props.moduleKey === "spectrum-comparisons" && !payload.sampleId) {
+      emit("notify", "请选择检测样本后再保存图谱比对");
+      return;
+    }
+    if (props.moduleKey === "herb-batches" && !payload.herbId) {
+      emit("notify", "请选择来源资源点后再创建批次");
+      return;
+    }
     if (props.moduleKey === "teaching-resources" && !payload.courseTitle) {
       emit("notify", "请选择要发布到的试验课程");
       return;
@@ -815,11 +934,15 @@ async function save() {
         payload.owner = source?.owner || props.currentUser.name;
       }
     }
-    if (editingId.value) payload.id = editingId.value;
+    if (editingId.value) {
+      payload.id = editingId.value;
+      if (source?.version !== undefined && source?.version !== null) payload.version = source.version;
+    }
     await api(`/api/${props.moduleKey}`, {
       method: editingId.value ? "PUT" : "POST",
       body: JSON.stringify(payload)
     });
+    emit("resource-saved", { moduleKey: props.moduleKey });
     emit("notify", editingId.value ? "修改已保存" : "新增记录已保存");
     panelOpen.value = false;
     await load();
@@ -977,7 +1100,7 @@ watch(() => props.editId, id => {
           </div>
           <select :value="selectedGrowthGroup?.key || ''" @change="selectGrowthGroup($event.target.value)">
             <option v-for="group in growthSeriesGroups" :key="group.key" :value="group.key">
-              {{ group.district }} / {{ group.herbName }}（{{ group.rows.length }} 次）
+              {{ group.batchName }}（{{ group.rows.length }} 次）
             </option>
           </select>
         </div>
@@ -1077,7 +1200,7 @@ watch(() => props.editId, id => {
           </div>
           <select :value="selectedTraceGroup?.key || ''" @change="selectedTraceKey = $event.target.value">
             <option v-for="group in traceGroups" :key="group.key" :value="group.key">
-              {{ group.traceCode }} / {{ group.herbName }}（{{ group.rows.length }} 环节）
+              {{ group.batchName }} / {{ group.traceCode }}（{{ group.rows.length }} 环节）
             </option>
           </select>
         </div>
@@ -1277,8 +1400,8 @@ watch(() => props.editId, id => {
           <tr v-for="item in pagedItems" :key="item.id" :class="{ selected: selectedIds.includes(item.id) }">
             <td v-if="canBatchDelete" class="checkbox-cell"><input v-model="selectedIds" type="checkbox" :value="item.id" :aria-label="`选择${item.id}`"></td>
             <td v-for="[name] in config.fields" :key="name">
-              <span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ display(item[name]) }}</span>
-              <template v-else>{{ display(item[name]) }}</template>
+              <span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(item, name) }}</span>
+              <template v-else>{{ relationDisplay(item, name) }}</template>
             </td>
             <td v-if="hasRowActions" class="sticky-action">
               <div class="row-actions">
@@ -1368,7 +1491,7 @@ watch(() => props.editId, id => {
           <dl class="detail-grid">
             <div v-for="[name, label] in config.fields" :key="name">
               <dt>{{ label }}</dt>
-              <dd><span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ display(form[name]) }}</span><template v-else>{{ display(form[name]) }}</template></dd>
+              <dd><span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(form, name) }}</span><template v-else>{{ relationDisplay(form, name) }}</template></dd>
             </div>
           </dl>
         </div>
@@ -1386,9 +1509,23 @@ watch(() => props.editId, id => {
             <label v-for="[name, label] in editableFields" :key="name" :class="{ 'field-wide': textareaFields.includes(name) }">
               <span class="field-label">{{ label }}</span>
               <textarea v-if="textareaFields.includes(name)" v-model="form[name]"></textarea>
+              <select v-else-if="name === 'herbId'" v-model="form[name]" @change="applySelectedHerb(form[name])">
+                <option value="">请选择来源资源点</option>
+                <option v-for="herb in herbRecords" :key="herb.id" :value="herb.id">{{ herb.name }} / {{ herb.district }}</option>
+              </select>
+              <select v-else-if="name === 'batchId'" v-model="form[name]" :disabled="moduleKey === 'spectrum-comparisons' && Boolean(form.sampleId)" @change="applySelectedBatch(form[name])">
+                <option value="">请选择药材批次</option>
+                <option v-for="batch in batchOptions" :key="batch.id" :value="batch.id">{{ batch.batchName }} / {{ batch.batchCode }}</option>
+              </select>
+              <select v-else-if="name === 'sampleId'" v-model="form[name]" @change="applySelectedSample(form[name])">
+                <option value="">请选择检测样本</option>
+                <option v-for="sample in sampleOptions" :key="sample.id" :value="sample.id">{{ sample.sampleCode }} / {{ sample.herbName }} / {{ sample.batchName }}</option>
+              </select>
+              <select v-else-if="name === 'status' && moduleKey === 'herb-batches'" v-model="form[name]"><option value="active">使用中</option><option value="archived">已归档</option></select>
+              <select v-else-if="name === 'status' && moduleKey === 'lab-samples'" v-model="form[name]"><option value="collected">已采样</option><option value="tested">已检测</option><option value="consumed">已耗用</option><option value="archived">已归档</option></select>
               <select v-else-if="name === 'status'" v-model="form[name]"><option v-for="status in statuses" :key="status">{{ status }}</option></select>
               <select v-else-if="name === 'role'" v-model="form[name]"><option v-for="(info, code) in roleOptions" :key="code" :value="code">{{ info.label }}</option></select>
-              <select v-else-if="name === 'collector'" v-model="form[name]"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select>
+              <select v-else-if="name === 'collectSource'" v-model="form[name]"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select>
               <select v-else-if="name === 'courseTitle' && moduleKey === 'teaching-resources'" v-model="form[name]">
                 <option value="">请选择试验课程</option>
                 <option v-for="course in courseOptions" :key="course.id" :value="course.title">{{ course.title }} / {{ course.teacher }}</option>
@@ -1397,10 +1534,10 @@ watch(() => props.editId, id => {
                 <option value="">请选择资料文件</option>
                 <option v-for="file in uploadedFiles" :key="file.id" :value="file.id">{{ file.fileName }} / {{ file.category }}</option>
               </select>
-              <input v-else v-model="form[name]">
+              <input v-else v-model="form[name]" :readonly="isLinkedReadonly(name)" :class="{ 'linked-readonly': isLinkedReadonly(name) }">
             </label>
             <MapPicker
-              v-if="moduleKey === 'herbs'"
+              v-if="['herbs', 'herb-batches'].includes(moduleKey)"
               v-model:latitude="form.latitude"
               v-model:longitude="form.longitude"
             />

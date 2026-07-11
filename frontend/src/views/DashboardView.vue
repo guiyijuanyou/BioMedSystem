@@ -4,13 +4,14 @@ import { useRouter } from "vue-router";
 import L from "leaflet";
 import "leaflet.markercluster";
 import {
-  Activity, Award, BookOpen, ClipboardCheck, FlaskConical, Leaf,
-  GitBranch, RotateCcw, Search, X, ZoomIn, ZoomOut
+  Activity, Award, BookOpen, Boxes, ClipboardCheck, FlaskConical, Leaf,
+  GitBranch, Plus, RotateCcw, Search, X, ZoomIn, ZoomOut
 } from "lucide-vue-next";
 
 const router = useRouter();
 const summary = inject("summary");
 const herbs = inject("herbs");
+const batches = inject("batches");
 const currentRole = inject("currentRole");
 const currentUser = inject("currentUser");
 const canEditMap = inject("canEditMap");
@@ -54,7 +55,9 @@ const tileSources = [
 ];
 
 const metrics = computed(() => [
-  { label: "药材品种", value: summary.value.herbCount || 0, icon: Leaf, tone: "green" },
+  { label: "资源点数量", value: summary.value.herbCount || 0, icon: Leaf, tone: "green" },
+  { label: "药材批次", value: summary.value.herbBatchCount || 0, icon: Boxes, tone: "blue" },
+  { label: "检测样本", value: summary.value.labSampleCount || 0, icon: FlaskConical, tone: "violet" },
   { label: "采集记录", value: summary.value.growthRecordCount || 0, icon: Activity, tone: "blue" },
   { label: "溯源事件", value: summary.value.traceEventCount || 0, icon: GitBranch, tone: "green" },
   { label: "教学资源", value: summary.value.teachingResourceCount || 0, icon: BookOpen, tone: "amber" },
@@ -83,11 +86,12 @@ const located = computed(() => filtered.value.filter(item => {
 
 const growth = reactive({
   herbName: "",
+  batchId: "",
   district: "",
   temperature: "20.0",
   humidity: "80",
   soilPh: "6.5",
-  collector: "电脑终端录入",
+  collectSource: "电脑终端录入",
   recordedAt: new Date().toISOString().slice(0, 19)
 });
 
@@ -176,10 +180,18 @@ function resetMap() {
 }
 
 async function submitGrowth() {
+  if (!growth.batchId) {
+    notify("请选择药材批次后再提交采集数据");
+    return;
+  }
   await submitGrowthHandler({ ...growth });
-  growth.herbName = "";
-  growth.district = "";
   growth.recordedAt = new Date().toISOString().slice(0, 19);
+}
+
+function applyGrowthBatch() {
+  const batch = batches.value.find(item => item.id === growth.batchId);
+  growth.herbName = batch?.herbName || "";
+  growth.district = batch?.district || "";
 }
 
 onMounted(async () => {
@@ -214,10 +226,11 @@ onBeforeUnmount(() => map?.remove());
       <section class="panel map-panel">
         <div class="panel-head">
           <div>
-            <h2>重庆中药材分布网络地图</h2>
-            <span>真实地图定位、聚合展示和条件查询</span>
+            <h2>种植基地与资源点地图</h2>
+            <span>维护资源点位置，并作为药材批次的数据来源</span>
           </div>
           <div class="map-tools">
+            <button v-if="canEditMap" class="map-add-point" type="button" @click="router.push({ path: '/module/herbs', query: { create: '1' } })"><Plus :size="16" />新增资源点</button>
             <button type="button" title="缩小地图" @click="map?.zoomOut()"><ZoomOut :size="17" /></button>
             <button type="button" title="复位地图" @click="resetMap"><RotateCcw :size="17" /></button>
             <button type="button" title="放大地图" @click="map?.zoomIn()"><ZoomIn :size="17" /></button>
@@ -246,7 +259,7 @@ onBeforeUnmount(() => map?.remove());
             <div v-if="!located.length" class="map-empty">没有符合条件且包含经纬度的记录</div>
           </div>
           <aside class="map-detail">
-            <div v-if="!selected" class="map-detail-empty"><strong>记录详情</strong><p>点击地图标记查看药材分布信息</p></div>
+            <div v-if="!selected" class="map-detail-empty"><strong>资源点详情</strong><p>点击地图标记查看种植基地信息</p></div>
             <template v-else>
               <div class="map-detail-head"><strong>{{ selected.name || "未命名药材" }}</strong><span>{{ selected.district || "未知地区" }}</span></div>
               <dl class="map-detail-list">
@@ -257,7 +270,7 @@ onBeforeUnmount(() => map?.remove());
                 <div><dt>溯源码</dt><dd>{{ selected.traceCode || "-" }}</dd></div>
                 <div><dt>记录时间</dt><dd>{{ selected.createdAt || selected.recordedAt || "-" }}</dd></div>
               </dl>
-              <button v-if="canEditMap" type="button" @click="router.push({ path: '/module/herbs', query: { editId: selected.id } })">查看并编辑记录</button>
+              <button v-if="canEditMap" type="button" @click="router.push({ path: '/module/herbs', query: { editId: selected.id } })">查看并编辑资源点</button>
             </template>
           </aside>
         </div>
@@ -269,12 +282,13 @@ onBeforeUnmount(() => map?.remove());
           <button class="button-secondary" type="button" @click="captureOpen = !captureOpen">{{ captureOpen ? "收起录入" : "展开录入" }}</button>
         </div>
         <form v-if="captureOpen" class="form-grid quick-growth-form" @submit.prevent="submitGrowth">
-          <label>药材名称<input v-model="growth.herbName"></label>
-          <label>采集地点<input v-model="growth.district"></label>
+          <label>药材批次<select v-model="growth.batchId" @change="applyGrowthBatch"><option value="">请选择批次</option><option v-for="batch in batches" :key="batch.id" :value="batch.id">{{ batch.batchName }} / {{ batch.batchCode }}</option></select></label>
+          <label>药材名称<input v-model="growth.herbName" readonly></label>
+          <label>采集地点<input v-model="growth.district" readonly></label>
           <label>温度<input v-model="growth.temperature"></label>
           <label>湿度<input v-model="growth.humidity"></label>
           <label>土壤 PH<input v-model="growth.soilPh"></label>
-          <label>采集来源<select v-model="growth.collector"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select></label>
+          <label>采集来源<select v-model="growth.collectSource"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select></label>
           <label>采集时间<input v-model="growth.recordedAt"></label>
           <button type="submit">提交采集数据</button>
         </form>

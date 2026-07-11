@@ -1,7 +1,7 @@
 export const modules = {
   herbs: {
-    title: "中药材分布数据",
-    hint: "品种分布、生态环境、溯源码",
+    title: "种植基地与资源点",
+    hint: "维护地图资源点、种植基地位置、生态环境和基础溯源码",
     fields: [
       ["name", "品种名称"],
       ["district", "分布区县"],
@@ -12,17 +12,53 @@ export const modules = {
       ["traceCode", "溯源码"]
     ]
   },
+  "herb-batches": {
+    title: "药材批次管理",
+    hint: "建立种植、采收或采购批次，作为生长、溯源、检测、分析和评价的数据主线",
+    fields: [
+      ["batchName", "批次名称"],
+      ["batchCode", "批次编号"],
+      ["herbId", "来源资源点"],
+      ["traceCode", "溯源码"],
+      ["plotName", "地块或基地"],
+      ["district", "所属区县"],
+      ["longitude", "经度"],
+      ["latitude", "纬度"],
+      ["scale", "种植规模"],
+      ["environment", "生态环境"],
+      ["plantingDate", "种植日期"],
+      ["expectedHarvestDate", "预计采收日期"],
+      ["responsiblePerson", "负责人"],
+      ["currentStage", "当前阶段"],
+      ["status", "档案状态"]
+    ]
+  },
+  "lab-samples": {
+    title: "检测样本管理",
+    hint: "管理从药材批次抽取的检测样本，为图谱比对提供稳定样本身份",
+    fields: [
+      ["sampleCode", "样本编号"],
+      ["batchId", "来源批次"],
+      ["sampleType", "样本类型"],
+      ["collectedAt", "采样时间"],
+      ["collector", "采样人"],
+      ["sampleLocation", "采样位置"],
+      ["storageCondition", "保存条件"],
+      ["status", "样本状态"]
+    ]
+  },
   "growth-records": {
     title: "生长数据采集",
     hint: "APP、传感器和电脑终端采集记录",
     fields: [
+      ["batchId", "药材批次"],
       ["herbName", "药材名称"],
       ["district", "采集地点"],
       ["temperature", "温度"],
       ["humidity", "湿度"],
       ["soilPh", "土壤 PH"],
       ["growthStage", "生长阶段"],
-      ["collector", "采集来源"],
+      ["collectSource", "采集来源"],
       ["recorder", "采集人"],
       ["recorderRole", "采集角色"],
       ["recordedAt", "采集时间"]
@@ -32,11 +68,12 @@ export const modules = {
     title: "溯源管理",
     hint: "按溯源码记录药材种植、采集、检测、加工、入库等流转事件",
     fields: [
+      ["batchId", "药材批次"],
       ["herbName", "药材名称"],
       ["traceCode", "溯源码"],
       ["eventType", "事件类型"],
       ["eventContent", "事件内容"],
-      ["operator", "操作人"],
+      ["operatorName", "操作人"],
       ["eventTime", "事件时间"],
       ["location", "发生地点"]
     ]
@@ -60,6 +97,8 @@ export const modules = {
     title: "图谱比对",
     hint: "中药材图谱上传、参考图谱比对和相似度判定",
     fields: [
+      ["sampleId", "检测样本"],
+      ["batchId", "来源批次"],
       ["herbName", "药材名称"],
       ["sampleCode", "样本编号"],
       ["district", "采集区县"],
@@ -78,6 +117,7 @@ export const modules = {
     hint: "按批次、区县和生态指标对生长数据进行对比分析",
     fields: [
       ["analysisName", "分析名称"],
+      ["batchId", "药材批次"],
       ["herbName", "药材名称"],
       ["district", "对比区县"],
       ["indicator", "分析指标"],
@@ -132,6 +172,7 @@ export const modules = {
     title: "评价体系",
     hint: "评价过程、结果跟踪、申报素材",
     fields: [
+      ["batchId", "药材批次"],
       ["herbName", "药材名称"],
       ["indicator", "评价指标"],
       ["score", "评分"],
@@ -179,6 +220,8 @@ export const modules = {
 
 export const navItems = [
   ["dashboard", "总览"],
+  ["herb-batches", "药材批次"],
+  ["lab-samples", "检测样本"],
   ["growth-records", "生长采集"],
   ["trace-events", "溯源管理"],
   ["spectrum-comparisons", "图谱比对"],
@@ -204,6 +247,9 @@ export const roles = {
 export const roleMenus = {
   admin: [
     ["dashboard", "工作台"],
+    ["herbs", "种植资源点"],
+    ["herb-batches", "药材批次"],
+    ["lab-samples", "检测样本"],
     ["teaching-resources", "资源审核"],
     ["users", "用户管理"],
     ["growth-records", "生长数据"],
@@ -220,6 +266,9 @@ export const roleMenus = {
   ],
   teacher: [
     ["dashboard", "教学工作台"],
+    ["herbs", "种植资源点"],
+    ["herb-batches", "药材批次"],
+    ["lab-samples", "检测样本"],
     ["growth-records", "生长采集"],
     ["trace-events", "溯源管理"],
     ["spectrum-comparisons", "图谱比对"],
@@ -234,6 +283,9 @@ export const roleMenus = {
   ],
   researcher: [
     ["dashboard", "科研工作台"],
+    ["herbs", "种植资源点"],
+    ["herb-batches", "药材批次"],
+    ["lab-samples", "检测样本"],
     ["growth-records", "生长数据"],
     ["trace-events", "溯源管理"],
     ["spectrum-comparisons", "图谱比对"],
@@ -246,6 +298,8 @@ export const roleMenus = {
   ],
   student: [
     ["dashboard", "学习首页"],
+    ["herbs", "资源点查询"],
+    ["herb-batches", "药材批次"],
     ["courses", "课程学习"],
     ["teaching-resources", "教学视频"],
     ["growth-records", "生长采集"],

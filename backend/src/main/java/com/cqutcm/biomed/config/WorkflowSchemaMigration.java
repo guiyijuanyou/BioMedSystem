@@ -20,7 +20,8 @@ public class WorkflowSchemaMigration implements org.springframework.boot.Command
     @Override
     public void run(String... args) {
         ResourceDatabasePopulator migration = new ResourceDatabasePopulator(
-                new ClassPathResource("db/migration/V2__workflow_review_and_version.sql"));
+                new ClassPathResource("db/migration/V2__workflow_review_and_version.sql"),
+                new ClassPathResource("db/migration/V3__herb_batch_and_lab_sample.sql"));
         migration.setContinueOnError(false);
         migration.execute(dataSource);
     }

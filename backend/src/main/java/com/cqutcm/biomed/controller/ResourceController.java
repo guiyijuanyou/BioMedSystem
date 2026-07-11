@@ -13,6 +13,7 @@ import java.util.Map;
 @RequestMapping("/api")
 public class ResourceController {
     private final AuthService authService;
+    private final BatchCatalogService batchCatalogService;
     private final BackupService backupService;
     private final CourseRecordService courseService;
     private final GrowthRecordService growthService;
@@ -22,12 +23,14 @@ public class ResourceController {
     private final StructuredRecordService structuredService;
     private final TraceEventService traceService;
 
-    public ResourceController(AuthService authService, BackupService backupService,
+    public ResourceController(AuthService authService, BatchCatalogService batchCatalogService,
+                              BackupService backupService,
                               CourseRecordService courseService, GrowthRecordService growthService,
                               PermissionService permissionService, ProjectRecordService projectService,
                               ResearchDataService researchService, StructuredRecordService structuredService,
                               TraceEventService traceService) {
         this.authService = authService;
+        this.batchCatalogService = batchCatalogService;
         this.backupService = backupService;
         this.courseService = courseService;
         this.growthService = growthService;
@@ -50,6 +53,8 @@ public class ResourceController {
         s.put("growthAnalysisCount", researchService.analysisCount());
         s.put("projectCount", projectService.count());
         s.put("herbCount", structuredService.count("herbs"));
+        s.put("herbBatchCount", batchCatalogService.listBatches().size());
+        s.put("labSampleCount", batchCatalogService.listSamples().size());
         s.put("evaluationCount", structuredService.count("evaluations"));
         s.put("achievementCount", structuredService.count("achievements"));
         s.put("latestBackup", LocalDateTime.now().toString());
@@ -69,6 +74,8 @@ public class ResourceController {
         PermissionService.Actor a = authService.requireActor(authorization);
         permissionService.assertCanRead(resourceType, a);
         return switch (resourceType) {
+            case "herb-batches" -> Map.of("items", batchCatalogService.listBatches());
+            case "lab-samples" -> Map.of("items", batchCatalogService.listSamples());
             case "projects" -> Map.of("items", projectService.list(a));
             case "growth-records" -> Map.of("items", growthService.list());
             case "trace-events" -> Map.of("items", traceService.list());
@@ -85,6 +92,38 @@ public class ResourceController {
     }
 
     // ==================== CREATE ====================
+
+    @GetMapping("/herb-batches/{id}")
+    public Map<String, Object> getBatch(@PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanRead("herb-batches", a);
+        return batchCatalogService.getBatch(id);
+    }
+
+    @GetMapping("/lab-samples/{id}")
+    public Map<String, Object> getSample(@PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanRead("lab-samples", a);
+        return batchCatalogService.getSample(id);
+    }
+
+    @PostMapping("/herb-batches")
+    public Map<String, Object> createBatch(@Valid @RequestBody BatchCatalogDTOs.BatchCreate dto,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanCreate("herb-batches", a);
+        return batchCatalogService.createBatch(dto, a);
+    }
+
+    @PostMapping("/lab-samples")
+    public Map<String, Object> createSample(@Valid @RequestBody BatchCatalogDTOs.SampleCreate dto,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanCreate("lab-samples", a);
+        return batchCatalogService.createSample(dto, a);
+    }
 
     @PostMapping("/courses")
     public Map<String, Object> createCourse(@Valid @RequestBody CourseDTOs.Create dto,
@@ -156,6 +195,22 @@ public class ResourceController {
     }
 
     // ==================== UPDATE ====================
+
+    @PutMapping("/herb-batches")
+    public Map<String, Object> updateBatch(@Valid @RequestBody BatchCatalogDTOs.BatchUpdate dto,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanUpdate("herb-batches", a);
+        return batchCatalogService.updateBatch(dto, a);
+    }
+
+    @PutMapping("/lab-samples")
+    public Map<String, Object> updateSample(@Valid @RequestBody BatchCatalogDTOs.SampleUpdate dto,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanUpdate("lab-samples", a);
+        return batchCatalogService.updateSample(dto, a);
+    }
 
     @PutMapping("/courses")
     public Map<String, Object> updateCourse(@Valid @RequestBody CourseDTOs.Update dto,
@@ -238,6 +293,8 @@ public class ResourceController {
         PermissionService.Actor a = authService.requireActor(authorization);
         permissionService.assertCanDelete(resourceType, a);
         return switch (resourceType) {
+            case "herb-batches" -> { batchCatalogService.deleteBatch(id, a); yield Map.of("message", "deleted", "id", id); }
+            case "lab-samples" -> { batchCatalogService.deleteSample(id, a); yield Map.of("message", "deleted", "id", id); }
             case "projects" -> { projectService.delete(id, a); yield Map.of("message", "deleted", "id", id); }
             case "growth-records" -> { growthService.delete(id, a.name(), a.role()); yield Map.of("message", "deleted", "id", id); }
             case "trace-events" -> { traceService.delete(id, a); yield Map.of("message", "deleted", "id", id); }

@@ -11,7 +11,7 @@ import java.util.Map;
 @Mapper
 public interface SpectrumComparisonMapper extends BiomedBaseMapper<SpectrumComparison> {
 
-    @Select("SELECT id, herb_name AS herbName, sample_code AS sampleCode, district, " +
+    @Select("SELECT id, batch_id AS batchId, sample_id AS sampleId, herb_name AS herbName, sample_code AS sampleCode, district, " +
             "spectrum_type AS spectrumType, reference_name AS referenceName, similarity, result, " +
             "operator_name AS operatorName, compared_at AS comparedAt, remark, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
@@ -19,7 +19,7 @@ public interface SpectrumComparisonMapper extends BiomedBaseMapper<SpectrumCompa
             "FROM spectrum_comparison ORDER BY compared_at DESC")
     List<Map<String, Object>> findAllAsMap();
 
-    @Select("SELECT id, herb_name AS herbName, sample_code AS sampleCode, district, " +
+    @Select("SELECT id, batch_id AS batchId, sample_id AS sampleId, herb_name AS herbName, sample_code AS sampleCode, district, " +
             "spectrum_type AS spectrumType, reference_name AS referenceName, similarity, result, " +
             "operator_name AS operatorName, compared_at AS comparedAt, remark, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
@@ -27,13 +27,13 @@ public interface SpectrumComparisonMapper extends BiomedBaseMapper<SpectrumCompa
             "FROM spectrum_comparison WHERE id = #{id}")
     Map<String, Object> findByIdAsMap(String id);
 
-    @Insert("INSERT INTO spectrum_comparison (id, herb_name, sample_code, district, spectrum_type, reference_name, " +
+    @Insert("INSERT INTO spectrum_comparison (id, batch_id, sample_id, herb_name, sample_code, district, spectrum_type, reference_name, " +
             "similarity, result, operator_name, compared_at, remark, status, created_at) " +
-            "VALUES (#{id}, #{herbName}, #{sampleCode}, #{district}, #{spectrumType}, #{referenceName}, " +
+            "VALUES (#{id}, #{batchId}, #{sampleId}, #{herbName}, #{sampleCode}, #{district}, #{spectrumType}, #{referenceName}, " +
             "#{similarity}, #{result}, #{operatorName}, #{comparedAt}, #{remark}, #{status}, #{createdAt})")
     int insertMap(Map<String, Object> record);
 
-    @Update("UPDATE spectrum_comparison SET herb_name = #{herbName}, sample_code = #{sampleCode}, district = #{district}, " +
+    @Update("UPDATE spectrum_comparison SET batch_id = #{batchId}, sample_id = #{sampleId}, herb_name = #{herbName}, sample_code = #{sampleCode}, district = #{district}, " +
             "spectrum_type = #{spectrumType}, reference_name = #{referenceName}, similarity = #{similarity}, " +
             "result = #{result}, operator_name = #{operatorName}, compared_at = #{comparedAt}, remark = #{remark}, " +
             "status = #{status}, reviewer_name = #{reviewerName}, review_comment = #{reviewComment}, " +

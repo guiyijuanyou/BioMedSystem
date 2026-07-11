@@ -11,7 +11,7 @@ import java.util.Map;
 @Mapper
 public interface GrowthAnalysisMapper extends BiomedBaseMapper<GrowthAnalysis> {
 
-    @Select("SELECT id, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
+    @Select("SELECT id, batch_id AS batchId, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
             "baseline, current_value AS currentValue, difference_desc AS differenceDesc, trend, conclusion, " +
             "analyst_name AS analystName, analyzed_at AS analyzedAt, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
@@ -19,7 +19,7 @@ public interface GrowthAnalysisMapper extends BiomedBaseMapper<GrowthAnalysis> {
             "FROM growth_analysis ORDER BY analyzed_at DESC")
     List<Map<String, Object>> findAllAsMap();
 
-    @Select("SELECT id, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
+    @Select("SELECT id, batch_id AS batchId, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
             "baseline, current_value AS currentValue, difference_desc AS differenceDesc, trend, conclusion, " +
             "analyst_name AS analystName, analyzed_at AS analyzedAt, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
@@ -27,13 +27,13 @@ public interface GrowthAnalysisMapper extends BiomedBaseMapper<GrowthAnalysis> {
             "FROM growth_analysis WHERE id = #{id}")
     Map<String, Object> findByIdAsMap(String id);
 
-    @Insert("INSERT INTO growth_analysis (id, analysis_name, herb_name, district, indicator, baseline, current_value, " +
+    @Insert("INSERT INTO growth_analysis (id, batch_id, analysis_name, herb_name, district, indicator, baseline, current_value, " +
             "difference_desc, trend, conclusion, analyst_name, analyzed_at, status, created_at) " +
-            "VALUES (#{id}, #{analysisName}, #{herbName}, #{district}, #{indicator}, #{baseline}, #{currentValue}, " +
+            "VALUES (#{id}, #{batchId}, #{analysisName}, #{herbName}, #{district}, #{indicator}, #{baseline}, #{currentValue}, " +
             "#{differenceDesc}, #{trend}, #{conclusion}, #{analystName}, #{analyzedAt}, #{status}, #{createdAt})")
     int insertMap(Map<String, Object> record);
 
-    @Update("UPDATE growth_analysis SET analysis_name = #{analysisName}, herb_name = #{herbName}, district = #{district}, " +
+    @Update("UPDATE growth_analysis SET batch_id = #{batchId}, analysis_name = #{analysisName}, herb_name = #{herbName}, district = #{district}, " +
             "indicator = #{indicator}, baseline = #{baseline}, current_value = #{currentValue}, difference_desc = #{differenceDesc}, " +
             "trend = #{trend}, conclusion = #{conclusion}, analyst_name = #{analystName}, analyzed_at = #{analyzedAt}, " +
             "status = #{status}, reviewer_name = #{reviewerName}, review_comment = #{reviewComment}, " +

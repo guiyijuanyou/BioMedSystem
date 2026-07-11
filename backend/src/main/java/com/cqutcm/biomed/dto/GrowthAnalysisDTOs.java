@@ -1,9 +1,11 @@
 package com.cqutcm.biomed.dto;
 
 import jakarta.validation.constraints.*;
+import java.time.LocalDateTime;
 
 public class GrowthAnalysisDTOs {
     public static class Create {
+        public String batchId;
         @NotBlank @Size(max = 200) public String analysisName;
         @Size(max = 100) public String herbName;
         @Size(max = 100) public String district;
@@ -13,9 +15,12 @@ public class GrowthAnalysisDTOs {
         @Size(max = 200) public String differenceDesc;
         @Size(max = 100) public String trend;
         @Size(max = 1000) public String conclusion;
+        @Size(max = 100) public String analyst;
+        public LocalDateTime analyzedAt;
     }
     public static class Update {
         @NotBlank public String id;
+        public String batchId;
         @NotBlank @Size(max = 200) public String analysisName;
         @Size(max = 100) public String herbName;
         @Size(max = 100) public String district;
@@ -25,6 +30,8 @@ public class GrowthAnalysisDTOs {
         @Size(max = 200) public String differenceDesc;
         @Size(max = 100) public String trend;
         @Size(max = 1000) public String conclusion;
+        @Size(max = 100) public String analyst;
+        public LocalDateTime analyzedAt;
         @NotNull public Integer version;
     }
     public static class Review {
