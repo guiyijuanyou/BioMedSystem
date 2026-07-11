@@ -2,6 +2,7 @@ package com.cqutcm.biomed.service;
 
 import com.cqutcm.biomed.entity.SysUser;
 import com.cqutcm.biomed.mapper.SysUserMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,11 +27,14 @@ class AuthServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userMapper, passwordEncoder);
+        // redis 传 null → AuthService 自动降级到本地内存
+        authService = new AuthService(userMapper, passwordEncoder, null, objectMapper);
     }
 
     @Test

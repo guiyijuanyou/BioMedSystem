@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
@@ -33,10 +35,24 @@ public class ApiExceptionHandler {
         return errorBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), "AUTH_REQUIRED");
     }
 
+    /** 401 - Spring Security 认证异常 */
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, Object> handleSpringAuth(AuthenticationException ex) {
+        return errorBody(HttpStatus.UNAUTHORIZED, ex.getMessage(), "AUTH_REQUIRED");
+    }
+
     /** 403 Forbidden - 越权操作 */
     @ExceptionHandler(AuthorizationDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Map<String, Object> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        return errorBody(HttpStatus.FORBIDDEN, ex.getMessage(), "ACCESS_DENIED");
+    }
+
+    /** 403 - Spring Security 访问拒绝 */
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, Object> handleSpringAccessDenied(AccessDeniedException ex) {
         return errorBody(HttpStatus.FORBIDDEN, ex.getMessage(), "ACCESS_DENIED");
     }
 
