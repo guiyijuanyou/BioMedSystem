@@ -1,6 +1,17 @@
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIconSrc from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+// 修复 Vite 打包后 Leaflet 默认图标路径丢失的问题
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIconSrc,
+  shadowUrl: markerShadow
+});
 
 const props = defineProps({
   latitude: [String, Number],
@@ -11,11 +22,18 @@ const emit = defineEmits(["update:latitude", "update:longitude"]);
 let map;
 let marker;
 
-const center = [29.563, 106.5516];
+const locating = ref(false);
+const locateStatus = ref("");
+
+const center = [29.563, 106.5516]; // 重庆市默认坐标
 
 function validPoint() {
-  const lat = Number(props.latitude);
-  const lng = Number(props.longitude);
+  const latRaw = props.latitude;
+  const lngRaw = props.longitude;
+  if (latRaw === "" || latRaw === null || latRaw === undefined) return false;
+  if (lngRaw === "" || lngRaw === null || lngRaw === undefined) return false;
+  const lat = Number(latRaw);
+  const lng = Number(lngRaw);
   return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
 
@@ -32,6 +50,40 @@ function setPoint(lat, lng, pan = false) {
   emit("update:latitude", Number(lat).toFixed(6));
   emit("update:longitude", Number(lng).toFixed(6));
   if (pan) map.panTo([lat, lng]);
+}
+
+function locateMe() {
+  if (!("geolocation" in navigator)) {
+    locateStatus.value = "浏览器不支持定位功能";
+    return;
+  }
+  locating.value = true;
+  locateStatus.value = "";
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      const { latitude: lat, longitude: lng } = position.coords;
+      setPoint(lat, lng);
+      map.setView([lat, lng], 14);
+      locating.value = false;
+    },
+    error => {
+      locating.value = false;
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          locateStatus.value = "定位权限被拒绝，请在浏览器设置中允许";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          locateStatus.value = "无法获取位置信息";
+          break;
+        case error.TIMEOUT:
+          locateStatus.value = "定位超时，请检查网络或 GPS 信号";
+          break;
+        default:
+          locateStatus.value = "定位失败，请手动点击地图选点";
+      }
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
 }
 
 onMounted(async () => {
@@ -73,8 +125,14 @@ onBeforeUnmount(() => map?.remove());
         <strong>地图选点</strong>
         <small>点击或拖动标记设置真实位置</small>
       </div>
-      <output>{{ validPoint() ? `${longitude}, ${latitude}` : "尚未选择位置" }}</output>
+      <div class="location-picker-actions">
+        <output>{{ validPoint() ? `${longitude}, ${latitude}` : "尚未选择位置" }}</output>
+        <button class="locate-button" type="button" :disabled="locating" @click="locateMe" title="获取当前定位">
+          {{ locating ? "定位中..." : "📍 定位" }}
+        </button>
+      </div>
     </div>
     <div id="record-location-picker" class="location-picker-map"></div>
+    <p v-if="locateStatus" class="locate-message">{{ locateStatus }}</p>
   </section>
 </template>

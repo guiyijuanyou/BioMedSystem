@@ -69,13 +69,25 @@ const metrics = computed(() => [
   { label: "业绩记录", value: summary.value.achievementCount || 0, icon: Award, tone: "red" }
 ]);
 
-const herbOptions = computed(() => [...new Set(herbs.value.map(item => item.name).filter(Boolean))].sort());
-const districtOptions = computed(() => [...new Set(herbs.value.map(item => item.district).filter(Boolean))].sort());
-const filtered = computed(() => herbs.value.filter(item => {
-  const text = `${item.name || ""} ${item.district || ""}`.toLowerCase();
+const mapDataSource = ref("herbs");
+
+const mapData = computed(() => mapDataSource.value === "batches" ? batches.value : herbs.value);
+
+const herbOptions = computed(() => [
+  ...new Set(mapData.value.map(item => item.herbName || item.name).filter(Boolean))
+].sort());
+
+const districtOptions = computed(() => [
+  ...new Set(mapData.value.map(item => item.district).filter(Boolean))
+].sort());
+
+const filtered = computed(() => mapData.value.filter(item => {
+  const name = item.herbName || item.name || "";
+  const district = item.district || "";
+  const text = `${name} ${district}`.toLowerCase();
   return (!search.value || text.includes(search.value.trim().toLowerCase()))
-    && (!herbFilter.value || item.name === herbFilter.value)
-    && (!districtFilter.value || item.district === districtFilter.value);
+    && (!herbFilter.value || name === herbFilter.value)
+    && (!districtFilter.value || district === districtFilter.value);
 }));
 
 const located = computed(() => filtered.value.filter(item => {
@@ -142,17 +154,27 @@ function changeSource(event) {
   useTileSource(Number(event.target.value));
 }
 
+function markerTitle(item) {
+  const name = item.herbName || item.name || "未命名药材";
+  const district = item.district || "未知地区";
+  if (mapDataSource.value === "batches" && item.batchCode) {
+    return `${item.batchName || name} · ${district}`;
+  }
+  return `${name} · ${district}`;
+}
+
 function renderMarkers() {
   if (!map || !cluster) return;
   cluster.clearLayers();
   selected.value = null;
   selectedMarker = null;
   located.value.forEach(item => {
+    const title = markerTitle(item);
     const marker = L.marker([Number(item.latitude), Number(item.longitude)], {
       icon: markerIcon(),
-      title: `${item.name || "未命名药材"} · ${item.district || "未知地区"}`
+      title
     });
-    marker.bindTooltip(`${item.name || "未命名药材"} · ${item.district || "未知地区"}`, { direction: "top", offset: [0, -12] });
+    marker.bindTooltip(title, { direction: "top", offset: [0, -12] });
     marker.on("click", () => {
       if (selectedMarker) selectedMarker.setIcon(markerIcon());
       selected.value = item;
@@ -227,10 +249,15 @@ onBeforeUnmount(() => map?.remove());
         <div class="panel-head">
           <div>
             <h2>种植基地与资源点地图</h2>
-            <span>维护资源点位置，并作为药材批次的数据来源</span>
+            <span>{{ mapDataSource === "batches" ? "展示药材批次坐标位置，可切换查看资源点" : "维护资源点位置，并作为药材批次的数据来源" }}</span>
           </div>
           <div class="map-tools">
-            <button v-if="canEditMap" class="map-add-point" type="button" @click="router.push({ path: '/module/herbs', query: { create: '1' } })"><Plus :size="16" />新增资源点</button>
+            <div class="map-source-toggle">
+              <button type="button" :class="{ active: mapDataSource === 'herbs' }" @click="mapDataSource = 'herbs'">资源点</button>
+              <button type="button" :class="{ active: mapDataSource === 'batches' }" @click="mapDataSource = 'batches'">药材批次</button>
+            </div>
+            <button v-if="canEditMap && mapDataSource === 'herbs'" class="map-add-point" type="button" @click="router.push({ path: '/module/herbs', query: { create: '1' } })"><Plus :size="16" />新增资源点</button>
+            <button v-if="canEditMap && mapDataSource === 'batches'" class="map-add-point" type="button" @click="router.push({ path: '/module/herb-batches', query: { create: '1' } })"><Plus :size="16" />新增批次</button>
             <button type="button" title="缩小地图" @click="map?.zoomOut()"><ZoomOut :size="17" /></button>
             <button type="button" title="复位地图" @click="resetMap"><RotateCcw :size="17" /></button>
             <button type="button" title="放大地图" @click="map?.zoomIn()"><ZoomIn :size="17" /></button>
@@ -240,9 +267,9 @@ onBeforeUnmount(() => map?.remove());
         <div class="map-filter-bar">
           <label class="map-search">
             <span>搜索</span>
-            <div class="input-with-icon"><Search :size="15" /><input v-model="search" type="search" placeholder="药材名称或区县"></div>
+            <div class="input-with-icon"><Search :size="15" /><input v-model="search" type="search" :placeholder="mapDataSource === 'batches' ? '批次名称或区县' : '药材名称或区县'"></div>
           </label>
-          <label><span>药材品种</span><select v-model="herbFilter"><option value="">全部药材</option><option v-for="name in herbOptions" :key="name">{{ name }}</option></select></label>
+          <label><span>{{ mapDataSource === 'batches' ? '批次药材' : '药材品种' }}</span><select v-model="herbFilter"><option value="">全部</option><option v-for="name in herbOptions" :key="name">{{ name }}</option></select></label>
           <label><span>所属区县</span><select v-model="districtFilter"><option value="">全部区县</option><option v-for="name in districtOptions" :key="name">{{ name }}</option></select></label>
           <button class="button-secondary" type="button" @click="clearFilters"><X :size="15" />清空</button>
           <output class="map-result-count">{{ filtered.length }} 条结果<span v-if="filtered.length - located.length">，{{ filtered.length - located.length }} 条缺少坐标</span></output>
@@ -259,18 +286,27 @@ onBeforeUnmount(() => map?.remove());
             <div v-if="!located.length" class="map-empty">没有符合条件且包含经纬度的记录</div>
           </div>
           <aside class="map-detail">
-            <div v-if="!selected" class="map-detail-empty"><strong>资源点详情</strong><p>点击地图标记查看种植基地信息</p></div>
+            <div v-if="!selected" class="map-detail-empty"><strong>{{ mapDataSource === 'batches' ? '批次详情' : '资源点详情' }}</strong><p>点击地图标记查看{{ mapDataSource === 'batches' ? '药材批次' : '种植基地' }}信息</p></div>
             <template v-else>
-              <div class="map-detail-head"><strong>{{ selected.name || "未命名药材" }}</strong><span>{{ selected.district || "未知地区" }}</span></div>
+              <div class="map-detail-head"><strong>{{ selected.herbName || selected.name || "未命名药材" }}</strong><span>{{ selected.district || "未知地区" }}</span></div>
               <dl class="map-detail-list">
-                <div><dt>具体地点</dt><dd>{{ selected.location || selected.town || selected.district || "-" }}</dd></div>
+                <template v-if="mapDataSource === 'batches'">
+                  <div><dt>批次名称</dt><dd>{{ selected.batchName || "-" }}</dd></div>
+                  <div><dt>批次编号</dt><dd>{{ selected.batchCode || "-" }}</dd></div>
+                  <div><dt>地块/基地</dt><dd>{{ selected.plotName || selected.district || "-" }}</dd></div>
+                  <div><dt>当前阶段</dt><dd>{{ selected.currentStage || "-" }}</dd></div>
+                </template>
+                <template v-else>
+                  <div><dt>具体地点</dt><dd>{{ selected.location || selected.town || selected.district || "-" }}</dd></div>
+                </template>
                 <div><dt>经纬度</dt><dd>{{ selected.longitude || "-" }}, {{ selected.latitude || "-" }}</dd></div>
                 <div><dt>种植规模</dt><dd>{{ selected.scale || "-" }}</dd></div>
                 <div><dt>生态环境</dt><dd>{{ selected.environment || "-" }}</dd></div>
                 <div><dt>溯源码</dt><dd>{{ selected.traceCode || "-" }}</dd></div>
-                <div><dt>记录时间</dt><dd>{{ selected.createdAt || selected.recordedAt || "-" }}</dd></div>
+                <div><dt>记录时间</dt><dd>{{ selected.createdAt || selected.plantingDate || selected.recordedAt || "-" }}</dd></div>
               </dl>
-              <button v-if="canEditMap" type="button" @click="router.push({ path: '/module/herbs', query: { editId: selected.id } })">查看并编辑资源点</button>
+              <button v-if="canEditMap && mapDataSource === 'herbs'" type="button" @click="router.push({ path: '/module/herbs', query: { editId: selected.id } })">查看并编辑资源点</button>
+              <button v-if="mapDataSource === 'batches'" type="button" @click="router.push(`/batches/${selected.id}`)">打开批次档案</button>
             </template>
           </aside>
         </div>
