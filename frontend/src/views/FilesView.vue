@@ -1,7 +1,7 @@
 <script setup>
 import { inject, onMounted, ref } from "vue";
-import { Download, Eye, Upload } from "lucide-vue-next";
-import { api } from "@/services/api";
+import { Download, Eye, Trash2, Upload } from "lucide-vue-next";
+import { api, authHeader } from "@/services/api";
 
 const permissions = inject("modulePermissions");
 const currentRole = inject("currentRole");
@@ -17,6 +17,48 @@ const categories = ["教学视频", "课程课件", "图片资料", "图谱文�
 async function load() {
   const result = await api("/api/files");
   items.value = result.items || [];
+}
+
+/** fetch + Blob 方式下载/预览，自动携带 Authorization header */
+async function fetchFile(url, openPreview) {
+  try {
+    const headers = authHeader();
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || "请求失败");
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    if (openPreview) {
+      window.open(objectUrl, "_blank", "noopener");
+    } else {
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename\*?=(?:UTF-8'')?(.+)/i);
+      const fileName = match ? decodeURIComponent(match[1]) : "download";
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+  } catch (e) {
+    notify(e.message || "操作失败");
+  }
+}
+
+/** 删除文件 */
+async function deleteFile(fid) {
+  if (!confirm("确定要删除该文件吗？已发布到课程中的资源可能受影响。")) return;
+  try {
+    await api(`/api/files/${fid}`, { method: "DELETE" });
+    notify("文件已删除");
+    await load();
+  } catch (e) {
+    notify(e.message);
+  }
 }
 
 function chooseFile(event) {
@@ -97,12 +139,9 @@ onMounted(load);
             <small>{{ item.category }} · {{ sizeText(item.sizeBytes) }}</small>
           </div>
           <div class="file-actions">
-            <a :href="`/api/files/${item.id}/preview`" target="_blank" rel="noopener">
-              <button class="secondary" type="button"><Eye :size="15" />查看</button>
-            </a>
-            <a :href="`/api/files/${item.id}/download`">
-              <button type="button"><Download :size="15" />下载</button>
-            </a>
+            <button class="secondary" type="button" @click="fetchFile(`/api/files/${item.id}/preview`, true)"><Eye :size="15" />查看</button>
+            <button type="button" @click="fetchFile(`/api/files/${item.id}/download`, false)"><Download :size="15" />下载</button>
+            <button v-if="['admin','teacher','researcher'].includes(currentRole)" class="danger" type="button" @click="deleteFile(item.id)"><Trash2 :size="15" />删除</button>
           </div>
         </article>
         <p v-if="!items.length" class="empty-state">暂无上传文件</p>

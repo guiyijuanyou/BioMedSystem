@@ -33,6 +33,16 @@ public class AuthController {
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(result);
     }
 
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(
+            @RequestBody Map<String, String> payload,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        String oldPassword = payload.getOrDefault("oldPassword", "");
+        String newPassword = payload.getOrDefault("newPassword", "");
+        authService.changePassword(authorization, oldPassword, newPassword);
+        return ResponseEntity.ok(Map.of("message", "密码修改成功"));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(
             @RequestHeader(value = "Authorization", required = false) String authorization,
