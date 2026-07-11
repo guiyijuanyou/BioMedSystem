@@ -27,7 +27,7 @@ html.immersive-scroll::-webkit-scrollbar {
     radial-gradient(circle at 72% 8%, rgba(91, 63, 225, 0.28), transparent 28%),
     radial-gradient(circle at 20% 32%, rgba(19, 126, 199, 0.14), transparent 26%),
     linear-gradient(180deg, #050816 0%, #070a1c 48%, #040612 100%);
-  font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: "Noto Serif SC Variable", "Noto Serif SC", "Songti SC", serif;
 }
 
 .login-experience *, .login-dialog * { box-sizing: border-box; }

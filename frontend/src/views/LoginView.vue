@@ -1,6 +1,7 @@
 <script setup>
 import { inject, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import "@fontsource-variable/noto-serif-sc";
 import { api } from "@/services/api";
 import LoginNavigation from "@/components/login/LoginNavigation.vue";
 import ScrollProgress from "@/components/login/ScrollProgress.vue";
