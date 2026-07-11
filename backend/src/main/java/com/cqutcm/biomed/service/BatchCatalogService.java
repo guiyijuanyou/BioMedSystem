@@ -4,13 +4,12 @@ import com.cqutcm.biomed.dto.BatchCatalogDTOs;
 import com.cqutcm.biomed.entity.Herb;
 import com.cqutcm.biomed.entity.HerbBatch;
 import com.cqutcm.biomed.entity.LabSample;
-import com.cqutcm.biomed.mapper.HerbBatchMapper;
-import com.cqutcm.biomed.mapper.HerbMapper;
-import com.cqutcm.biomed.mapper.LabSampleMapper;
+import com.cqutcm.biomed.mapper.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,13 +19,26 @@ public class BatchCatalogService {
     private final HerbBatchMapper batchMapper;
     private final HerbMapper herbMapper;
     private final LabSampleMapper sampleMapper;
+    private final GrowthRecordMapper growthMapper;
+    private final TraceEventMapper traceMapper;
+    private final SpectrumComparisonMapper spectrumMapper;
+    private final GrowthAnalysisMapper analysisMapper;
+    private final EvaluationRecordMapper evaluationMapper;
     private final PermissionService permissionService;
 
     public BatchCatalogService(HerbBatchMapper batchMapper, HerbMapper herbMapper,
-                               LabSampleMapper sampleMapper, PermissionService permissionService) {
+                               LabSampleMapper sampleMapper, GrowthRecordMapper growthMapper,
+                               TraceEventMapper traceMapper, SpectrumComparisonMapper spectrumMapper,
+                               GrowthAnalysisMapper analysisMapper, EvaluationRecordMapper evaluationMapper,
+                               PermissionService permissionService) {
         this.batchMapper = batchMapper;
         this.herbMapper = herbMapper;
         this.sampleMapper = sampleMapper;
+        this.growthMapper = growthMapper;
+        this.traceMapper = traceMapper;
+        this.spectrumMapper = spectrumMapper;
+        this.analysisMapper = analysisMapper;
+        this.evaluationMapper = evaluationMapper;
         this.permissionService = permissionService;
     }
 
@@ -48,6 +60,19 @@ public class BatchCatalogService {
         Map<String, Object> result = sampleMapper.findByIdAsMap(id);
         if (result == null) throw new IllegalArgumentException("检测样本不存在");
         return result;
+    }
+
+    public Map<String, Object> getBatchOverview(String id, PermissionService.Actor actor) {
+        Map<String, Object> overview = new LinkedHashMap<>();
+        overview.put("batch", getBatch(id));
+        overview.put("growthRecords", growthMapper.findByBatchIdAsMap(id));
+        overview.put("traceEvents", traceMapper.findByBatchIdAsMap(id));
+        overview.put("samples", sampleMapper.findByBatchIdAsMap(id));
+        overview.put("spectrumComparisons", visibleWorkflow(spectrumMapper.findByBatchIdAsMap(id), actor));
+        overview.put("analyses", visibleWorkflow(analysisMapper.findByBatchIdAsMap(id), actor));
+        overview.put("evaluations", visibleWorkflow(evaluationMapper.findByBatchIdAsMap(id), actor));
+        overview.put("generatedAt", LocalDateTime.now().toString());
+        return overview;
     }
 
     @Transactional
@@ -245,5 +270,13 @@ public class BatchCatalogService {
 
     private String text(Object value) {
         return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    private List<Map<String, Object>> visibleWorkflow(List<Map<String, Object>> records,
+                                                       PermissionService.Actor actor) {
+        if (!permissionService.isStudent(actor)) return records;
+        return records.stream()
+                .filter(item -> StatusMachine.isStudentVisible(text(item.get("status"))))
+                .toList();
     }
 }
