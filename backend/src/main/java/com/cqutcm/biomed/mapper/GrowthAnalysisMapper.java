@@ -21,6 +21,13 @@ public interface GrowthAnalysisMapper extends BiomedBaseMapper<GrowthAnalysis> {
 
     @Select("SELECT id, batch_id AS batchId, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
             "baseline, current_value AS currentValue, difference_desc AS differenceDesc, trend, conclusion, " +
+            "analyst_name AS analystName, analyzed_at AS analyzedAt, status, reviewer_name AS reviewerName, " +
+            "review_comment AS reviewComment, reviewed_at AS reviewedAt, version, created_at AS createdAt, updated_at AS updatedAt " +
+            "FROM growth_analysis WHERE batch_id = #{batchId} ORDER BY analyzed_at DESC")
+    List<Map<String, Object>> findByBatchIdAsMap(String batchId);
+
+    @Select("SELECT id, batch_id AS batchId, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
+            "baseline, current_value AS currentValue, difference_desc AS differenceDesc, trend, conclusion, " +
             "analyst_name AS analystName, analyzed_at AS analyzedAt, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
             "version, created_at AS createdAt, updated_at AS updatedAt " +
