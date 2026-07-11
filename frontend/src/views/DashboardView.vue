@@ -191,6 +191,25 @@ function renderMarkers() {
   } else if (!search.value && !herbFilter.value && !districtFilter.value) resetMap();
 }
 
+function navigateTo(label) {
+  const routes = {
+    "资源点数量": "/module/herbs",
+    "药材批次": "/module/herb-batches",
+    "检测样本": "/module/lab-samples",
+    "采集记录": "/module/growth-records",
+    "溯源事件": "/module/trace-events",
+    "教学资源": "/module/teaching-resources",
+    "图谱比对": "/module/spectrum-comparisons",
+    "数据分析": "/module/growth-analysis",
+    "试验课程": "/module/courses",
+    "研究课题": "/module/projects",
+    "评价记录": "/module/evaluations",
+    "业绩记录": "/module/achievements"
+  };
+  const path = routes[label];
+  if (path) router.push(path);
+}
+
 function clearFilters() {
   search.value = "";
   herbFilter.value = "";
@@ -238,9 +257,9 @@ onBeforeUnmount(() => map?.remove());
 <template>
   <section>
     <div class="metrics">
-      <article v-for="metric in metrics" :key="metric.label" class="metric" :data-tone="metric.tone">
+      <article v-for="metric in metrics" :key="metric.label" class="metric" :data-tone="metric.tone" @click="navigateTo(metric.label)" :title="`跳转到${metric.label}`">
         <div class="metric-icon"><component :is="metric.icon" :size="19" /></div>
-        <div><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong><small>实时统计</small></div>
+        <div><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong><small>点击跳转</small></div>
       </article>
     </div>
 
