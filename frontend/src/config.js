@@ -84,7 +84,7 @@ export const modules = {
     fields: [
       ["title", "资源标题"],
       ["resourceType", "资源类型"],
-      ["courseTitle", "所属课程"],
+      ["courseId", "所属课程"],
       ["uploader", "上传人"],
       ["uploaderRole", "上传角色"],
       ["status", "审核状态"],

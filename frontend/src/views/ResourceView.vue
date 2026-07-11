@@ -259,7 +259,7 @@ const visibleCourseRows = computed(() =>
   isStudentCourseModule.value ? items.value.filter(item => isPublished(item.status)) : items.value
 );
 const courseCards = computed(() => visibleCourseRows.value.map((item, index) => {
-  const resources = courseResources(item.title);
+  const resources = courseResources(item.id);
   const videos = resources.filter(isVideoResource);
   return {
     ...item,
@@ -271,9 +271,9 @@ const courseCards = computed(() => visibleCourseRows.value.map((item, index) => 
     views: item.views || formatCourseViews(index)
   };
 }));
-const drawerCourseResources = computed(() => isCourseModule.value ? courseResources(form.title) : []);
+const drawerCourseResources = computed(() => isCourseModule.value ? courseResources(editingId.value) : []);
 const drawerCourseVideos = computed(() => drawerCourseResources.value.filter(isVideoResource));
-const learningResources = computed(() => learningCourse.value ? courseResources(learningCourse.value.title) : []);
+const learningResources = computed(() => learningCourse.value ? courseResources(learningCourse.value.id) : []);
 const learningVideos = computed(() => learningResources.value.filter(isVideoResource));
 const activeLearningResource = computed(() =>
   learningResources.value.find(resource => resource.id === activeLearningResourceId.value)
@@ -337,6 +337,11 @@ function findSample(id) {
   return sampleOptions.value.find(item => item.id === id);
 }
 
+function findCourseTitle(courseId) {
+  const course = courseOptions.value.find(c => c.id === courseId);
+  return course ? course.title : courseId;
+}
+
 function applySelectedHerb(herbId) {
   const herb = findHerb(herbId);
   if (!herb) return;
@@ -386,6 +391,9 @@ function relationDisplay(item, name) {
   if (name === "herbId" && value) {
     const herb = findHerb(value);
     return herb ? `${herb.name} / ${herb.district}` : (item.herbName || value);
+  }
+  if (name === "courseId" && value) {
+    return form.courseTitle || findCourseTitle(value);
   }
   return display(value);
 }
@@ -541,10 +549,10 @@ function isVideoResource(resource) {
   return String(resource.resourceType || "").includes("视频");
 }
 
-function courseResources(courseTitle) {
-  if (!courseTitle) return [];
+function courseResources(courseId) {
+  if (!courseId) return [];
   const source = isStudentCourseModule.value ? publishedTeachingResources.value : teachingResources.value;
-  return source.filter(resource => resource.courseTitle === courseTitle);
+  return source.filter(resource => resource.courseId === courseId);
 }
 
 function openTeachingResourceAudit(resource) {
@@ -577,6 +585,11 @@ function applySelectedFile(fileId) {
   if (!file) return;
   if (!form.title) form.title = file.fileName;
   form.resourceType = fileResourceType(file);
+}
+
+function onCourseSelect(courseId) {
+  const course = courseOptions.value.find(c => c.id === courseId);
+  if (course) form.courseTitle = course.title;
 }
 
 function ownerName(item) {
@@ -901,7 +914,7 @@ async function save() {
       emit("notify", "请选择来源资源点后再创建批次");
       return;
     }
-    if (props.moduleKey === "teaching-resources" && !payload.courseTitle) {
+    if (props.moduleKey === "teaching-resources" && !payload.courseId) {
       emit("notify", "请选择要发布到的试验课程");
       return;
     }
@@ -1526,9 +1539,9 @@ watch(() => props.editId, id => {
               <select v-else-if="name === 'status'" v-model="form[name]"><option v-for="status in statuses" :key="status">{{ status }}</option></select>
               <select v-else-if="name === 'role'" v-model="form[name]"><option v-for="(info, code) in roleOptions" :key="code" :value="code">{{ info.label }}</option></select>
               <select v-else-if="name === 'collectSource'" v-model="form[name]"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select>
-              <select v-else-if="name === 'courseTitle' && moduleKey === 'teaching-resources'" v-model="form[name]">
+              <select v-else-if="name === 'courseId' && moduleKey === 'teaching-resources'" v-model="form[name]" @change="onCourseSelect(form[name])">
                 <option value="">请选择试验课程</option>
-                <option v-for="course in courseOptions" :key="course.id" :value="course.title">{{ course.title }} / {{ course.teacher }}</option>
+                <option v-for="course in courseOptions" :key="course.id" :value="course.id">{{ course.title }} / {{ course.teacher }}</option>
               </select>
               <select v-else-if="name === 'fileId'" v-model="form[name]" @change="applySelectedFile(form[name])">
                 <option value="">请选择资料文件</option>
