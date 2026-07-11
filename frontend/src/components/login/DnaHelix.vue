@@ -51,8 +51,8 @@ onBeforeRender(({ delta }) => {
     <TresMesh v-for="node in nodes" :key="node.id" :position="node.position">
       <TresSphereGeometry :args="[node.strand ? 0.115 : 0.14, 18, 18]" />
       <TresMeshStandardMaterial
-        :color="node.strand ? '#8b5cf6' : '#22d3ee'"
-        :emissive="node.strand ? '#6d28d9' : '#0891b2'"
+        :color="node.strand ? '#635bff' : '#ff7a59'"
+        :emissive="node.strand ? '#8b5cf6' : '#ffb38a'"
         :emissive-intensity="1.3 + accentMix"
         :transparent="true"
         :opacity="opacity"
@@ -62,11 +62,11 @@ onBeforeRender(({ delta }) => {
     </TresMesh>
     <TresMesh v-for="bar in bars" :key="`bar-${bar.id}`" :position="bar.position" :rotation="bar.rotation" :scale="bar.scale">
       <TresBoxGeometry />
-      <TresMeshStandardMaterial color="#9eefff" emissive="#2563eb" :emissive-intensity="0.5" :transparent="true" :opacity="opacity * Math.max(0.08, 0.34 - spread * 0.2)" />
+      <TresMeshStandardMaterial color="#b8c8ff" emissive="#7a73ff" :emissive-intensity="0.5" :transparent="true" :opacity="opacity * Math.max(0.08, 0.34 - spread * 0.2)" />
     </TresMesh>
     <TresMesh v-for="particle in particles" :key="`particle-${particle.id}`" :position="particle.position" :scale="particle.scale">
       <TresSphereGeometry :args="[1, 8, 8]" />
-      <TresMeshBasicMaterial color="#b8f5ff" :transparent="true" :opacity="0.5 + accentMix * 0.3" />
+      <TresMeshBasicMaterial color="#9db8ff" :transparent="true" :opacity="0.5 + accentMix * 0.3" />
     </TresMesh>
   </TresGroup>
 </template>
