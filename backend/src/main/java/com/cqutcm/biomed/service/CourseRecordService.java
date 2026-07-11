@@ -78,7 +78,9 @@ public class CourseRecordService {
         TeachingResource resource = mapToResource(payload, actor);
         resource.setId(id);
         resource.setCreatedAt(LocalDateTime.now());
-        requireExistingCourse(resource.getCourseTitle());
+        // 通过 courseId 校验课程存在性，并填充课程标题（冗余展示）
+        Course course = requireExistingCourse(resource.getCourseId());
+        resource.setCourseTitle(course.getTitle());
         resourceMapper.insert(resource);
         Map<String, Object> result = resourceToMap(resource);
         result.put("createdAt", resource.getCreatedAt().toString());
@@ -125,7 +127,9 @@ public class CourseRecordService {
         resource.setId(id);
         preserveResourceReviewFields(resource, existing);
         resource.setVersion(existing.getVersion());
-        requireExistingCourse(resource.getCourseTitle());
+        // 通过 courseId 校验课程存在性，并填充课程标题（冗余展示）
+        Course course = requireExistingCourse(resource.getCourseId());
+        resource.setCourseTitle(course.getTitle());
         if (resourceMapper.update(resource) == 0) throw conflict("教学资源");
         Map<String, Object> result = resourceToMap(resource);
         result.put("id", id);
@@ -254,14 +258,15 @@ public class CourseRecordService {
         target.setPublishedAt(existing.getPublishedAt());
     }
 
-    private void requireExistingCourse(String courseTitle) {
-        if (courseTitle == null || courseTitle.isBlank()) {
+    private Course requireExistingCourse(String courseId) {
+        if (courseId == null || courseId.isBlank()) {
             throw new IllegalArgumentException("请选择要发布到的试验课程");
         }
-        List<Course> courses = courseMapper.findByTitle(courseTitle);
-        if (courses.isEmpty()) {
+        Course course = courseMapper.findById(courseId);
+        if (course == null) {
             throw new IllegalArgumentException("试验课程不存在，请先在试验课程中创建课程");
         }
+        return course;
     }
 
     // ---- Map/Entity 转换 ----

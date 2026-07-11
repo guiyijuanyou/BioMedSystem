@@ -4,8 +4,8 @@ import jakarta.validation.constraints.*;
 
 public class TeachingResourceDTOs {
     public static class Create {
-        @Size(max = 64) public String courseId;
-        @NotBlank @Size(max = 200) public String courseTitle;
+        @NotBlank @Size(max = 64) public String courseId;
+        @Size(max = 200) public String courseTitle;
         @NotBlank @Size(max = 200) public String title;
         @NotBlank @Size(max = 80) public String resourceType;
         @Size(max = 64) public String fileId;
@@ -14,8 +14,8 @@ public class TeachingResourceDTOs {
     }
     public static class Update {
         @NotBlank public String id;
-        @Size(max = 64) public String courseId;
-        @NotBlank @Size(max = 200) public String courseTitle;
+        @NotBlank @Size(max = 64) public String courseId;
+        @Size(max = 200) public String courseTitle;
         @NotBlank @Size(max = 200) public String title;
         @NotBlank @Size(max = 80) public String resourceType;
         @Size(max = 64) public String fileId;
