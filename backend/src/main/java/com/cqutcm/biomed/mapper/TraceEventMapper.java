@@ -20,6 +20,12 @@ public interface TraceEventMapper extends BiomedBaseMapper<TraceEvent> {
     List<Map<String, Object>> findAllAsMap();
 
     @Select("SELECT id, batch_id AS batchId, herb_name AS herbName, trace_code AS traceCode, event_type AS eventType, " +
+            "event_content AS eventContent, operator_name AS operatorName, event_time AS eventTime, location, " +
+            "version, created_at AS createdAt, updated_at AS updatedAt " +
+            "FROM trace_event WHERE batch_id = #{batchId} ORDER BY event_time ASC")
+    List<Map<String, Object>> findByBatchIdAsMap(String batchId);
+
+    @Select("SELECT id, batch_id AS batchId, herb_name AS herbName, trace_code AS traceCode, event_type AS eventType, " +
             "event_content AS eventContent, operator_name AS operatorName, event_time AS eventTime, " +
             "location, version, created_at AS createdAt, updated_at AS updatedAt " +
             "FROM trace_event WHERE id = #{id}")

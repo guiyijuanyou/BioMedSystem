@@ -260,6 +260,7 @@ export const roleMenus = {
     ["projects", "课题审核"],
     ["trainings", "培训素材"],
     ["evaluations", "评价体系"],
+    ["improvement", "改进闭环"],
     ["achievements", "工作业绩"],
     ["standards", "认定标准"],
     ["files", "资料文件"]
@@ -278,6 +279,7 @@ export const roleMenus = {
     ["projects", "课题研究"],
     ["trainings", "培训素材"],
     ["evaluations", "评价体系"],
+    ["improvement", "改进闭环"],
     ["achievements", "工作业绩"],
     ["files", "资料文件"]
   ],
@@ -293,6 +295,7 @@ export const roleMenus = {
     ["teaching-resources", "视频资料"],
     ["projects", "课题研究"],
     ["evaluations", "评价体系"],
+    ["improvement", "改进闭环"],
     ["achievements", "工作业绩"],
     ["files", "资料文件"]
   ],

@@ -25,6 +25,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: "/batches/:batchId",
+    name: "batch-detail",
+    component: () => import("@/views/BatchDetailView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/improvement",
+    name: "improvement",
+    component: () => import("@/views/ImprovementWorkflowView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
     path: "/files",
     name: "files",
     component: () => import("@/views/FilesView.vue"),

@@ -137,6 +137,14 @@ public class ResourceController {
 
     // ==================== GET SINGLE ====================
 
+    @GetMapping("/herb-batches/{id}/overview")
+    public Map<String, Object> getBatchOverview(@PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanRead("herb-batches", a);
+        return batchCatalogService.getBatchOverview(id, a);
+    }
+
     @GetMapping("/herb-batches/{id}")
     public Map<String, Object> getBatch(@PathVariable String id,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
@@ -469,7 +477,7 @@ public class ResourceController {
         return result;
     }
 
-    @PutMapping("/{resourceType:^(trainings|evaluations|achievements)$}/{id}/review")
+    @PutMapping("/{resourceType:^(?:trainings|evaluations|achievements)$}/{id}/review")
     public Map<String, Object> reviewStructured(@PathVariable String resourceType, @PathVariable String id,
             @Valid @RequestBody Map<String, Object> dto,
             @RequestHeader(value = "Authorization", required = false) String authorization) {
