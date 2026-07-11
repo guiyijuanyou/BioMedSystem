@@ -22,6 +22,18 @@ public class SysUser {
     private String department;
     @TableField("status")
     private String status;
+    @TableField("phone")
+    private String phone;
+    @TableField("email")
+    private String email;
+    @TableField("avatar_url")
+    private String avatarUrl;
+    @TableField("title")
+    private String title;
+    @TableField("research_area")
+    private String researchArea;
+    @TableField("bio")
+    private String bio;
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(value = "updated_at", fill = FieldFill.UPDATE)
@@ -39,6 +51,18 @@ public class SysUser {
     public void setDepartment(String department) { this.department = department; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getResearchArea() { return researchArea; }
+    public void setResearchArea(String researchArea) { this.researchArea = researchArea; }
+    public String getBio() { return bio; }
+    public void setBio(String bio) { this.bio = bio; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

@@ -110,6 +110,34 @@ public class AuthService {
         return actor;
     }
 
+    /**
+     * 获取登录用户名（而非显示名），供需要根据 username 列查询的场景使用
+     */
+    public String requireLoginUsername(String authorization) {
+        return requireLoginUsername(authorization, null);
+    }
+
+    public String requireLoginUsername(String authorization, String sessionCookie) {
+        TokenAuthToken existing = (TokenAuthToken) SecurityContextHolder.getContext().getAuthentication();
+        if (existing != null && existing.isAuthenticated()) {
+            // 从 SecurityContext 取不到 username，需要回退查 session
+        }
+        String token = resolveToken(authorization, sessionCookie);
+        UserSession session = getSession(token);
+        if (session == null || session.expiresAt().isBefore(Instant.now())) {
+            deleteSession(token);
+            throw new AuthenticationRequiredException("login required");
+        }
+        refreshSession(token, session);
+        DemoUser user = session.user();
+        // 若有 SecurityContext 未设，补设
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            SecurityContextHolder.getContext().setAuthentication(
+                    new TokenAuthToken(token, new PermissionService.Actor(user.name(), user.role())));
+        }
+        return user.username();
+    }
+
     // ==================== LOGOUT ====================
 
     public void logout(String authorization) {
@@ -260,15 +288,13 @@ public class AuthService {
     // ==================== CHANGE PASSWORD ====================
 
     public void changePassword(String authorization, String oldPassword, String newPassword) {
-        PermissionService.Actor actor = requireActor(authorization);
-        String username = actor.name();
-        // 从数据库查用户的密码哈希
-        SysUser sysUser = sysUserMapper.findByUsername(username);
+        String loginUsername = requireLoginUsername(authorization);
+        SysUser sysUser = sysUserMapper.findByUsername(loginUsername);
         if (sysUser == null || sysUser.getPasswordHash() == null) {
-            throw new AuthenticationRequiredException("用户不存在");
+            throw new IllegalArgumentException("用户不存在");
         }
         if (!passwordEncoder.matches(oldPassword, sysUser.getPasswordHash())) {
-            throw new AuthenticationRequiredException("原密码错误");
+            throw new IllegalArgumentException("原密码错误");
         }
         if (newPassword == null || newPassword.length() < 6) {
             throw new IllegalArgumentException("新密码长度不能少于6位");
