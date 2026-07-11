@@ -17,6 +17,11 @@ public interface GrowthRecordMapper extends BiomedBaseMapper<GrowthRecord> {
     List<Map<String, Object>> findAllAsMap();
 
     @Select("SELECT id, batch_id AS batchId, herb_name, district, temperature, humidity, soil_ph, " +
+            "growth_stage, collect_source, recorder_name AS recorder, recorder_role, recorded_at, " +
+            "version, created_at, updated_at FROM growth_record WHERE batch_id = #{batchId} ORDER BY recorded_at ASC")
+    List<Map<String, Object>> findByBatchIdAsMap(String batchId);
+
+    @Select("SELECT id, batch_id AS batchId, herb_name, district, temperature, humidity, soil_ph, " +
             "growth_stage, collect_source, recorder_name AS recorder, " +
             "recorder_role, recorded_at, version, created_at, updated_at " +
             "FROM growth_record WHERE id = #{id}")

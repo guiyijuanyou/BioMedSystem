@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, provide, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { LogOut, Menu, RefreshCw, Save, ShieldCheck } from "lucide-vue-next";
+import { ClipboardList, Grid2X2, Home, LogOut, Menu, RefreshCw, Save, ShieldCheck, Sprout } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
 import AiAssistant from "@/components/AiAssistant.vue";
 import { modules, roleMenus, roleModulePermissions, roles } from "@/config";
@@ -25,6 +25,7 @@ const summary = ref({});
 const herbs = ref([]);
 const batches = ref([]);
 const drawerOpen = ref(false);
+const navCollapsed = ref(localStorage.getItem("biomed-nav-collapsed") === "1");
 const toastText = ref("");
 const refreshing = ref(false);
 const backingUp = ref(false);
@@ -47,6 +48,8 @@ const activeModuleConfig = computed(() => {
 const pageTitle = computed(() => {
   if (route.name === "dashboard") return roles[currentRole.value]?.title || "工作台";
   if (route.name === "files") return "资料文件";
+  if (route.name === "batch-detail") return "药材批次档案";
+  if (route.name === "improvement") return "专业改进闭环";
   if (route.name === "module") {
     const key = route.params.moduleKey;
     return modules[key]?.title || "业务模块";
@@ -135,10 +138,24 @@ function handleLoginRequired() {
   router.push("/login");
 }
 
+function mobileNavigate(key) {
+  if (key === "dashboard") router.push("/dashboard");
+  else if (key === "herb-batches") router.push("/module/herb-batches");
+  else if (key === "improvement" && currentRole.value !== "student") router.push("/improvement");
+  else drawerOpen.value = true;
+}
+
 function consumeResourceQuery(name) {
   if (!route.query[name]) return;
   const query = { ...route.query };
   delete query[name];
+  router.replace({ path: route.path, query });
+}
+
+function consumeCreateQuery() {
+  const query = { ...route.query };
+  delete query.create;
+  delete query.batchId;
   router.replace({ path: route.path, query });
 }
 
@@ -209,11 +226,12 @@ onBeforeUnmount(() => {
     <button class="mobile-menu-button" type="button" aria-label="打开导航菜单" @click="drawerOpen = true">
       <Menu :size="21" />
     </button>
-    <div class="shell" :class="{ 'drawer-open': drawerOpen }">
+    <div class="shell" :class="{ 'drawer-open': drawerOpen, 'nav-collapsed': navCollapsed }">
       <SidebarNav
         :open="drawerOpen"
         :items="visibleNavItems"
         :role-label="currentRoleLabel"
+        @collapsed="navCollapsed = $event"
         @close="drawerOpen = false"
       />
       <div class="drawer-mask" @click="drawerOpen = false"></div>
@@ -243,12 +261,20 @@ onBeforeUnmount(() => {
           :current-user="currentUser"
           :edit-id="String(route.query.editId || '')"
           :open-create-on-load="route.query.create === '1'"
+          :prefill-batch-id="String(route.query.batchId || '')"
           @edit-consumed="consumeResourceQuery('editId')"
-          @create-consumed="consumeResourceQuery('create')"
+          @create-consumed="consumeCreateQuery"
           @resource-saved="handleResourceSaved"
         />
       </main>
     </div>
+
+    <nav class="mobile-bottom-nav" aria-label="手机快捷导航">
+      <button type="button" :class="{ active: route.name === 'dashboard' }" @click="mobileNavigate('dashboard')"><Home :size="20" /><span>工作台</span></button>
+      <button type="button" :class="{ active: route.params.moduleKey === 'herb-batches' || route.name === 'batch-detail' }" @click="mobileNavigate('herb-batches')"><Sprout :size="20" /><span>药材</span></button>
+      <button v-if="currentRole !== 'student'" type="button" :class="{ active: route.name === 'improvement' }" @click="mobileNavigate('improvement')"><ClipboardList :size="20" /><span>改进</span></button>
+      <button type="button" :class="{ active: drawerOpen }" @click="mobileNavigate('all')"><Grid2X2 :size="20" /><span>全部</span></button>
+    </nav>
 
     <AiAssistant />
   </template>

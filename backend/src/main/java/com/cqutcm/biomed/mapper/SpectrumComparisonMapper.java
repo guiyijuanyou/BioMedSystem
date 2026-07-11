@@ -20,6 +20,13 @@ public interface SpectrumComparisonMapper extends BiomedBaseMapper<SpectrumCompa
     List<Map<String, Object>> findAllAsMap();
 
     @Select("SELECT id, batch_id AS batchId, sample_id AS sampleId, herb_name AS herbName, sample_code AS sampleCode, district, " +
+            "spectrum_type AS spectrumType, reference_name AS referenceName, similarity, result, operator_name AS operatorName, " +
+            "compared_at AS comparedAt, remark, status, reviewer_name AS reviewerName, review_comment AS reviewComment, " +
+            "reviewed_at AS reviewedAt, version, created_at AS createdAt, updated_at AS updatedAt " +
+            "FROM spectrum_comparison WHERE batch_id = #{batchId} ORDER BY compared_at DESC")
+    List<Map<String, Object>> findByBatchIdAsMap(String batchId);
+
+    @Select("SELECT id, batch_id AS batchId, sample_id AS sampleId, herb_name AS herbName, sample_code AS sampleCode, district, " +
             "spectrum_type AS spectrumType, reference_name AS referenceName, similarity, result, " +
             "operator_name AS operatorName, compared_at AS comparedAt, remark, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
