@@ -10,8 +10,9 @@ import java.util.Map;
 
 @Mapper
 public interface CourseMapper extends BiomedBaseMapper<Course> {
-    @Select("SELECT id, title, teacher_name AS teacher, hours, material_type, " +
-            "status, reviewer_name, review_comment, reviewed_at, version, created_at, updated_at " +
+    @Select("SELECT id, title, teacher_name AS teacher, hours, material_type AS materialType, " +
+            "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
+            "version, created_at AS createdAt, updated_at AS updatedAt " +
             "FROM course ORDER BY created_at DESC")
     List<Map<String, Object>> findAllAsMap();
 

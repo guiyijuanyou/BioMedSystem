@@ -29,6 +29,7 @@ const courseOptions = ref([]);
 const herbRecords = ref([]);
 const batchOptions = ref([]);
 const sampleOptions = ref([]);
+const userMap = ref({});
 const search = ref("");
 const editingId = ref(null);
 const selectedIds = ref([]);
@@ -182,10 +183,10 @@ const traceStats = computed(() => {
 const growthSeriesGroups = computed(() => {
   const groups = {};
   items.value.forEach(item => {
-    const herbName = item.herbName || "未填写药材";
-    const district = item.district || "未填写地区";
-    const key = item.batchId || `legacy__${district}__${herbName}`;
+    const key = item.batchId || `legacy__${item.district || "未填写地区"}__${item.herbName || "未填写药材"}`;
     const batch = findBatch(item.batchId);
+    const herbName = batch?.herbName || item.herbName || "未填写药材";
+    const district = batch?.district || item.district || "未填写地区";
     if (!groups[key]) groups[key] = {
       key, herbName, district, batchName: batch?.batchName || `${district} / ${herbName}`, rows: []
     };
@@ -869,14 +870,15 @@ function closePanel() {
 
 async function load() {
   try {
-    const [result, resourceResult, fileResult, courseResult, herbResult, batchResult, sampleResult] = await Promise.all([
+    const [result, resourceResult, fileResult, courseResult, herbResult, batchResult, sampleResult, userResult] = await Promise.all([
       api(`/api/${props.moduleKey}`),
       props.moduleKey === "courses" ? api("/api/teaching-resources") : Promise.resolve({ items: [] }),
       ["teaching-resources", "courses"].includes(props.moduleKey) ? api("/api/files") : Promise.resolve({ items: [] }),
       props.moduleKey === "teaching-resources" ? api("/api/courses") : Promise.resolve({ items: [] }),
       props.moduleKey === "herb-batches" ? api("/api/herbs") : Promise.resolve({ items: [] }),
       batchLinkedModules.has(props.moduleKey) ? api("/api/herb-batches") : Promise.resolve({ items: [] }),
-      props.moduleKey === "spectrum-comparisons" ? api("/api/lab-samples") : Promise.resolve({ items: [] })
+      props.moduleKey === "spectrum-comparisons" ? api("/api/lab-samples") : Promise.resolve({ items: [] }),
+      canEdit.value ? api("/api/users") : Promise.resolve({ items: [] })
     ]);
     items.value = result.items || [];
     teachingResources.value = resourceResult.items || [];
@@ -885,6 +887,14 @@ async function load() {
     herbRecords.value = herbResult.items || [];
     batchOptions.value = props.moduleKey === "herb-batches" ? items.value : (batchResult.items || []);
     sampleOptions.value = sampleResult.items || [];
+    // build name→id map from users list (only when user can edit)
+    if (userResult.items && userResult.items.length) {
+      const map = {};
+      userResult.items.forEach(u => {
+        if (u.name) map[u.name] = u.id;
+      });
+      userMap.value = map;
+    }
     selectedIds.value = selectedIds.value.filter(id => items.value.some(item => item.id === id));
     if (page.value > totalPages.value) page.value = totalPages.value;
     if (props.editId) {
@@ -1034,6 +1044,42 @@ function exportCsv(rows = filtered.value) {
   emit("notify", `已导出 ${rows.length} 条记录`);
 }
 
+function isLinkField(name) {
+  if (name === "batchId") return true;
+  if (name === "herbId" && canEdit.value) return true;
+  if (name === "sampleId" && canEdit.value) return true;
+  if (props.moduleKey === "users" && name === "name") return true;
+  if (isOwnerField(name)) return Object.keys(userMap.value).length > 0;
+  return false;
+}
+
+function isOwnerField(name) {
+  return ["recorder", "uploader", "leader", "teacher", "owner",
+    "trainer", "evaluator", "responsiblePerson", "collector",
+    "operator", "analyst", "operatorName", "analystName"].includes(name);
+}
+
+function fieldLink(item, name) {
+  if (name === "batchId" && item.batchId) return `/batches/${item.batchId}`;
+  if (name === "herbId" && item.herbId && canEdit.value) return `/module/herbs?editId=${item.herbId}`;
+  if (name === "sampleId" && item.sampleId && canEdit.value) return `/module/lab-samples?editId=${item.sampleId}`;
+  if (name === "name" && props.moduleKey === "users" && item.id) return `/profile/${item.id}`;
+  if (isOwnerField(name) && item[name]) {
+    const userId = userMap.value[item[name]];
+    if (userId) return `/profile/${userId}`;
+  }
+  return null;
+}
+
+function fieldLinkTitle(item, name) {
+  if (name === "batchId") return "查看批次档案";
+  if (name === "herbId") return "查看资源点详情";
+  if (name === "sampleId") return "查看检测样本";
+  if (isOwnerField(name)) return "查看用户资料";
+  if (name === "name" && props.moduleKey === "users") return "查看用户资料";
+  return "";
+}
+
 function display(value) {
   return value === undefined || value === null || value === "" ? "-" : value;
 }
@@ -1119,8 +1165,8 @@ watch(() => props.editId, id => {
       <section v-if="isGrowthModule" class="growth-trend-card">
         <div class="trend-toolbar">
           <div>
-            <strong>地区药材生长档案</strong>
-            <small>同一地区、同一药材可连续记录多次，并与上一条记录自动对比</small>
+              <strong>药材批次生长档案</strong>
+              <small>同一批次的生长数据按时间排列，自动与上一条记录对比趋势</small>
           </div>
           <select :value="selectedGrowthGroup?.key || ''" @change="selectGrowthGroup($event.target.value)">
             <option v-for="group in growthSeriesGroups" :key="group.key" :value="group.key">
@@ -1421,6 +1467,7 @@ watch(() => props.editId, id => {
             <td v-if="canBatchDelete" class="checkbox-cell"><input v-model="selectedIds" type="checkbox" :value="item.id" :aria-label="`选择${item.id}`"></td>
             <td v-for="[name] in config.fields" :key="name">
               <span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(item, name) }}</span>
+              <a v-else-if="isLinkField(name) && fieldLink(item, name)" :href="fieldLink(item, name)" class="field-link" :title="fieldLinkTitle(item, name)" @click.prevent="router.push(fieldLink(item, name))">{{ relationDisplay(item, name) }}</a>
               <template v-else>{{ relationDisplay(item, name) }}</template>
             </td>
             <td v-if="hasRowActions" class="sticky-action">

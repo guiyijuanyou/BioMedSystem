@@ -52,6 +52,10 @@ const pageTitle = computed(() => {
   if (route.name === "files") return "资料文件";
   if (route.name === "batch-detail") return "药材批次档案";
   if (route.name === "improvement") return "专业改进闭环";
+    if (route.name === "profile") return "个人中心";
+    if (route.name === "quality-metrics") return "质量指标与自动分析";
+  if (route.name === "multi-evaluations") return "多指标自动评价";
+  if (route.name === "mobile-devices") return "手机与采集设备";
   if (route.name === "profile") return "个人中心";
   if (route.name === "spectrum-compare") return "图谱比对";
   if (route.name === "module") {
