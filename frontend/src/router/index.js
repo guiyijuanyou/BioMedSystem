@@ -43,6 +43,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: "/spectrum-compare",
+    name: "spectrum-compare",
+    component: () => import("@/views/SpectrumCompareView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
     path: "/profile",
     name: "profile",
     component: () => import("@/views/ProfileView.vue"),

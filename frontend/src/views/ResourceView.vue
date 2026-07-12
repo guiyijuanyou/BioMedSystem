@@ -136,8 +136,7 @@ const spectrumStats = computed(() => {
     count: rows.length,
     avgSimilarity: average(similarities),
     excellent,
-    risk: rows.filter(item => String(item.result || "").includes("复核") || toNumber(item.similarity) < 85).length,
-    types: countBy(rows, "spectrumType")
+    risk: rows.filter(item => String(item.result || "").includes("复核") || toNumber(item.similarity) < 85).length
   };
 });
 const analysisStats = computed(() => ({
@@ -816,6 +815,10 @@ function fillForm(item = null) {
 }
 
 function openCreate() {
+  if (props.config?.useDedicatedView) {
+    router.push("/spectrum-compare");
+    return;
+  }
   fillForm();
   panelMode.value = "edit";
   panelOpen.value = true;
@@ -1076,7 +1079,7 @@ watch(() => props.editId, id => {
   <section class="panel resource-workbench">
     <div class="panel-head resource-head">
       <div><h2>{{ config.title }}</h2><span>{{ config.hint }}</span></div>
-      <button v-if="canCreate" type="button" @click="openCreate"><Plus :size="16" />新增记录</button>
+      <button v-if="canCreate" type="button" @click="openCreate"><Plus :size="16" />{{ config.createLabel || '新增记录' }}</button>
     </div>
 
     <section v-if="insightVisible" class="insight-panel">
@@ -1243,10 +1246,6 @@ watch(() => props.editId, id => {
         <div v-if="isTraceModule">
           <strong>事件类型</strong>
           <span v-for="(count, name) in traceStats.eventTypes" :key="name">{{ name }}：{{ count }}</span>
-        </div>
-        <div v-if="isSpectrumModule">
-          <strong>图谱类型</strong>
-          <span v-for="(count, name) in spectrumStats.types" :key="name">{{ name }}：{{ count }}</span>
         </div>
         <div v-if="isAnalysisModule">
           <strong>分析指标</strong>
