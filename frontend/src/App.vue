@@ -53,6 +53,7 @@ const pageTitle = computed(() => {
   if (route.name === "batch-detail") return "药材批次档案";
   if (route.name === "improvement") return "专业改进闭环";
   if (route.name === "profile") return "个人中心";
+  if (route.name === "spectrum-compare") return "图谱比对";
   if (route.name === "module") {
     const key = route.params.moduleKey;
     return modules[key]?.title || "业务模块";

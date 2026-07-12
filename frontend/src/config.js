@@ -95,7 +95,9 @@ export const modules = {
   },
   "spectrum-comparisons": {
     title: "图谱比对",
-    hint: "中药材图谱上传、参考图谱比对和相似度判定",
+    hint: "上传 HPLC 数据，自动计算相似度并生成叠加图谱",
+    useDedicatedView: true,
+    createLabel: "开始比对",
     fields: [
       ["sampleId", "检测样本"],
       ["batchId", "来源批次"],
