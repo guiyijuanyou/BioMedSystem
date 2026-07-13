@@ -6,6 +6,7 @@ import {
   Archive, FolderOpen, Pencil, PlayCircle, Plus, Search, Send, Trash2, Upload, X, XCircle
 } from "lucide-vue-next";
 import MapPicker from "@/components/MapPicker.vue";
+import AppSelect from "@/components/AppSelect.vue";
 import { api } from "@/services/api";
 import { roles as roleOptions } from "@/config";
 
@@ -51,6 +52,15 @@ const batchLinkedModules = new Set([
 
 const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion", "eventContent", "reviewComment", "requirements", "applicantRequests", "approvedMembers", "rejectedApplicants"];
 const statuses = ["待审核", "已通过", "已发布", "已驳回", "数据采集中", "已归档"];
+const pageSizeOptions = [8, 15, 30].map(value => ({ value, label: String(value) }));
+const batchStatusOptions = [{ value: "active", label: "使用中" }, { value: "archived", label: "已归档" }];
+const sampleStatusOptions = [
+  { value: "collected", label: "已采样" },
+  { value: "tested", label: "已检测" },
+  { value: "consumed", label: "已耗用" },
+  { value: "archived", label: "已归档" }
+];
+const collectionSourceOptions = ["电脑终端录入", "手机APP采集", "传感器网关"].map(value => ({ value, label: value }));
 const editableFields = computed(() =>
   props.config.fields.filter(([name]) => !isRestrictedAuditField(name))
 );
@@ -202,6 +212,36 @@ const selectedGrowthGroup = computed(() =>
   growthSeriesGroups.value.find(group => group.key === selectedGrowthKey.value) || growthSeriesGroups.value[0]
 );
 const selectedGrowthRows = computed(() => selectedGrowthGroup.value?.rows || []);
+const growthGroupOptions = computed(() => growthSeriesGroups.value.map(group => ({
+  value: group.key,
+  label: `${group.batchName}（${group.rows.length} 次）`
+})));
+const traceGroupOptions = computed(() => traceGroups.value.map(group => ({
+  value: group.key,
+  label: `${group.batchName} / ${group.traceCode}（${group.rows.length} 环节）`
+})));
+const herbRecordSelectOptions = computed(() => [
+  { value: "", label: "请选择来源资源点" },
+  ...herbRecords.value.map(herb => ({ value: herb.id, label: `${herb.name} / ${herb.district}` }))
+]);
+const batchRecordSelectOptions = computed(() => [
+  { value: "", label: "请选择药材批次" },
+  ...batchOptions.value.map(batch => ({ value: batch.id, label: `${batch.batchName} / ${batch.batchCode}` }))
+]);
+const sampleRecordSelectOptions = computed(() => [
+  { value: "", label: "请选择检测样本" },
+  ...sampleOptions.value.map(sample => ({ value: sample.id, label: `${sample.sampleCode} / ${sample.herbName} / ${sample.batchName}` }))
+]);
+const workflowStatusOptions = statuses.map(value => ({ value, label: value }));
+const roleSelectOptions = Object.entries(roleOptions).map(([value, info]) => ({ value, label: info.label }));
+const courseSelectOptions = computed(() => [
+  { value: "", label: "请选择试验课程" },
+  ...courseOptions.value.map(course => ({ value: course.id, label: `${course.title} / ${course.teacher}` }))
+]);
+const fileSelectOptions = computed(() => [
+  { value: "", label: "请选择资料文件" },
+  ...uploadedFiles.value.map(file => ({ value: file.id, label: `${file.fileName} / ${file.category}` }))
+]);
 const latestGrowthComparison = computed(() => {
   const rows = selectedGrowthRows.value;
   const latest = rows[rows.length - 1];
@@ -1038,6 +1078,10 @@ const ownerNameFields = ["recorder", "uploader", "leader", "teacher", "owner",
   "trainer", "evaluator", "responsiblePerson", "collector",
   "operator", "analyst", "operatorName", "analystName"];
 
+function isOwnerField(name) {
+  return ownerNameFields.includes(name);
+}
+
 function isLinkField(name) {
   if (name === "batchId") return true;
   if (name === "herbId" && canEdit.value) return true;
@@ -1152,11 +1196,7 @@ watch(() => props.editId, id => {
               <strong>药材批次生长档案</strong>
               <small>同一批次的生长数据按时间排列，自动与上一条记录对比趋势</small>
           </div>
-          <select :value="selectedGrowthGroup?.key || ''" @change="selectGrowthGroup($event.target.value)">
-            <option v-for="group in growthSeriesGroups" :key="group.key" :value="group.key">
-              {{ group.batchName }}（{{ group.rows.length }} 次）
-            </option>
-          </select>
+          <AppSelect :model-value="selectedGrowthGroup?.key || ''" :options="growthGroupOptions" aria-label="选择药材批次生长档案" @change="selectGrowthGroup($event.target.value)" />
         </div>
 
         <div v-if="selectedGrowthGroup" class="trend-body">
@@ -1252,11 +1292,7 @@ watch(() => props.editId, id => {
             <strong>溯源码流转链路</strong>
             <small>同一溯源码下的事件会按时间顺序形成完整追溯记录</small>
           </div>
-          <select :value="selectedTraceGroup?.key || ''" @change="selectedTraceKey = $event.target.value">
-            <option v-for="group in traceGroups" :key="group.key" :value="group.key">
-              {{ group.batchName }} / {{ group.traceCode }}（{{ group.rows.length }} 环节）
-            </option>
-          </select>
+          <AppSelect :model-value="selectedTraceGroup?.key || ''" :options="traceGroupOptions" aria-label="选择溯源码流转链路" @change="selectedTraceKey = $event.target.value" />
         </div>
 
         <div v-if="selectedTraceGroup" class="trace-timeline">
@@ -1452,6 +1488,7 @@ watch(() => props.editId, id => {
             <td v-for="[name] in config.fields" :key="name">
               <span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(item, name) }}</span>
               <a v-else-if="isLinkField(name) && fieldLink(item, name)" :href="fieldLink(item, name)" class="field-link" :title="fieldLinkTitle(item, name)" @click.prevent="router.push(fieldLink(item, name))">{{ relationDisplay(item, name) }}</a>
+              <span v-else-if="isOwnerField(name)" class="field-link field-reference" title="该姓名尚未关联系统用户">{{ relationDisplay(item, name) }}</span>
               <template v-else>{{ relationDisplay(item, name) }}</template>
             </td>
             <td v-if="hasRowActions" class="sticky-action">
@@ -1475,7 +1512,7 @@ watch(() => props.editId, id => {
 
     <footer v-if="!isStudentCourseModule && !showProjectWorkflow" class="pagination">
       <span>第 {{ page }} / {{ totalPages }} 页</span>
-      <label>每页<select v-model.number="pageSize" @change="page = 1"><option :value="8">8</option><option :value="15">15</option><option :value="30">30</option></select>条</label>
+      <label>每页<AppSelect v-model="pageSize" :options="pageSizeOptions" aria-label="选择每页记录数" @change="page = 1" />条</label>
       <div>
         <button class="icon-button" type="button" title="上一页" :disabled="page <= 1" @click="page--"><ChevronLeft :size="17" /></button>
         <button class="icon-button" type="button" title="下一页" :disabled="page >= totalPages" @click="page++"><ChevronRight :size="17" /></button>
@@ -1561,31 +1598,16 @@ watch(() => props.editId, id => {
             <label v-for="[name, label] in editableFields" :key="name" :class="{ 'field-wide': textareaFields.includes(name) }">
               <span class="field-label">{{ label }}</span>
               <textarea v-if="textareaFields.includes(name)" v-model="form[name]"></textarea>
-              <select v-else-if="name === 'herbId'" v-model="form[name]" @change="applySelectedHerb(form[name])">
-                <option value="">请选择来源资源点</option>
-                <option v-for="herb in herbRecords" :key="herb.id" :value="herb.id">{{ herb.name }} / {{ herb.district }}</option>
-              </select>
-              <select v-else-if="name === 'batchId'" v-model="form[name]" :disabled="moduleKey === 'spectrum-comparisons' && Boolean(form.sampleId)" @change="applySelectedBatch(form[name])">
-                <option value="">请选择药材批次</option>
-                <option v-for="batch in batchOptions" :key="batch.id" :value="batch.id">{{ batch.batchName }} / {{ batch.batchCode }}</option>
-              </select>
-              <select v-else-if="name === 'sampleId'" v-model="form[name]" @change="applySelectedSample(form[name])">
-                <option value="">请选择检测样本</option>
-                <option v-for="sample in sampleOptions" :key="sample.id" :value="sample.id">{{ sample.sampleCode }} / {{ sample.herbName }} / {{ sample.batchName }}</option>
-              </select>
-              <select v-else-if="name === 'status' && moduleKey === 'herb-batches'" v-model="form[name]"><option value="active">使用中</option><option value="archived">已归档</option></select>
-              <select v-else-if="name === 'status' && moduleKey === 'lab-samples'" v-model="form[name]"><option value="collected">已采样</option><option value="tested">已检测</option><option value="consumed">已耗用</option><option value="archived">已归档</option></select>
-              <select v-else-if="name === 'status'" v-model="form[name]"><option v-for="status in statuses" :key="status">{{ status }}</option></select>
-              <select v-else-if="name === 'role'" v-model="form[name]"><option v-for="(info, code) in roleOptions" :key="code" :value="code">{{ info.label }}</option></select>
-              <select v-else-if="name === 'collectSource'" v-model="form[name]"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select>
-              <select v-else-if="name === 'courseId' && moduleKey === 'teaching-resources'" v-model="form[name]" @change="onCourseSelect(form[name])">
-                <option value="">请选择试验课程</option>
-                <option v-for="course in courseOptions" :key="course.id" :value="course.id">{{ course.title }} / {{ course.teacher }}</option>
-              </select>
-              <select v-else-if="name === 'fileId'" v-model="form[name]" @change="applySelectedFile(form[name])">
-                <option value="">请选择资料文件</option>
-                <option v-for="file in uploadedFiles" :key="file.id" :value="file.id">{{ file.fileName }} / {{ file.category }}</option>
-              </select>
+              <AppSelect v-else-if="name === 'herbId'" v-model="form[name]" :options="herbRecordSelectOptions" aria-label="选择来源资源点" @change="applySelectedHerb(form[name])" />
+              <AppSelect v-else-if="name === 'batchId'" v-model="form[name]" :options="batchRecordSelectOptions" :disabled="moduleKey === 'spectrum-comparisons' && Boolean(form.sampleId)" aria-label="选择药材批次" @change="applySelectedBatch(form[name])" />
+              <AppSelect v-else-if="name === 'sampleId'" v-model="form[name]" :options="sampleRecordSelectOptions" aria-label="选择检测样本" @change="applySelectedSample(form[name])" />
+              <AppSelect v-else-if="name === 'status' && moduleKey === 'herb-batches'" v-model="form[name]" :options="batchStatusOptions" aria-label="选择批次状态" />
+              <AppSelect v-else-if="name === 'status' && moduleKey === 'lab-samples'" v-model="form[name]" :options="sampleStatusOptions" aria-label="选择样本状态" />
+              <AppSelect v-else-if="name === 'status'" v-model="form[name]" :options="workflowStatusOptions" aria-label="选择审核状态" />
+              <AppSelect v-else-if="name === 'role'" v-model="form[name]" :options="roleSelectOptions" aria-label="选择用户角色" />
+              <AppSelect v-else-if="name === 'collectSource'" v-model="form[name]" :options="collectionSourceOptions" aria-label="选择采集来源" />
+              <AppSelect v-else-if="name === 'courseId' && moduleKey === 'teaching-resources'" v-model="form[name]" :options="courseSelectOptions" aria-label="选择试验课程" @change="onCourseSelect(form[name])" />
+              <AppSelect v-else-if="name === 'fileId'" v-model="form[name]" :options="fileSelectOptions" aria-label="选择资料文件" @change="applySelectedFile(form[name])" />
               <input v-else v-model="form[name]" :readonly="isLinkedReadonly(name)" :class="{ 'linked-readonly': isLinkedReadonly(name) }">
             </label>
             <MapPicker

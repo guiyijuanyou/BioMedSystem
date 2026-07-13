@@ -3,10 +3,12 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, reactive, ref, 
 import { useRouter } from "vue-router";
 import L from "leaflet";
 import "leaflet.markercluster";
+import gsap from "gsap";
 import {
   Activity, Award, BookOpen, Boxes, ClipboardCheck, FlaskConical, Leaf,
   GitBranch, Plus, RotateCcw, Search, X, ZoomIn, ZoomOut
 } from "lucide-vue-next";
+import AppSelect from "@/components/AppSelect.vue";
 
 const router = useRouter();
 const summary = inject("summary");
@@ -25,6 +27,7 @@ const selected = ref(null);
 const captureOpen = ref(false);
 const mapStatus = ref("正在加载真实地图...");
 const sourceIndex = ref(0);
+const mapSourceIndicator = ref(null);
 let map;
 let cluster;
 let selectedMarker;
@@ -70,6 +73,7 @@ const metrics = computed(() => [
 ]);
 
 const mapDataSource = ref("herbs");
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const mapData = computed(() => mapDataSource.value === "batches" ? batches.value : herbs.value);
 
@@ -80,6 +84,21 @@ const herbOptions = computed(() => [
 const districtOptions = computed(() => [
   ...new Set(mapData.value.map(item => item.district).filter(Boolean))
 ].sort());
+
+const herbSelectOptions = computed(() => [
+  { value: "", label: "全部" },
+  ...herbOptions.value.map(name => ({ value: name, label: name }))
+]);
+const districtSelectOptions = computed(() => [
+  { value: "", label: "全部区县" },
+  ...districtOptions.value.map(name => ({ value: name, label: name }))
+]);
+const tileSelectOptions = tileSources.map((source, index) => ({ value: index, label: source.name }));
+const batchSelectOptions = computed(() => [
+  { value: "", label: "请选择批次" },
+  ...batches.value.map(batch => ({ value: batch.id, label: `${batch.batchName} / ${batch.batchCode}` }))
+]);
+const collectionSourceOptions = ["电脑终端录入", "手机APP采集", "传感器网关"].map(value => ({ value, label: value }));
 
 const filtered = computed(() => mapData.value.filter(item => {
   const name = item.herbName || item.name || "";
@@ -235,8 +254,26 @@ function applyGrowthBatch() {
   growth.district = batch?.district || "";
 }
 
+function animateMapSource(source) {
+  if (!mapSourceIndicator.value) return;
+  gsap.to(mapSourceIndicator.value, {
+    xPercent: source === "batches" ? 100 : 0,
+    duration: reducedMotion.matches ? 0 : 0.22,
+    ease: "power2.out",
+    overwrite: "auto"
+  });
+}
+
+function createMapRecord() {
+  router.push({
+    path: mapDataSource.value === "batches" ? "/module/herb-batches" : "/module/herbs",
+    query: { create: "1" }
+  });
+}
+
 onMounted(async () => {
   await nextTick();
+  gsap.set(mapSourceIndicator.value, { xPercent: mapDataSource.value === "batches" ? 100 : 0 });
   map = L.map(mapElement.value, { center: [29.563, 106.5516], zoom: 7, minZoom: 6, maxZoom: 17, zoomControl: false });
   cluster = L.markerClusterGroup({ showCoverageOnHover: false, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 13, maxClusterRadius: 45 });
   map.addLayer(cluster);
@@ -251,6 +288,7 @@ onMounted(async () => {
 });
 
 watch([filtered, located], renderMarkers, { deep: true });
+watch(mapDataSource, animateMapSource);
 onBeforeUnmount(() => map?.remove());
 </script>
 
@@ -272,11 +310,11 @@ onBeforeUnmount(() => map?.remove());
           </div>
           <div class="map-tools">
             <div class="map-source-toggle">
+              <span ref="mapSourceIndicator" class="map-source-indicator" aria-hidden="true"></span>
               <button type="button" :class="{ active: mapDataSource === 'herbs' }" @click="mapDataSource = 'herbs'">资源点</button>
               <button type="button" :class="{ active: mapDataSource === 'batches' }" @click="mapDataSource = 'batches'">药材批次</button>
             </div>
-            <button v-if="canEditMap && mapDataSource === 'herbs'" class="map-add-point" type="button" @click="router.push({ path: '/module/herbs', query: { create: '1' } })"><Plus :size="16" />新增资源点</button>
-            <button v-if="canEditMap && mapDataSource === 'batches'" class="map-add-point" type="button" @click="router.push({ path: '/module/herb-batches', query: { create: '1' } })"><Plus :size="16" />新增批次</button>
+            <button v-if="canEditMap" class="map-add-point" type="button" @click="createMapRecord"><Plus :size="16" />新增</button>
             <button type="button" title="缩小地图" @click="map?.zoomOut()"><ZoomOut :size="17" /></button>
             <button type="button" title="复位地图" @click="resetMap"><RotateCcw :size="17" /></button>
             <button type="button" title="放大地图" @click="map?.zoomIn()"><ZoomIn :size="17" /></button>
@@ -288,15 +326,15 @@ onBeforeUnmount(() => map?.remove());
             <span>搜索</span>
             <div class="input-with-icon"><Search :size="15" /><input v-model="search" type="search" :placeholder="mapDataSource === 'batches' ? '批次名称或区县' : '药材名称或区县'"></div>
           </label>
-          <label><span>{{ mapDataSource === 'batches' ? '批次药材' : '药材品种' }}</span><select v-model="herbFilter"><option value="">全部</option><option v-for="name in herbOptions" :key="name">{{ name }}</option></select></label>
-          <label><span>所属区县</span><select v-model="districtFilter"><option value="">全部区县</option><option v-for="name in districtOptions" :key="name">{{ name }}</option></select></label>
+          <label><span>{{ mapDataSource === 'batches' ? '批次药材' : '药材品种' }}</span><AppSelect v-model="herbFilter" :options="herbSelectOptions" aria-label="筛选药材品种" /></label>
+          <label><span>所属区县</span><AppSelect v-model="districtFilter" :options="districtSelectOptions" aria-label="筛选所属区县" /></label>
           <button class="button-secondary" type="button" @click="clearFilters"><X :size="15" />清空</button>
           <output class="map-result-count">{{ filtered.length }} 条结果<span v-if="filtered.length - located.length">，{{ filtered.length - located.length }} 条缺少坐标</span></output>
         </div>
 
         <div class="map-source-row">
           <span :class="{ error: mapStatus.includes('失败') }">{{ mapStatus }}</span>
-          <label>底图<select :value="sourceIndex" @change="changeSource"><option v-for="(source, index) in tileSources" :key="source.name" :value="index">{{ source.name }}</option></select></label>
+          <label>底图<AppSelect v-model="sourceIndex" :options="tileSelectOptions" aria-label="切换地图底图" @change="changeSource" /></label>
         </div>
 
         <div class="map-content">
@@ -337,13 +375,13 @@ onBeforeUnmount(() => map?.remove());
           <button class="button-secondary" type="button" @click="captureOpen = !captureOpen">{{ captureOpen ? "收起录入" : "展开录入" }}</button>
         </div>
         <form v-if="captureOpen" class="form-grid quick-growth-form" @submit.prevent="submitGrowth">
-          <label>药材批次<select v-model="growth.batchId" @change="applyGrowthBatch"><option value="">请选择批次</option><option v-for="batch in batches" :key="batch.id" :value="batch.id">{{ batch.batchName }} / {{ batch.batchCode }}</option></select></label>
+          <label>药材批次<AppSelect v-model="growth.batchId" :options="batchSelectOptions" placeholder="请选择批次" aria-label="选择药材批次" @change="applyGrowthBatch" /></label>
           <label>药材名称<input v-model="growth.herbName" readonly></label>
           <label>采集地点<input v-model="growth.district" readonly></label>
           <label>温度<input v-model="growth.temperature"></label>
           <label>湿度<input v-model="growth.humidity"></label>
           <label>土壤 PH<input v-model="growth.soilPh"></label>
-          <label>采集来源<select v-model="growth.collectSource"><option>电脑终端录入</option><option>手机APP采集</option><option>传感器网关</option></select></label>
+          <label>采集来源<AppSelect v-model="growth.collectSource" :options="collectionSourceOptions" aria-label="选择采集来源" /></label>
           <label>采集时间<input v-model="growth.recordedAt"></label>
           <button type="submit">提交采集数据</button>
         </form>
