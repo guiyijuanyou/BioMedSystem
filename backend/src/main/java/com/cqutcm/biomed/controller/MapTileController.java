@@ -1,5 +1,7 @@
 package com.cqutcm.biomed.controller;
 
+import com.cqutcm.biomed.config.AppDataPathResolver;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -32,7 +34,13 @@ public class MapTileController {
             .connectTimeout(Duration.ofSeconds(10))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
-    private final Path cacheRoot = Path.of("data", "map-cache").toAbsolutePath().normalize();
+
+    private final Path cacheRoot;
+
+    public MapTileController(@Value("${app.map-cache-dir:data/map-cache}") String mapCacheDir,
+                             AppDataPathResolver pathResolver) {
+        this.cacheRoot = pathResolver.resolve(mapCacheDir);
+    }
 
     @GetMapping(value = "/{source}/{z}/{x}/{y}", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> tile(

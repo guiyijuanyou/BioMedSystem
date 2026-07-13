@@ -1,5 +1,6 @@
 package com.cqutcm.biomed.service;
 
+import com.cqutcm.biomed.config.AppDataPathResolver;
 import com.cqutcm.biomed.entity.FileAsset;
 import com.cqutcm.biomed.mapper.FileAssetMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,10 +43,11 @@ public class FileAssetService {
     public FileAssetService(
             FileAssetMapper mapper,
             @Value("${app.upload-dir:data/uploads}") String uploadDir,
-            @Value("${app.upload-max-bytes:268435456}") long maxBytes
+            @Value("${app.upload-max-bytes:268435456}") long maxBytes,
+            AppDataPathResolver pathResolver
     ) {
         this.mapper = mapper;
-        this.uploadDir = Path.of(uploadDir).toAbsolutePath().normalize();
+        this.uploadDir = pathResolver.resolve(uploadDir);
         this.maxBytes = maxBytes;
     }
 

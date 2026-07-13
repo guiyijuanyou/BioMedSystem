@@ -25,7 +25,7 @@ spring:
 
   data:
     redis:
-      # 请修改为你的 Redis 连接信息（如有）
+      # 请修改为你的 Redis 连接信息
       host: localhost
       port: 6379
       password:
@@ -40,6 +40,8 @@ spring:
 app:
   upload-dir: data/uploads
   upload-max-bytes: 268435456
+  map-cache-dir: data/map-cache
+  backup-dir: data/backup
 
 mybatis:
   configuration:

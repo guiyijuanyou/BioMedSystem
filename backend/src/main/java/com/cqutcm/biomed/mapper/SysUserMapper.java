@@ -57,4 +57,7 @@ public interface SysUserMapper extends BiomedBaseMapper<SysUser> {
     int updateProfile(@Param("id") String id, @Param("phone") String phone, @Param("email") String email,
                       @Param("avatarUrl") String avatarUrl, @Param("title") String title,
                       @Param("researchArea") String researchArea, @Param("bio") String bio);
+
+    @Select("SELECT * FROM sys_user WHERE display_name = #{name}")
+    SysUser findByDisplayName(String name);
 }
