@@ -1,10 +1,12 @@
 package com.cqutcm.biomed.service;
 
+import com.cqutcm.biomed.config.AppDataPathResolver;
 import com.cqutcm.biomed.entity.SysUser;
 import com.cqutcm.biomed.mapper.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -44,6 +46,7 @@ public class BackupService {
     private final SysUserRoleMapper userRoleMapper;
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
+    private final Path backupDir;
 
     public BackupService(HerbMapper herbMapper, HerbBatchMapper batchMapper,
                          LabSampleMapper sampleMapper,
@@ -57,7 +60,9 @@ public class BackupService {
                          AchievementRecordMapper achievementMapper, AchievementStandardMapper standardMapper,
                          SysUserMapper userMapper, SysRoleMapper roleMapper,
                          SysUserRoleMapper userRoleMapper, JdbcTemplate jdbc,
-                         ObjectMapper objectMapper) {
+                         ObjectMapper objectMapper,
+                         AppDataPathResolver pathResolver,
+                         @Value("${app.backup-dir:data}") String backupDir) {
         this.herbMapper = herbMapper;
         this.batchMapper = batchMapper;
         this.sampleMapper = sampleMapper;
@@ -79,6 +84,7 @@ public class BackupService {
         this.userRoleMapper = userRoleMapper;
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
+        this.backupDir = pathResolver.resolve(backupDir);
     }
 
     /** 每天凌晨 3:00 自动备份 */
@@ -99,9 +105,9 @@ public class BackupService {
 
     private Path execute() {
         try {
-            Files.createDirectories(Path.of("data"));
+            Files.createDirectories(backupDir);
             String timestamp = LocalDateTime.now().format(FILE_FMT);
-            Path target = Path.of("data", "backup-" + timestamp + ".json");
+            Path target = backupDir.resolve("backup-" + timestamp + ".json");
             Map<String, Object> backup = new LinkedHashMap<>();
             backup.put("herbsNormalized", herbMapper.findAll());
             backup.put("herbBatchesNormalized", batchMapper.findAll());
