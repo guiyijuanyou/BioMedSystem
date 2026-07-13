@@ -1,0 +1,15 @@
+**/.git
+**/node_modules
+**/target
+**/dist
+**/data
+**/logs
+**/*.log
+**/.env
+**/.env.*
+**/.gitignore
+README.md
+backend/.mvn/wrapper/maven-wrapper.jar
+frontend/node_modules
+frontend/dist
+.dockerignore

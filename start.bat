@@ -2,8 +2,7 @@
 cd /d "%~dp0"
 
 set "APP_JAR=backend\target\biomed-digital-system-1.0.0.jar"
-set "MAVEN_CMD=D:\IntelliJ IDEA 2024.3.1.1\plugins\maven\lib\maven3\bin\mvn.cmd"
-set "MAVEN_SETTINGS=%USERPROFILE%\.m2\settings.xml"
+set "MVNW_CMD=backend\mvnw.cmd"
 
 
 netstat -ano | findstr /R /C:":8088 .*LISTENING" >nul
@@ -36,28 +35,19 @@ if errorlevel 1 (
 popd
 
 echo Building Spring Boot backend...
-pushd backend
-if exist "%MAVEN_CMD%" (
-  if exist "%MAVEN_SETTINGS%" (
-    call "%MAVEN_CMD%" -s "%MAVEN_SETTINGS%" -DskipTests package
-  ) else (
-    call "%MAVEN_CMD%" -DskipTests package
-  )
-) else (
-  if exist "%MAVEN_SETTINGS%" (
-    call mvn.cmd -s "%MAVEN_SETTINGS%" -DskipTests package
-  ) else (
-    call mvn.cmd -DskipTests package
-  )
-)
-if errorlevel 1 (
+if not exist "%MVNW_CMD%" (
   echo.
-  echo Backend build failed. Check the network and Maven configuration.
-  popd
+  echo Maven Wrapper not found. Run: cd backend ^&^& mvn wrapper:wrapper -Dmaven=3.9.9
   pause
   exit /b 1
 )
-popd
+call "%MVNW_CMD%" -Pprod -DskipTests package
+if errorlevel 1 (
+  echo.
+  echo Backend build failed. Check the network and Maven configuration.
+  pause
+  exit /b 1
+)
 
 if not exist "%APP_JAR%" (
   echo.
