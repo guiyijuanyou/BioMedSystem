@@ -4517,6 +4517,33 @@ thead .sticky-action {
     padding-inline: 14px;
   }
 }
+
+/* Authenticated homepage DNA background */
+.shell,
+.shell.nav-collapsed {
+  position: relative;
+  isolation: isolate;
+}
+
+.authenticated-leaf-background {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  background: #f6f9fc;
+  pointer-events: none;
+}
+
+.authenticated-leaf-background .biomed-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.workspace {
+  position: relative;
+  z-index: 1;
+}
 .shell { transition: grid-template-columns .2s ease; }
 .shell.nav-collapsed { grid-template-columns: 72px minmax(0, 1fr); }
 .grouped-nav { overflow-y: auto; scrollbar-width: thin; }

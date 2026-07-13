@@ -1,0 +1,35 @@
+.biomed-scene {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+.biomed-scene canvas {
+  opacity: .98;
+}
+
+.biomed-scene::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 83% 8%, rgba(255, 133, 66, .24), transparent 28%),
+    radial-gradient(ellipse at 70% 17%, rgba(255, 83, 168, .18), transparent 32%),
+    radial-gradient(ellipse at 58% 13%, rgba(99, 91, 255, .17), transparent 35%),
+    radial-gradient(circle at 28% 40%, rgba(104, 207, 255, .13), transparent 30%),
+    linear-gradient(90deg, rgba(255,255,255,.88) 0%, rgba(246,249,252,.38) 48%, rgba(255,255,255,.25) 100%);
+}
+
+.biomed-scene__fallback {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .biomed-scene::after {
+    background:
+      radial-gradient(ellipse at 76% 8%, rgba(255,122,89,.2), transparent 32%),
+      radial-gradient(ellipse at 58% 16%, rgba(99,91,255,.15), transparent 38%),
+      linear-gradient(180deg,rgba(255,255,255,.28),rgba(246,249,252,.62) 55%,rgba(246,249,252,.94));
+  }
+}
