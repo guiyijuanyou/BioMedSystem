@@ -1,19 +1,23 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AuthenticatedLeafBackground from "@/components/background/AuthenticatedLeafBackground.vue";
-import {
-  AUTHENTICATED_BACKGROUND_LIMITS,
-  resolveAuthenticatedBackgroundConfig,
-} from "@/composables/useAuthenticatedBackground";
 
 const appSource = readFileSync(resolve(process.cwd(), "src/App.vue"), "utf8");
+const backgroundSource = readFileSync(
+  resolve(process.cwd(), "src/components/background/AuthenticatedLeafBackground.vue"),
+  "utf8",
+);
 const loginSource = readFileSync(resolve(process.cwd(), "src/views/LoginView.vue"), "utf8");
 const loginSceneSource = readFileSync(
   resolve(process.cwd(), "src/components/login/BiomedScene.vue"),
   "utf8",
 );
+const sharedSceneStylesPath = resolve(process.cwd(), "src/styles/biomed-scene.css");
+const sharedSceneStyles = existsSync(sharedSceneStylesPath)
+  ? readFileSync(sharedSceneStylesPath, "utf8")
+  : "";
 const styles = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
 const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8"));
 
@@ -26,14 +30,11 @@ function mediaQuery(matches) {
     removeEventListener: vi.fn(),
     addListener: vi.fn(),
     removeListener: vi.fn(),
-    dispatchEvent: vi.fn(),
   };
 }
 
 beforeEach(() => {
-  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
   vi.stubGlobal("matchMedia", vi.fn(query => mediaQuery(query.includes("prefers-reduced-motion"))));
-  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
 });
 
 afterEach(() => {
@@ -41,92 +42,45 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("authenticated background runtime policy", () => {
-  it("enables the bounded desktop WebGL configuration", () => {
-    expect(resolveAuthenticatedBackgroundConfig({
-      viewportWidth: 1440,
-      coarsePointer: false,
-      reducedMotion: false,
-      webglSupported: true,
-      hidden: false,
-    })).toEqual({
-      shouldRenderWebgl: true,
-      active: true,
-      dpr: [1, 1.25],
-      particleCount: 32,
-    });
-
-    expect(AUTHENTICATED_BACKGROUND_LIMITS).toEqual({
-      mobileBreakpoint: 768,
-      maxDpr: 1.25,
-      desktopParticleCount: 32,
-    });
-  });
-
-  it("falls back on mobile and coarse-pointer devices", () => {
-    const config = resolveAuthenticatedBackgroundConfig({
-      viewportWidth: 390,
-      coarsePointer: true,
-      reducedMotion: false,
-      webglSupported: true,
-      hidden: false,
-    });
-
-    expect(config.shouldRenderWebgl).toBe(false);
-    expect(config.particleCount).toBe(0);
-  });
-
-  it("falls back when reduced motion is requested", () => {
-    expect(resolveAuthenticatedBackgroundConfig({
-      viewportWidth: 1440,
-      coarsePointer: false,
-      reducedMotion: true,
-      webglSupported: true,
-      hidden: false,
-    }).shouldRenderWebgl).toBe(false);
-  });
-
-  it("pauses active updates while the page is hidden", () => {
-    const config = resolveAuthenticatedBackgroundConfig({
-      viewportWidth: 1440,
-      coarsePointer: false,
-      reducedMotion: false,
-      webglSupported: true,
-      hidden: true,
-    });
-
-    expect(config.shouldRenderWebgl).toBe(true);
-    expect(config.active).toBe(false);
-  });
-});
-
 describe("authenticated leaf background components", () => {
-  it("keeps the static decorative fallback under reduced motion", () => {
-    const wrapper = mount(AuthenticatedLeafBackground);
+  it("reuses the homepage scene at its first-screen state", () => {
+    const wrapper = mount(AuthenticatedLeafBackground, {
+      global: {
+        stubs: {
+          BiomedScene: { props: ["progress"], template: '<div data-test="biomed-scene-stub" />' },
+        },
+      },
+    });
 
     expect(wrapper.attributes("aria-hidden")).toBe("true");
     expect(wrapper.classes()).toContain("authenticated-leaf-background");
-    expect(wrapper.find(".authenticated-leaf-background__static").exists()).toBe(true);
-    expect(wrapper.find("canvas").exists()).toBe(false);
+    expect(wrapper.find('[data-test="biomed-scene-stub"]').exists()).toBe(true);
+    expect(backgroundSource).toContain('import BiomedScene from "@/components/login/BiomedScene.vue"');
+    expect(backgroundSource).toContain('<BiomedScene :progress="0" />');
+    expect(backgroundSource).not.toContain("MedicinalLeafScene");
+    expect(backgroundSource).not.toContain("useAuthenticatedBackground");
+    expect(loginSceneSource).toContain("@/styles/biomed-scene.css");
+    expect(sharedSceneStyles).toContain(".biomed-scene::after");
 
     wrapper.unmount();
   });
 
-  it("uses the accepted TresJS primitive and transparent canvas configuration", () => {
-    const modelSource = readFileSync(
-      resolve(process.cwd(), "src/components/background/MedicinalLeafModel.vue"),
-      "utf8",
-    );
-    const sceneSource = readFileSync(
-      resolve(process.cwd(), "src/components/background/MedicinalLeafScene.vue"),
-      "utf8",
-    );
+  it("disables interaction only for the authenticated wrapper", () => {
+    expect(styles).toMatch(/\.authenticated-leaf-background\s+\.biomed-scene\s*\{[\s\S]*?pointer-events:\s*none/);
+    expect(styles).not.toContain("authenticated-leaf-background__static-leaf");
+    expect(loginSceneSource).toContain('@pointermove="movePointer"');
+  });
 
-    expect(modelSource).toContain('<primitive :object="model.group" />');
-    expect(modelSource).not.toContain("TresPrimitive");
-    expect(sceneSource).toContain('clear-color="#000000"');
-    expect(sceneSource).toContain(':clear-alpha="0"');
-    expect(sceneSource).toContain(':dpr="dpr"');
+  it("removes the retired leaf implementation", () => {
+    for (const file of [
+      "src/composables/useAuthenticatedBackground.js",
+      "src/components/background/medicinalLeafGeometry.js",
+      "src/components/background/MedicinalLeafModel.vue",
+      "src/components/background/MedicinalLeafScene.vue",
+      "src/components/__tests__/medicinalLeafGeometry.test.js",
+    ]) {
+      expect(existsSync(resolve(process.cwd(), file))).toBe(false);
+    }
   });
 });
 

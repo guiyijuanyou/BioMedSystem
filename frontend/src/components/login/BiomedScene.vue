@@ -3,6 +3,7 @@ import { computed, ref } from "vue";
 import { TresCanvas } from "@tresjs/core";
 import DnaHelix from "@/components/login/DnaHelix.vue";
 import { resolveSceneState } from "@/composables/useLoginScene";
+import "@/styles/biomed-scene.css";
 
 const props = defineProps({ progress: { type: Number, default: 0 } });
 const pointer = ref({ x: 0, y: 0 });
