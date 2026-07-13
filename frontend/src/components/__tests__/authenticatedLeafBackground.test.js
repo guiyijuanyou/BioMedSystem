@@ -1,8 +1,36 @@
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { mount } from "@vue/test-utils";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import AuthenticatedLeafBackground from "@/components/background/AuthenticatedLeafBackground.vue";
 import {
   AUTHENTICATED_BACKGROUND_LIMITS,
   resolveAuthenticatedBackgroundConfig,
 } from "@/composables/useAuthenticatedBackground";
+
+function mediaQuery(matches) {
+  return {
+    matches,
+    media: "",
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  };
+}
+
+beforeEach(() => {
+  Object.defineProperty(window, "innerWidth", { configurable: true, value: 1440 });
+  vi.stubGlobal("matchMedia", vi.fn(query => mediaQuery(query.includes("prefers-reduced-motion"))));
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("authenticated background runtime policy", () => {
   it("enables the bounded desktop WebGL configuration", () => {
@@ -60,5 +88,35 @@ describe("authenticated background runtime policy", () => {
 
     expect(config.shouldRenderWebgl).toBe(true);
     expect(config.active).toBe(false);
+  });
+});
+
+describe("authenticated leaf background components", () => {
+  it("keeps the static decorative fallback under reduced motion", () => {
+    const wrapper = mount(AuthenticatedLeafBackground);
+
+    expect(wrapper.attributes("aria-hidden")).toBe("true");
+    expect(wrapper.classes()).toContain("authenticated-leaf-background");
+    expect(wrapper.find(".authenticated-leaf-background__static").exists()).toBe(true);
+    expect(wrapper.find("canvas").exists()).toBe(false);
+
+    wrapper.unmount();
+  });
+
+  it("uses the accepted TresJS primitive and transparent canvas configuration", () => {
+    const modelSource = readFileSync(
+      resolve(process.cwd(), "src/components/background/MedicinalLeafModel.vue"),
+      "utf8",
+    );
+    const sceneSource = readFileSync(
+      resolve(process.cwd(), "src/components/background/MedicinalLeafScene.vue"),
+      "utf8",
+    );
+
+    expect(modelSource).toContain('<primitive :object="model.group" />');
+    expect(modelSource).not.toContain("TresPrimitive");
+    expect(sceneSource).toContain('clear-color="#000000"');
+    expect(sceneSource).toContain(':clear-alpha="0"');
+    expect(sceneSource).toContain(':dpr="dpr"');
   });
 });
