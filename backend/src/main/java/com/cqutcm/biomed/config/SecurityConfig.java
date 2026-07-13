@@ -67,6 +67,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/map/tiles/**").permitAll()
                 .requestMatchers("/api/mobile/growth-records/batch", "/api/mobile/sync/status").permitAll()
                 .requestMatchers("/api/soap/**").permitAll()
+                .requestMatchers("/api/actuator/**").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
