@@ -323,6 +323,11 @@ public class ResearchDataService {
         if (cleaned.containsKey("difference") && !cleaned.containsKey("differenceDesc")) {
             cleaned.put("differenceDesc", cleaned.get("difference"));
         }
+        // Pass through data point and algorithm fields
+        if (cleaned.containsKey("dataPointsJson") && !cleaned.containsKey("sampleDataJson")) {
+            cleaned.put("sampleDataJson", cleaned.get("dataPointsJson"));
+        }
+        cleaned.putIfAbsent("compareAlgorithm", "COSINE");
         return cleaned;
     }
 
@@ -382,6 +387,16 @@ public class ResearchDataService {
     private Map<String, Object> spectrumView(Map<String, Object> source) {
         Map<String, Object> view = new LinkedHashMap<>(source);
         view.put("operator", source.get("operatorName"));
+        // Keep data JSON fields but don't send full data points in list views (too large)
+        // Only include a flag indicating whether data is available
+        String sampleData = String.valueOf(source.getOrDefault("sampleDataJson", ""));
+        String refData = String.valueOf(source.getOrDefault("referenceDataJson", ""));
+        view.put("hasDataPoints", sampleData != null && !"null".equals(sampleData) && !"[]".equals(sampleData) && sampleData.length() > 10);
+        view.put("hasReferenceData", refData != null && !"null".equals(refData) && !"[]".equals(refData) && refData.length() > 10);
+        // Don't include the full JSON in list view to reduce payload size
+        view.remove("sampleDataJson");
+        view.remove("referenceDataJson");
+        view.put("compareAlgorithm", source.getOrDefault("compareAlgorithm", "COSINE"));
         return view;
     }
 

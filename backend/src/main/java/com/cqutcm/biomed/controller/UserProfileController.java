@@ -96,14 +96,14 @@ public class UserProfileController {
     private Map<String, Object> buildPublicProfileMap(Map<String, Object> userMap) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", userMap.get("id"));
-        m.put("name", userMap.get("display_name"));
+        m.put("name", val(userMap, "display_name", "displayName"));
         m.put("department", userMap.get("department"));
         m.put("title", userMap.get("title"));
-        m.put("researchArea", userMap.get("research_area"));
+        m.put("researchArea", val(userMap, "research_area", "researchArea"));
         m.put("bio", userMap.get("bio"));
-        m.put("avatarUrl", userMap.get("avatar_url"));
-        m.put("role", userMap.get("role_code"));
-        m.put("roleLabel", userMap.get("role_name"));
+        m.put("avatarUrl", val(userMap, "avatar_url", "avatarUrl"));
+        m.put("role", val(userMap, "role_code", "roleCode"));
+        m.put("roleLabel", val(userMap, "role_name", "roleName"));
         return m;
     }
 
@@ -121,5 +121,11 @@ public class UserProfileController {
     private String str(Map<String, Object> m, String key) {
         Object v = m.get(key);
         return v == null ? null : String.valueOf(v);
+    }
+
+    private Object val(Map<String, Object> m, String snakeKey, String camelKey) {
+        Object v = m.get(snakeKey);
+        if (v != null) return v;
+        return m.get(camelKey);
     }
 }

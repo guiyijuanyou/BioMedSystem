@@ -46,6 +46,12 @@ public class SpectrumComparison {
     private String reviewComment;
     @TableField("reviewed_at")
     private LocalDateTime reviewedAt;
+    @TableField("sample_data_json")
+    private String sampleDataJson;
+    @TableField("reference_data_json")
+    private String referenceDataJson;
+    @TableField("compare_algorithm")
+    private String compareAlgorithm;
     @Version
     @TableField("version")
     private Integer version;
@@ -88,6 +94,12 @@ public class SpectrumComparison {
     public void setReviewComment(String reviewComment) { this.reviewComment = reviewComment; }
     public LocalDateTime getReviewedAt() { return reviewedAt; }
     public void setReviewedAt(LocalDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+    public String getSampleDataJson() { return sampleDataJson; }
+    public void setSampleDataJson(String sampleDataJson) { this.sampleDataJson = sampleDataJson; }
+    public String getReferenceDataJson() { return referenceDataJson; }
+    public void setReferenceDataJson(String referenceDataJson) { this.referenceDataJson = referenceDataJson; }
+    public String getCompareAlgorithm() { return compareAlgorithm; }
+    public void setCompareAlgorithm(String compareAlgorithm) { this.compareAlgorithm = compareAlgorithm; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
     public LocalDateTime getCreatedAt() { return createdAt; }
