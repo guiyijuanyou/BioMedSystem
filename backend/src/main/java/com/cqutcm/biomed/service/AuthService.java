@@ -5,6 +5,7 @@ import com.cqutcm.biomed.mapper.SysUserMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,7 +25,7 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     public static final String SESSION_COOKIE = "BIOMED_SESSION";
-    public static final Duration SESSION_TTL = Duration.ofHours(8);
+    private final Duration sessionTtl;
     private static final String REDIS_SESSION_PREFIX = "biomed:session:";
     private static final String REDIS_LOGIN_FAIL_PREFIX = "biomed:loginfail:";
     private static final int MAX_LOGIN_FAILURES = 5;
@@ -35,18 +36,25 @@ public class AuthService {
     private final Map<String, UserSession> fallbackSessions;
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
+    private final int passwordMinLength;
     private volatile boolean redisAvailable = true;
 
     public AuthService(SysUserMapper sysUserMapper,
                        PasswordEncoder passwordEncoder,
                        StringRedisTemplate redisTemplate,
-                       ObjectMapper objectMapper) {
+                       ObjectMapper objectMapper,
+                       @Value("${app.session.ttl-minutes:480}") long sessionTtlMinutes,
+                       @Value("${app.password.min-length:8}") int passwordMinLength) {
         this.sysUserMapper = sysUserMapper;
         this.passwordEncoder = passwordEncoder;
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.fallbackSessions = new ConcurrentHashMap<>();
+        this.sessionTtl = Duration.ofMinutes(sessionTtlMinutes);
+        this.passwordMinLength = passwordMinLength;
     }
+
+    public Duration getSessionTtl() { return sessionTtl; }
 
     // ==================== LOGIN ====================
 
@@ -67,7 +75,7 @@ public class AuthService {
         clearLoginFailures(username);
 
         String token = UUID.randomUUID().toString();
-        Instant expiresAt = Instant.now().plus(SESSION_TTL);
+        Instant expiresAt = Instant.now().plus(sessionTtl);
         UserSession session = new UserSession(user, expiresAt);
         storeSession(token, session);
 
@@ -296,8 +304,20 @@ public class AuthService {
         if (!passwordEncoder.matches(oldPassword, sysUser.getPasswordHash())) {
             throw new IllegalArgumentException("原密码错误");
         }
-        if (newPassword == null || newPassword.length() < 6) {
-            throw new IllegalArgumentException("新密码长度不能少于6位");
+        if (newPassword == null || newPassword.length() < passwordMinLength) {
+            throw new IllegalArgumentException("密码长度不能少于" + passwordMinLength + "位");
+        }
+        if (newPassword.length() > 128) {
+            throw new IllegalArgumentException("密码长度不能超过128位");
+        }
+        if (!newPassword.matches(".*[A-Z].*")) {
+            throw new IllegalArgumentException("密码必须包含大写字母");
+        }
+        if (!newPassword.matches(".*[a-z].*")) {
+            throw new IllegalArgumentException("密码必须包含小写字母");
+        }
+        if (!newPassword.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("密码必须包含数字");
         }
         sysUserMapper.updatePasswordHash(sysUser.getId(), passwordEncoder.encode(newPassword));
     }

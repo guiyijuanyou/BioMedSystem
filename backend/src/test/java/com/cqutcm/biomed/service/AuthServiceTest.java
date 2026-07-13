@@ -34,7 +34,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         // redis 传 null → AuthService 自动降级到本地内存
-        authService = new AuthService(userMapper, passwordEncoder, null, objectMapper);
+        authService = new AuthService(userMapper, passwordEncoder, null, objectMapper, 480L, 8);
     }
 
     @Test
