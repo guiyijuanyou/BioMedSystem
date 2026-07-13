@@ -8,6 +8,15 @@ import {
   resolveAuthenticatedBackgroundConfig,
 } from "@/composables/useAuthenticatedBackground";
 
+const appSource = readFileSync(resolve(process.cwd(), "src/App.vue"), "utf8");
+const loginSource = readFileSync(resolve(process.cwd(), "src/views/LoginView.vue"), "utf8");
+const loginSceneSource = readFileSync(
+  resolve(process.cwd(), "src/components/login/BiomedScene.vue"),
+  "utf8",
+);
+const styles = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+const packageJson = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf8"));
+
 function mediaQuery(matches) {
   return {
     matches,
@@ -118,5 +127,27 @@ describe("authenticated leaf background components", () => {
     expect(sceneSource).toContain('clear-color="#000000"');
     expect(sceneSource).toContain(':clear-alpha="0"');
     expect(sceneSource).toContain(':dpr="dpr"');
+  });
+});
+
+describe("authenticated-only shell integration", () => {
+  it("mounts one async background inside the authenticated shell", () => {
+    expect(appSource).toContain("defineAsyncComponent");
+    expect(appSource).toContain("@/components/background/AuthenticatedLeafBackground.vue");
+    expect(appSource).toMatch(/<div class="shell"[\s\S]*?<AuthenticatedLeafBackground/);
+  });
+
+  it("does not modify or replace the immersive login scene", () => {
+    expect(loginSource).not.toContain("AuthenticatedLeafBackground");
+    expect(loginSceneSource).toContain("DnaHelix");
+  });
+
+  it("keeps authenticated content above the fixed decorative layer", () => {
+    expect(styles).toMatch(/\.authenticated-leaf-background\s*\{/);
+    expect(styles).toMatch(/\.workspace\s*\{[\s\S]*?z-index:\s*[1-9]/);
+  });
+
+  it("adds no second 3D runtime", () => {
+    expect(packageJson.dependencies.ogl).toBeUndefined();
   });
 });
