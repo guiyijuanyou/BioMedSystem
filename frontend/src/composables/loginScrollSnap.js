@@ -13,6 +13,18 @@ export function nearestSnapPoint(progress, snapPoints) {
   snapPoints[0] ?? 0);
 }
 
+export function directionalSnapPoint(scroll, direction, maxScroll, snapPoints) {
+  if (!snapPoints.length) return 0;
+  const safeMax = Math.max(1, Number(maxScroll) || 1);
+  const currentPoint = nearestSnapPoint((Number(scroll) || 0) / safeMax, snapPoints);
+  const currentIndex = Math.max(0, snapPoints.indexOf(currentPoint));
+  const adjacentIndex = Math.max(
+    0,
+    Math.min(snapPoints.length - 1, currentIndex + Math.sign(Number(direction) || 0)),
+  );
+  return snapPoints[adjacentIndex];
+}
+
 export function projectedSnapPoint(scroll, velocity, maxScroll, snapPoints, projectionFrames = 18) {
   const safeMax = Math.max(1, Number(maxScroll) || 1);
   const currentProgress = clamp((Number(scroll) || 0) / safeMax);
