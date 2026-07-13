@@ -1,5 +1,6 @@
 package com.cqutcm.biomed.service;
 
+import com.cqutcm.biomed.config.AppDataPathResolver;
 import com.cqutcm.biomed.entity.FileAsset;
 import com.cqutcm.biomed.mapper.FileAssetMapper;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class FileAssetServiceTest {
     @Test
     void storesValidPngInsideConfiguredDirectory() {
         FileAssetMapper mapper = mock(FileAssetMapper.class);
-        FileAssetService service = new FileAssetService(mapper, tempDir.toString(), 1024);
+        FileAssetService service = new FileAssetService(mapper, tempDir.toString(), 1024, new AppDataPathResolver());
         byte[] png = new byte[] {
                 (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00
         };
@@ -41,7 +42,7 @@ class FileAssetServiceTest {
 
     @Test
     void rejectsExecutableWebContent() {
-        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 1024);
+        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 1024, new AppDataPathResolver());
         MockMultipartFile upload = new MockMultipartFile(
                 "file", "attack.html", "text/html", "<script>alert(1)</script>".getBytes()
         );
@@ -51,7 +52,7 @@ class FileAssetServiceTest {
 
     @Test
     void rejectsFileWhoseContentDoesNotMatchExtension() {
-        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 1024);
+        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 1024, new AppDataPathResolver());
         MockMultipartFile upload = new MockMultipartFile(
                 "file", "fake.png", "image/png", "not a png".getBytes()
         );
@@ -61,7 +62,7 @@ class FileAssetServiceTest {
 
     @Test
     void rejectsOversizedBase64Upload() {
-        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 4);
+        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 4, new AppDataPathResolver());
         String content = Base64.getEncoder().encodeToString("12345".getBytes());
 
         assertThrows(IllegalArgumentException.class, () -> service.uploadBase64(Map.of(
@@ -73,7 +74,7 @@ class FileAssetServiceTest {
 
     @Test
     void rejectsStoredPathOutsideUploadDirectory() {
-        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 1024);
+        FileAssetService service = new FileAssetService(mock(FileAssetMapper.class), tempDir.toString(), 1024, new AppDataPathResolver());
         FileAsset file = new FileAsset();
         file.setStoragePath(tempDir.resolve("..").resolve("outside.txt").normalize().toString());
 

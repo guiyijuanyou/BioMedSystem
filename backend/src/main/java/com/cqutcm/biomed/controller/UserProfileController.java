@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.LinkedHashMap;
@@ -60,6 +61,16 @@ public class UserProfileController {
         PermissionService.Actor actor = authService.requireActor(authorization);
         var updated = sysUserMapper.findByUsername(loginUsername);
         return buildProfileMap(updated, actor);
+    }
+
+    @GetMapping("/by-name")
+    public Map<String, Object> getProfileByName(
+            @RequestParam String name,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        authService.requireActor(authorization);
+        var user = sysUserMapper.findByDisplayName(name);
+        if (user == null) throw new IllegalArgumentException("用户不存在：" + name);
+        return getUserProfile(user.getId(), authorization);
     }
 
     @GetMapping("/{userId}/profile")
