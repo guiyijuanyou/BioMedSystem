@@ -5331,7 +5331,7 @@ tbody tr:hover,
   display: none;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 860px) {
   html,
   body,
   #app {
@@ -5574,5 +5574,25 @@ tbody tr:hover,
   .leaflet-control-container,
   .leaflet-control-container * {
     max-width: calc(100vw - 48px);
+  }
+}
+@media (min-width: 601px) and (max-width: 860px) {
+  .sidebar,
+  .sidebar.collapsed {
+    top: 12px;
+    right: auto;
+    bottom: 12px;
+    left: 12px;
+    width: min(360px, calc(100vw - 24px));
+    height: auto;
+    max-height: calc(var(--app-height, 100vh) - 24px);
+    transform: translate3d(calc(-100% - 24px), 0, 0);
+  }
+
+  .sidebar.open,
+  .shell.drawer-open .sidebar,
+  .sidebar.collapsed.open,
+  .shell.drawer-open .sidebar.collapsed {
+    transform: translate3d(0, 0, 0);
   }
 }
