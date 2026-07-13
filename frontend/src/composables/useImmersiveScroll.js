@@ -4,7 +4,7 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import {
   createSectionSnapPoints,
-  projectedSnapPoint,
+  directionalSnapPoint,
 } from "@/composables/loginScrollSnap";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -19,7 +19,8 @@ export function useImmersiveScroll(sectionIds) {
   let snapEnabled = true;
   let autoSnapping = false;
   let navigationTimer;
-  let snapTimer;
+  let wheelSnapQuery;
+  let reducedMotionQuery;
   const contexts = [];
 
   function refreshSnapPoints() {
@@ -71,45 +72,45 @@ export function useImmersiveScroll(sectionIds) {
     });
   }
 
-  function scheduleSnap(event) {
-    if (!snapEnabled || autoSnapping || !snapPoints.length) return;
-    clearTimeout(snapTimer);
-    snapTimer = setTimeout(() => {
-      if (!snapEnabled || autoSnapping) return;
-      const maxScroll = Math.max(
-        1,
-        document.documentElement.scrollHeight - window.innerHeight,
-      );
-      const targetProgress = projectedSnapPoint(
-        event.scroll,
-        event.velocity,
-        maxScroll,
-        snapPoints,
-      );
-      const targetScroll = targetProgress * maxScroll;
-      if (Math.abs(targetScroll - window.scrollY) < 18) return;
-      snapEnabled = false;
-      autoSnapping = true;
-      lenis?.scrollTo(targetScroll, {
-        duration: Math.max(
-          0.35,
-          Math.min(0.9, Math.abs(targetScroll - window.scrollY) / 950),
-        ),
-        easing: (value) => 1 - Math.pow(1 - value, 3),
-        onComplete: () => {
-          navigationTimer = setTimeout(() => {
-            autoSnapping = false;
-            snapEnabled = true;
-          }, 260);
-        },
-      });
-    }, 140);
+  function handleWheel(event) {
+    if (
+      !wheelSnapQuery?.matches
+      || !snapEnabled
+      || !snapPoints.length
+      || event.ctrlKey
+      || event.deltaY === 0
+    ) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (autoSnapping) return;
+
+    const maxScroll = Math.max(
+      1,
+      document.documentElement.scrollHeight - window.innerHeight,
+    );
+    const targetProgress = directionalSnapPoint(
+      window.scrollY,
+      event.deltaY,
+      maxScroll,
+      snapPoints,
+    );
+    const targetScroll = targetProgress * maxScroll;
+    if (Math.abs(targetScroll - window.scrollY) < 1) return;
+
+    autoSnapping = true;
+    lenis?.scrollTo(targetScroll, {
+      duration: reducedMotionQuery?.matches ? 0.01 : 0.65,
+      easing: (value) => 1 - Math.pow(1 - value, 4),
+      onComplete: () => {
+        autoSnapping = false;
+      },
+    });
   }
 
   function pause() {
     snapEnabled = false;
     autoSnapping = false;
-    clearTimeout(snapTimer);
     lenis?.stop();
   }
 
@@ -130,9 +131,11 @@ export function useImmersiveScroll(sectionIds) {
       touchMultiplier: 1.05,
     });
     document.documentElement.classList.add("immersive-scroll");
+    wheelSnapQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    window.addEventListener("wheel", handleWheel, { passive: false, capture: true });
     lenis.on("scroll", ScrollTrigger.update);
     lenis.on("scroll", updatePosition);
-    lenis.on("scroll", scheduleSnap);
     ticker = (time) => lenis?.raf(time * 1000);
     gsap.ticker.add(ticker);
     gsap.ticker.lagSmoothing(0);
@@ -165,7 +168,7 @@ export function useImmersiveScroll(sectionIds) {
   onBeforeUnmount(() => {
     contexts.forEach((context) => context.revert());
     clearTimeout(navigationTimer);
-    clearTimeout(snapTimer);
+    window.removeEventListener("wheel", handleWheel, true);
     document.documentElement.classList.remove("immersive-scroll");
     ScrollTrigger.removeEventListener("refresh", refreshSnapPoints);
     if (ticker) gsap.ticker.remove(ticker);
