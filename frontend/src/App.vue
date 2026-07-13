@@ -1,11 +1,15 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, provide, ref } from "vue";
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, provide, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { ChevronDown, ClipboardList, Grid2X2, Home, LogOut, Menu, RefreshCw, Save, ShieldCheck, Sprout, User, KeyRound } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
 import AiAssistant from "@/components/AiAssistant.vue";
 import { modules, roleMenus, roleModulePermissions, roles } from "@/config";
 import { api } from "@/services/api";
+
+const AuthenticatedLeafBackground = defineAsyncComponent(
+  () => import("@/components/background/AuthenticatedLeafBackground.vue"),
+);
 
 const router = useRouter();
 const route = useRoute();
@@ -258,6 +262,7 @@ onBeforeUnmount(() => {
       <Menu :size="21" />
     </button>
     <div class="shell" :class="{ 'drawer-open': drawerOpen, 'nav-collapsed': navCollapsed }">
+      <AuthenticatedLeafBackground />
       <SidebarNav
         :open="drawerOpen"
         :items="visibleNavItems"
