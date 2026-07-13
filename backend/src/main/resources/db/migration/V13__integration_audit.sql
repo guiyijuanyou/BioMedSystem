@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS integration_audit_log (
+  id VARCHAR(64) PRIMARY KEY,
+  request_id VARCHAR(64) NOT NULL,
+  protocol_type VARCHAR(30) NOT NULL,
+  operation_name VARCHAR(80) NOT NULL,
+  caller_type VARCHAR(30) NOT NULL,
+  caller_identifier VARCHAR(160),
+  http_method VARCHAR(10) NOT NULL,
+  request_path VARCHAR(500) NOT NULL,
+  source_ip VARCHAR(64),
+  request_digest VARCHAR(64),
+  request_bytes BIGINT,
+  http_status INT NOT NULL,
+  success_flag TINYINT(1) NOT NULL,
+  result_code VARCHAR(80),
+  duration_ms BIGINT NOT NULL,
+  occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ial_occurred_at(occurred_at),
+  INDEX idx_ial_protocol(protocol_type),
+  INDEX idx_ial_caller(caller_identifier),
+  INDEX idx_ial_request_id(request_id),
+  INDEX idx_ial_success(success_flag)
+);

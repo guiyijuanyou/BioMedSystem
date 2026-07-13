@@ -5,7 +5,7 @@ spring:
   application:
     name: biomed-digital-system
   datasource:
-    # 请修改为你的 MySQL 连接信息
+    # Replace these values with the local MySQL connection settings.
     url: jdbc:mysql://localhost:3306/biomed?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
     username: root
     password: 123456
@@ -25,7 +25,6 @@ spring:
 
   data:
     redis:
-      # 请修改为你的 Redis 连接信息
       host: localhost
       port: 6379
       password:
@@ -42,6 +41,9 @@ app:
   upload-max-bytes: 268435456
   map-cache-dir: data/map-cache
   backup-dir: data/backup
+  integration:
+    # Production must provide a random master key through the environment.
+    master-key: ${INTEGRATION_MASTER_KEY:change-this-integration-master-key}
 
 mybatis:
   configuration:

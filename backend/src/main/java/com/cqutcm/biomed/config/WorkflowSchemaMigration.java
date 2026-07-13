@@ -28,7 +28,9 @@ public class WorkflowSchemaMigration implements org.springframework.boot.Command
                 new ClassPathResource("db/migration/V6__multi_metric_evaluation.sql"),
                 new ClassPathResource("db/migration/V7__improvement_recommendation.sql"),
                 new ClassPathResource("db/migration/V8__achievement_quantification.sql"),
-                new ClassPathResource("db/migration/V9__mobile_collection_device.sql"));
+                new ClassPathResource("db/migration/V9__mobile_collection_device.sql"),
+                new ClassPathResource("db/migration/V11__soap_integration.sql"),
+                new ClassPathResource("db/migration/V13__integration_audit.sql"));
         migration.setContinueOnError(false);
         migration.execute(dataSource);
     }
