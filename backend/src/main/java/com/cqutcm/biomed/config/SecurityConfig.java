@@ -21,8 +21,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +35,9 @@ import java.util.Map;
 public class SecurityConfig {
 
     private final ObjectMapper objectMapper;
+
+    @Value("${app.cors.origins}")
+    private String corsOrigins;
 
     public SecurityConfig(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -45,7 +51,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            AuthService authService,
-                                           IntegrationAuditService integrationAuditService) throws Exception {
+                                           IntegrationAuditService integrationAuditService,
+                                           StringRedisTemplate redisTemplate) throws Exception {
         http
             // 无状态，不使用 HttpSession
             .sessionManagement(session ->
@@ -76,6 +83,10 @@ public class SecurityConfig {
             .addFilterAfter(
                 new ExternalAuditFilter(integrationAuditService),
                 TokenAuthenticationFilter.class
+            )
+            .addFilterAfter(
+                new RateLimitFilter(redisTemplate),
+                ExternalAuditFilter.class
             );
 
         return http.build();
@@ -84,10 +95,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of(
-            "http://localhost:*",
-            "http://127.0.0.1:*"
-        ));
+        config.setAllowedOriginPatterns(Arrays.asList(corsOrigins.split(",")));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
