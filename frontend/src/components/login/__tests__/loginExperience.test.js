@@ -9,7 +9,12 @@ import DistributionSection from "@/components/login/sections/DistributionSection
 import TraceSection from "@/components/login/sections/TraceSection.vue";
 import RolesSection from "@/components/login/sections/RolesSection.vue";
 import { modules } from "@/config";
-import { createSectionSnapPoints, nearestSnapPoint, projectedSnapPoint } from "@/composables/loginScrollSnap";
+import {
+  createSectionSnapPoints,
+  directionalSnapPoint,
+  nearestSnapPoint,
+  projectedSnapPoint,
+} from "@/composables/loginScrollSnap";
 
 const sections = [
   { id: "cloud", label: "数据云" },
@@ -60,6 +65,16 @@ describe("immersive login components", () => {
     expect(projectedSnapPoint(1500, -18, 4800, points)).toBe(0.1867);
     expect(projectedSnapPoint(200, 500, 4800, points)).toBe(0);
     expect(projectedSnapPoint(600, 500, 4800, points)).toBe(0.1867);
+  });
+
+  it("moves exactly one section in the wheel direction", () => {
+    const points = [0, 0.2, 0.45, 0.7, 1];
+
+    expect(directionalSnapPoint(0, 1, 1000, points)).toBe(0.2);
+    expect(directionalSnapPoint(200, 1, 1000, points)).toBe(0.45);
+    expect(directionalSnapPoint(450, -1, 1000, points)).toBe(0.2);
+    expect(directionalSnapPoint(0, -1, 1000, points)).toBe(0);
+    expect(directionalSnapPoint(1000, 1, 1000, points)).toBe(1);
   });
 
   it("renders five sections and emits navigation and login events", async () => {

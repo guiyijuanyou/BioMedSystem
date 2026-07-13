@@ -7,7 +7,7 @@ defineEmits(["explore"]);
   <section id="cloud" class="login-section hero-section" data-section="cloud">
     <div class="section-copy hero-copy">
       <span class="section-kicker"><Sparkles :size="15" /> BIOMEDICAL DATA CLOUD · CQUTCM</span>
-      <h1>让每一份生物医药数据，<em>都拥有清晰的生命轨迹。</em></h1>
+      <h1>让每一份生物医药数据，<em>都拥有清晰的生命轨迹</em></h1>
       <p>连接药材资源、生长环境、质量图谱与全链路溯源，让采集、研究与教学协作发生在同一个数据空间。</p>
       <div class="hero-actions">
         <button class="hero-primary" type="button" @click="$emit('explore')">探索数据链路 <ArrowDown :size="18" /></button>
