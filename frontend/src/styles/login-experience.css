@@ -61,10 +61,6 @@ html.immersive-scroll::-webkit-scrollbar {
 .scroll-progress button.is-active { color: var(--lx-cyan)!important; }.scroll-progress button.is-active > span { border-color: var(--lx-cyan); box-shadow: 0 0 14px rgba(72,227,255,.55); }
 
 .login-scene-layer { position: fixed; z-index: 0; inset: 0; pointer-events: none; }
-.biomed-scene { position: absolute; inset: 0; pointer-events: auto; }
-.biomed-scene canvas { opacity: .98; }
-.biomed-scene::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 66% 46%, transparent 0 18%, rgba(5,8,22,.2) 45%, rgba(5,8,22,.84) 92%); }
-.biomed-scene__fallback { display: none; }
 .login-narrative { position: relative; z-index: 3; }
 .login-section { position: relative; display: grid; align-items: center; min-height: 110vh; padding: 140px 9vw 110px; }
 .section-copy { position: relative; z-index: 4; width: min(600px, 46vw); }
@@ -98,7 +94,7 @@ html.immersive-scroll::-webkit-scrollbar {
 
 @media (max-width: 900px) {
   .login-nav-shell { top: 10px; padding: 0 12px; }.login-nav { min-height: 60px; padding: 7px 8px 7px 12px; border-radius: 17px; }.login-nav__brand small { display: none; }.login-nav__brand strong { font-size: 12px; }.login-nav__menu { display: grid!important; place-items: center; width: 38px; height: 38px; margin-left: auto; border: 1px solid var(--lx-line)!important; border-radius: 11px!important; }.login-nav__links { position: absolute; top: 68px; left: 12px; right: 12px; display: none; flex-direction: column; align-items: stretch; padding: 9px; border: 1px solid var(--lx-line); border-radius: 15px; background: rgba(7,12,31,.96); backdrop-filter: blur(20px); }.login-nav__links.is-open { display: flex; }.login-nav__links button { text-align: left; }.login-nav__login { padding: 11px 13px!important; }.scroll-progress { right: 5px; }.scroll-progress button small { display: none; }
-  .login-section { min-height: auto; padding: 130px 24px 105px; }.hero-section { grid-template-columns: 1fr; min-height: 100svh; padding-top: 140px; }.hero-copy,.section-copy { width: min(100%,680px); }.section-copy h1 { font-size: clamp(42px,12vw,66px); }.section-copy h2,.roles-heading h2 { font-size: clamp(35px,9vw,55px); }.hero-data-cards { min-height: 330px; margin-top: 10px; }.data-float { transform: scale(.88); }.data-float--temperature { right: 0; }.data-float--spectrum { left: -12px; }.data-float--trace { right: 4%; }.biomed-scene::after { background: linear-gradient(180deg,rgba(5,8,22,.22),rgba(5,8,22,.65) 55%,rgba(5,8,22,.9)); }.collection-section,.distribution-section,.trace-section { grid-template-columns: 1fr; gap: 45px; }.collection-console,.distribution-map,.spectrum-panel { width: 100%; }.distribution-map { min-height: 520px; order: 2; transform: none; }.distribution-copy { order: 1; }.role-layout { grid-template-columns: 1fr; gap: 30px; }.role-orbit { min-height: 390px; }.roles-section { padding-top: 130px; }.roles-section footer { margin-top: 70px; }
+  .login-section { min-height: auto; padding: 130px 24px 105px; }.hero-section { grid-template-columns: 1fr; min-height: 100svh; padding-top: 140px; }.hero-copy,.section-copy { width: min(100%,680px); }.section-copy h1 { font-size: clamp(42px,12vw,66px); }.section-copy h2,.roles-heading h2 { font-size: clamp(35px,9vw,55px); }.hero-data-cards { min-height: 330px; margin-top: 10px; }.data-float { transform: scale(.88); }.data-float--temperature { right: 0; }.data-float--spectrum { left: -12px; }.data-float--trace { right: 4%; }.collection-section,.distribution-section,.trace-section { grid-template-columns: 1fr; gap: 45px; }.collection-console,.distribution-map,.spectrum-panel { width: 100%; }.distribution-map { min-height: 520px; order: 2; transform: none; }.distribution-copy { order: 1; }.role-layout { grid-template-columns: 1fr; gap: 30px; }.role-orbit { min-height: 390px; }.roles-section { padding-top: 130px; }.roles-section footer { margin-top: 70px; }
 }
 
 @media (max-width: 520px) {
@@ -160,14 +156,6 @@ html.immersive-scroll::-webkit-scrollbar {
 .scroll-progress button.is-active { color: #635bff!important; }
 .scroll-progress button.is-active > span { border-color: #635bff; box-shadow: 0 0 14px rgba(99,91,255,.28); }
 
-.biomed-scene::after {
-  background:
-    radial-gradient(ellipse at 83% 8%, rgba(255, 133, 66, .24), transparent 28%),
-    radial-gradient(ellipse at 70% 17%, rgba(255, 83, 168, .18), transparent 32%),
-    radial-gradient(ellipse at 58% 13%, rgba(99, 91, 255, .17), transparent 35%),
-    radial-gradient(circle at 28% 40%, rgba(104, 207, 255, .13), transparent 30%),
-    linear-gradient(90deg, rgba(255,255,255,.88) 0%, rgba(246,249,252,.38) 48%, rgba(255,255,255,.25) 100%);
-}
 .section-index, .section-kicker { color: #635bff; }
 .section-copy h1, .section-copy h2, .roles-heading h2 { color: #0a2540; }
 .section-copy h1 em, .section-copy h2 em, .roles-heading h2 em {
@@ -291,10 +279,4 @@ html.immersive-scroll::-webkit-scrollbar {
 
 @media (max-width: 900px) {
   .login-nav__links { background: rgba(255,255,255,.96); }
-  .biomed-scene::after {
-    background:
-      radial-gradient(ellipse at 76% 8%, rgba(255,122,89,.2), transparent 32%),
-      radial-gradient(ellipse at 58% 16%, rgba(99,91,255,.15), transparent 38%),
-      linear-gradient(180deg,rgba(255,255,255,.28),rgba(246,249,252,.62) 55%,rgba(246,249,252,.94));
-  }
 }
