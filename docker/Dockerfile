@@ -32,7 +32,7 @@ WORKDIR /app
 ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseZGC -XX:MaxMetaspaceSize=256m"
 
 COPY --from=backend-build /app/backend/target/biomed-digital-system-1.0.0.jar app.jar
-RUN chown -R appuser:appuser /app
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 8088
