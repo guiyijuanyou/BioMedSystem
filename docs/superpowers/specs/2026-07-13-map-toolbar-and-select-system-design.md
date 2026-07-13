@@ -2,7 +2,7 @@
 
 ## 目标
 
-在不修改后端、路由和业务数据逻辑的前提下，修复工作台地图工具条的视觉问题，并将项目内 30 个原生 `select` 统一替换为与当前沉浸式首页和认证页视觉系统一致的 Vue 下拉组件。
+在不修改后端、路由和业务数据逻辑的前提下，修复工作台地图工具条的视觉问题，并将项目内 31 个原生 `select` 统一替换为与当前沉浸式首页和认证页视觉系统一致的 Vue 下拉组件。
 
 ## 地图工具条
 
@@ -48,7 +48,8 @@
 - `ResourceView.vue`：13 处，包括溯源码流转链路。
 - `ImprovementWorkflowView.vue`：6 处。
 - `QualityMetricView.vue`：2 处。
-- `FilesView.vue`、`MobileDeviceView.vue`、`MultiEvaluationView.vue`、`SpectrumCompareView.vue`：各 1 处。
+- `MultiEvaluationView.vue`：2 处。
+- `FilesView.vue`、`MobileDeviceView.vue`、`SpectrumCompareView.vue`：各 1 处。
 
 ## 逻辑保持
 

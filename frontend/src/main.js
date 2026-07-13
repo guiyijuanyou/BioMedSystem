@@ -1,6 +1,7 @@
 import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
+import "@fontsource-variable/fraunces";
 import "./styles.css";
 import "./styles/login-experience.css";
 import "leaflet/dist/leaflet.css";

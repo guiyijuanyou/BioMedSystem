@@ -1,8 +1,9 @@
 <script setup>
-import { inject, onMounted, onUnmounted, ref } from "vue";
+import { computed, inject, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ArrowLeft, FlaskConical, RotateCcw, Upload } from "lucide-vue-next";
 import { api } from "@/services/api";
+import AppSelect from "@/components/AppSelect.vue";
 
 const router = useRouter();
 const notify = inject("notify");
@@ -19,6 +20,13 @@ const result = ref(null);
 const errorMsg = ref("");
 const loadingRefs = ref(false);
 const chartDom = ref(null);
+const referenceOptions = computed(() => [
+  { value: "", label: "从已有记录选择..." },
+  ...references.value.map(item => ({
+    value: item.id,
+    label: `${item.herbName || item.referenceName || "标准品"}（${item.spectrumType || "HPLC"}）`
+  }))
+]);
 
 let chartInstance = null;
 let echartsLib = null;
@@ -184,12 +192,7 @@ onUnmounted(() => {
             <Upload :size="14" /> {{ referenceInfo ? '更换' : '上传 CSV' }}
           </label>
           <span style="color:var(--muted);font-size:11px">或</span>
-          <select v-model="referenceId" @change="selectReference" style="width:auto;min-width:180px">
-            <option value="">从已有记录选择...</option>
-            <option v-for="r in references" :key="r.id" :value="r.id">
-              {{ r.herbName || r.referenceName || '标准品' }}（{{ r.spectrumType || 'HPLC' }}）
-            </option>
-          </select>
+          <AppSelect v-model="referenceId" :options="referenceOptions" aria-label="选择已有标准品记录" style="width:auto;min-width:220px" @change="selectReference" />
           <span v-if="referenceInfo" style="font-size:11px;color:#157457;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ referenceInfo.name }}</span>
           <span v-else-if="referenceId" style="font-size:11px;color:#157457;white-space:nowrap">已选择</span>
         </div>

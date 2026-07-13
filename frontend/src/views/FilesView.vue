@@ -2,6 +2,7 @@
 import { inject, onMounted, ref } from "vue";
 import { Download, Eye, Trash2, Upload } from "lucide-vue-next";
 import { api, authHeader } from "@/services/api";
+import AppSelect from "@/components/AppSelect.vue";
 
 const permissions = inject("modulePermissions");
 const currentRole = inject("currentRole");
@@ -13,6 +14,7 @@ const file = ref(null);
 const uploading = ref(false);
 
 const categories = ["教学视频", "课程课件", "图片资料", "图谱文件", "培训材料", "评价佐证", "溯源附件"];
+const categoryOptions = categories.map(value => ({ value, label: value }));
 
 async function load() {
   const result = await api("/api/files");
@@ -110,9 +112,7 @@ onMounted(load);
       <form v-if="permissions.create !== false" class="form-grid" @submit.prevent="upload">
         <label>
           资料分类
-          <select v-model="category">
-            <option v-for="item in categories" :key="item">{{ item }}</option>
-          </select>
+          <AppSelect v-model="category" :options="categoryOptions" aria-label="选择资料分类" />
         </label>
         <label>
           选择文件

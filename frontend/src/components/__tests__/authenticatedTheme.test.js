@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const styles = readFileSync(resolve(process.cwd(), "src/styles.css"), "utf8");
+const resourceView = readFileSync(resolve(process.cwd(), "src/views/ResourceView.vue"), "utf8");
 
 describe("authenticated Stripe-inspired theme", () => {
   it("defines the desktop top-navigation surface and floating dropdown", () => {
@@ -15,5 +16,17 @@ describe("authenticated Stripe-inspired theme", () => {
     const theme = styles.slice(styles.indexOf("/* Stripe-inspired authenticated shell */"));
     expect(theme).toMatch(/@media \(max-width:\s*860px\)[\s\S]*?\.desktop-nav-shell\s*\{\s*display:\s*none/);
     expect(theme).toMatch(/@media \(max-width:\s*860px\)[\s\S]*?\.sidebar\s*\{[\s\S]*?display:\s*flex/);
+  });
+
+  it("keeps the user profile dropdown above dashboard cards", () => {
+    const theme = styles.slice(styles.indexOf("/* Stripe-inspired authenticated shell */"));
+    const topbarStyles = theme.match(/\.topbar\s*\{([^}]*)\}/)?.[1] || "";
+
+    expect(topbarStyles).toMatch(/position:\s*relative/);
+    expect(topbarStyles).toMatch(/z-index:\s*[1-9]\d*/);
+  });
+
+  it("defines the owner-field helper used by resource table rendering", () => {
+    expect(resourceView).toMatch(/function\s+isOwnerField\s*\(name\)/);
   });
 });
