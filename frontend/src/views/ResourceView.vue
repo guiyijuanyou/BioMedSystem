@@ -3,7 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import {
   ArrowLeft, BarChart3, Check, ChevronLeft, ChevronRight, Clock3, Copy, Download, Eye, FileText,
-  Archive, FolderOpen, Pencil, PlayCircle, Plus, Search, Send, Trash2, Upload, X, XCircle
+  Archive, FolderOpen, MoreHorizontal, Pencil, PlayCircle, Plus, Search, Send, Trash2, Upload, X, XCircle
 } from "lucide-vue-next";
 import MapPicker from "@/components/MapPicker.vue";
 import AppSelect from "@/components/AppSelect.vue";
@@ -1501,6 +1501,18 @@ watch(() => props.editId, id => {
                 <button v-if="canDuplicate && canManageItem(item, 'edit')" class="icon-button" type="button" title="复制记录" @click="duplicate(item)"><Copy :size="16" /></button>
                 <button v-if="canManageItem(item, 'delete')" class="icon-button danger" type="button" title="删除记录" @click="requestDelete([item.id])"><Trash2 :size="16" /></button>
               </div>
+              <details class="mobile-row-actions">
+                <summary title="更多操作" aria-label="打开记录操作菜单"><MoreHorizontal :size="20" /></summary>
+                <div class="mobile-row-actions__menu">
+                  <button v-if="role === 'admin' && isAuditModule && isPendingReview(item)" type="button" @click="quickAudit(item, 'approve')"><Check :size="16" />通过审核</button>
+                  <button v-if="role === 'admin' && isAuditModule && isPendingReview(item)" class="danger" type="button" @click="quickAudit(item, 'reject')"><XCircle :size="16" />驳回审核</button>
+                  <button type="button" @click="openView(item)"><Eye :size="16" />查看详情</button>
+                  <button v-if="moduleKey === 'herb-batches'" type="button" @click="openBatchDetail(item)"><FolderOpen :size="16" />批次档案</button>
+                  <button v-if="canManageItem(item, 'edit')" type="button" @click="openEdit(item)"><Pencil :size="16" />编辑记录</button>
+                  <button v-if="canDuplicate && canManageItem(item, 'edit')" type="button" @click="duplicate(item)"><Copy :size="16" />复制记录</button>
+                  <button v-if="canManageItem(item, 'delete')" class="danger" type="button" @click="requestDelete([item.id])"><Trash2 :size="16" />删除记录</button>
+                </div>
+              </details>
             </td>
           </tr>
           <tr v-if="!pagedItems.length">
