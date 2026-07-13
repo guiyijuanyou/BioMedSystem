@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                  xmlns:tns="http://cqutcm.com/biomed/school/v1"
+                  targetNamespace="http://cqutcm.com/biomed/school/v1">
+  <wsdl:types>
+    <xs:schema>
+      <xs:import namespace="http://cqutcm.com/biomed/school/v1"
+                 schemaLocation="school-integration.xsd"/>
+    </xs:schema>
+  </wsdl:types>
+
+  <wsdl:message name="QueryGrowthDataInput">
+    <wsdl:part name="parameters" element="tns:queryGrowthDataRequest"/>
+  </wsdl:message>
+  <wsdl:message name="QueryGrowthDataOutput">
+    <wsdl:part name="parameters" element="tns:queryGrowthDataResponse"/>
+  </wsdl:message>
+
+  <wsdl:portType name="SchoolDataPortType">
+    <wsdl:operation name="queryGrowthData">
+      <wsdl:input message="tns:QueryGrowthDataInput"/>
+      <wsdl:output message="tns:QueryGrowthDataOutput"/>
+    </wsdl:operation>
+  </wsdl:portType>
+
+  <wsdl:binding name="SchoolDataSoapBinding" type="tns:SchoolDataPortType">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <wsdl:operation name="queryGrowthData">
+      <soap:operation soapAction="http://cqutcm.com/biomed/school/v1/queryGrowthData"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+
+  <wsdl:service name="SchoolDataService">
+    <wsdl:port name="SchoolDataPort" binding="tns:SchoolDataSoapBinding">
+      <soap:address location="http://localhost:8088/api/soap/school"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

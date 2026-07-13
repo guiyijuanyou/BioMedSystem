@@ -8,7 +8,9 @@ frontend/dist/
 .superpowers/
 .worktrees/
 scripts/
-docs/
+docs/*
+!docs/api/
+!docs/api/**
 .vscode/
 .settings/
 .project

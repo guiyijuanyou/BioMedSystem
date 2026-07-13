@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
+               xmlns:sch="http://cqutcm.com/biomed/school/v1">
+  <soap:Body>
+    <sch:queryGrowthDataRequest>
+      <sch:keyword>黄连</sch:keyword>
+    </sch:queryGrowthDataRequest>
+  </soap:Body>
+</soap:Envelope>

@@ -1,6 +1,7 @@
 package com.cqutcm.biomed.config;
 
 import com.cqutcm.biomed.service.AuthService;
+import com.cqutcm.biomed.service.IntegrationAuditService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,7 +44,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                           AuthService authService) throws Exception {
+                                           AuthService authService,
+                                           IntegrationAuditService integrationAuditService) throws Exception {
         http
             // 无状态，不使用 HttpSession
             .sessionManagement(session ->
@@ -57,6 +59,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/map/tiles/**").permitAll()
                 .requestMatchers("/api/mobile/growth-records/batch", "/api/mobile/sync/status").permitAll()
+                .requestMatchers("/api/soap/**").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()
             )
@@ -69,6 +72,10 @@ public class SecurityConfig {
             .addFilterBefore(
                 new TokenAuthenticationFilter(authService),
                 UsernamePasswordAuthenticationFilter.class
+            )
+            .addFilterAfter(
+                new ExternalAuditFilter(integrationAuditService),
+                TokenAuthenticationFilter.class
             );
 
         return http.build();
