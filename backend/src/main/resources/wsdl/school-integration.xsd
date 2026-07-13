@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://cqutcm.com/biomed/school/v1"
+           xmlns:tns="http://cqutcm.com/biomed/school/v1"
+           elementFormDefault="qualified">
+
+  <xs:element name="queryGrowthDataRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="keyword" type="xs:string" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="queryGrowthDataResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="items">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="item" type="tns:HerbData" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="HerbData">
+    <xs:sequence>
+      <xs:element name="id" type="xs:string"/>
+      <xs:element name="name" type="xs:string"/>
+      <xs:element name="district" type="xs:string" minOccurs="0"/>
+      <xs:element name="longitude" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="latitude" type="xs:decimal" minOccurs="0"/>
+      <xs:element name="scale" type="xs:string" minOccurs="0"/>
+      <xs:element name="environment" type="xs:string" minOccurs="0"/>
+      <xs:element name="traceCode" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>
