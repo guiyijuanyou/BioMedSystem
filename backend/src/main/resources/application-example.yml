@@ -1,50 +1,76 @@
 server:
-  port: 8088
+  port: ${SERVER_PORT:8088}
 
 spring:
   application:
     name: biomed-digital-system
+
   datasource:
-    # Replace these values with the local MySQL connection settings.
-    url: jdbc:mysql://localhost:3306/biomed?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-    username: root
-    password: 123456
+    # Replace with your MySQL connection details
+    url: ${DB_URL:jdbc:mysql://localhost:3306/biomed?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX:20}
+      minimum-idle: ${DB_POOL_MIN:5}
+      idle-timeout: ${DB_POOL_IDLE_TIMEOUT:300000}
+      connection-timeout: ${DB_POOL_CONN_TIMEOUT:20000}
+      max-lifetime: ${DB_POOL_MAX_LIFETIME:1200000}
+
   sql:
     init:
-      mode: always
+      # Set to 'never' in production; Flyway handles schema migrations.
+      mode: ${SQL_INIT_MODE:always}
       schema-locations: classpath:db/schema.sql
       data-locations: classpath:db/data.sql
+
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: Asia/Shanghai
+
   servlet:
     multipart:
-      max-file-size: 256MB
-      max-request-size: 256MB
+      max-file-size: ${APP_UPLOAD_MAX_BYTES:268435456}
+      max-request-size: ${APP_UPLOAD_MAX_BYTES:268435456}
 
   data:
     redis:
-      host: localhost
-      port: 6379
-      password:
-      database: 0
-      timeout: 3000ms
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:3000ms}
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 2
+          max-active: ${REDIS_POOL_MAX:16}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:2}
+          max-wait: ${REDIS_POOL_MAX_WAIT:3000ms}
+
+  # Flyway is enabled via application-prod.yml.
+  # See db/migration/ for migration scripts.
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.cqutcm.biomed.entity
+  configuration:
+    map-underscore-to-camel-case: true
 
 app:
-  upload-dir: data/uploads
-  upload-max-bytes: 268435456
-  map-cache-dir: data/map-cache
-  backup-dir: data/backup
+  upload-dir: ${APP_UPLOAD_DIR:data/uploads}
+  upload-max-bytes: ${APP_UPLOAD_MAX_BYTES:268435456}
+  map-cache-dir: ${APP_MAP_CACHE_DIR:data/map-cache}
+  backup-dir: ${APP_BACKUP_DIR:data/backup}
+  cors:
+    # Comma-separated origins allowed for CORS
+    origins: ${APP_CORS_ORIGINS:http://localhost:8088,http://localhost:5173,http://127.0.0.1:8088}
+  session:
+    # Session TTL in minutes (default 480 = 8 hours; recommend 120 for production)
+    ttl-minutes: ${APP_SESSION_TTL_MINUTES:480}
+  password:
+    # Minimum password length
+    min-length: ${APP_PASSWORD_MIN_LENGTH:8}
   integration:
     # Production must provide a random master key through the environment.
     master-key: ${INTEGRATION_MASTER_KEY:change-this-integration-master-key}
-
-mybatis:
-  configuration:
-    map-underscore-to-camel-case: true

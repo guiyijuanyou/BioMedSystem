@@ -29,7 +29,7 @@ public class AuthController {
             HttpServletRequest request
     ) {
         Map<String, Object> result = authService.login(payload);
-        ResponseCookie cookie = sessionCookie(String.valueOf(result.get("token")), request.isSecure(), AuthService.SESSION_TTL);
+        ResponseCookie cookie = sessionCookie(String.valueOf(result.get("token")), request.isSecure(), authService.getSessionTtl());
         return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(result);
     }
 
