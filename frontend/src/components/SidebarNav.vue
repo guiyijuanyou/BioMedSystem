@@ -26,16 +26,16 @@ const icons = {
   "teaching-resources": ShieldCheck, "spectrum-comparisons": FlaskConical,
   "growth-analysis": BarChart3, courses: BookOpen, projects: FolderKanban,
   trainings: GraduationCap, evaluations: ClipboardCheck, achievements: Award,
-  improvement: RefreshCcw, standards: Target, users: UsersRound, files: FileArchive
+  improvement: RefreshCcw, "quality-metrics": Target, "multi-evaluations": ClipboardCheck, "mobile-devices": Activity, standards: Target, users: UsersRound, files: FileArchive
 };
 
 const groupDefinitions = [
   { key: "resources", label: "药材资源", icon: Sprout, members: ["herbs", "herb-batches", "lab-samples", "trace-events"] },
-  { key: "research", label: "质量科研", icon: FlaskConical, members: ["growth-records", "spectrum-comparisons", "growth-analysis", "projects"] },
+  { key: "research", label: "质量科研", icon: FlaskConical, members: ["growth-records", "spectrum-comparisons", "growth-analysis", "quality-metrics", "projects"] },
   { key: "teaching", label: "教学培训", icon: GraduationCap, members: ["courses", "teaching-resources", "trainings"] },
-  { key: "evaluation", label: "评价改进", icon: ClipboardCheck, members: ["evaluations", "improvement", "standards"] },
+  { key: "evaluation", label: "评价改进", icon: ClipboardCheck, members: ["evaluations", "multi-evaluations", "improvement", "standards"] },
   { key: "results", label: "成果管理", icon: Award, members: ["achievements", "files"] },
-  { key: "system", label: "系统管理", icon: Settings, members: ["users"] }
+  { key: "system", label: "系统管理", icon: Settings, members: ["users", "mobile-devices"] }
 ];
 
 const itemMap = computed(() => new Map(props.items));
@@ -47,6 +47,9 @@ const activeKey = computed(() => {
   if (route.name === "dashboard") return "dashboard";
   if (route.name === "files") return "files";
   if (route.name === "improvement") return "improvement";
+  if (route.name === "quality-metrics") return "quality-metrics";
+  if (route.name === "multi-evaluations") return "multi-evaluations";
+  if (route.name === "mobile-devices") return "mobile-devices";
   if (route.name === "batch-detail") return "herb-batches";
   return String(route.params.moduleKey || "");
 });
@@ -113,6 +116,9 @@ function navigate(key) {
   if (key === "dashboard") router.push("/dashboard");
   else if (key === "files") router.push("/files");
   else if (key === "improvement") router.push("/improvement");
+  else if (key === "quality-metrics") router.push("/quality-metrics");
+  else if (key === "multi-evaluations") router.push("/multi-evaluations");
+  else if (key === "mobile-devices") router.push("/mobile-devices");
   else router.push(`/module/${key}`);
   closeDesktopGroup();
   emit("close");
