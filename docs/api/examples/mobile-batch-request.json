@@ -1,0 +1,16 @@
+{
+  "records": [
+    {
+      "clientRecordId": "APP-001-550e8400-e29b-41d4-a716-446655440000",
+      "batchId": "replace-with-active-batch-id",
+      "recordedAt": "2026-07-13T08:30:00",
+      "temperature": 22.6,
+      "humidity": 68.5,
+      "soilPh": 6.4,
+      "growthStage": "开花期",
+      "longitude": 108.250000,
+      "latitude": 30.100000,
+      "locationAccuracy": 8.5
+    }
+  ]
+}
