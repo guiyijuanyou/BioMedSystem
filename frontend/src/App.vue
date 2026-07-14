@@ -63,6 +63,8 @@ const pageTitle = computed(() => {
   if (route.name === "mobile-devices") return "手机与采集设备";
   if (route.name === "profile") return "个人中心";
   if (route.name === "spectrum-compare") return "图谱比对";
+  if (route.name === "growth-analysis") return "数据对比分析";
+  if (route.name === "growth-analysis-report") return "数据对比分析";
   if (route.name === "module") {
     const key = route.params.moduleKey;
     return modules[key]?.title || "业务模块";

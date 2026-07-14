@@ -79,9 +79,11 @@ public class SpectrumCompareController {
             @RequestParam(value = "herbName", required = false, defaultValue = "") String herbName,
             @RequestParam(value = "sampleCode", required = false, defaultValue = "") String sampleCode,
             @RequestParam(value = "district", required = false, defaultValue = "") String district,
+            @RequestParam(value = "remark", required = false, defaultValue = "") String remark,
             @RequestParam(value = "spectrumType", required = false, defaultValue = "HPLC") String spectrumType,
             @RequestParam(value = "algorithm", required = false, defaultValue = "COSINE") String algorithm,
             @RequestParam(value = "resolution", required = false, defaultValue = "500") int resolution,
+            @RequestParam(value = "diffThreshold", required = false, defaultValue = "0.06") double diffThreshold,
             @RequestHeader(value = "Authorization", required = false) String authorization) throws IOException {
 
         PermissionService.Actor actor = authService.requireActor(authorization);
@@ -141,15 +143,15 @@ public class SpectrumCompareController {
         }
 
         // Execute comparison
-        SpectrumCompareService.CompareResult result = compareService.compare(samplePoints, referencePoints, resolution);
+        SpectrumCompareService.CompareResult result = compareService.compare(samplePoints, referencePoints, resolution, diffThreshold);
         double score = Math.round(result.similarity() * 10000.0) / 100.0;
 
         // Build diff regions for response
         List<Map<String, Object>> diffList = new ArrayList<>();
         for (double[] d : result.diffRegions()) {
             Map<String, Object> dr = new LinkedHashMap<>();
-            dr.put("xStart", Math.round(d[0] * 10.0) / 10.0);
-            dr.put("xEnd", Math.round(d[1] * 10.0) / 10.0);
+            dr.put("xStart", Math.round(d[0] * 100.0) / 100.0);
+            dr.put("xEnd", Math.round(d[1] * 100.0) / 100.0);
             dr.put("maxDiffPercent", Math.round(d[2] * 10.0) / 10.0);
             diffList.add(dr);
         }
@@ -161,6 +163,7 @@ public class SpectrumCompareController {
         record.put("herbName", herbName.isBlank() ? "未知" : herbName);
         record.put("sampleCode", sampleCode);
         record.put("district", district);
+        record.put("remark", remark);
         record.put("spectrumType", spectrumType);
         record.put("referenceName", referenceName);
         record.put("similarity", new BigDecimal(String.valueOf(score)));
@@ -173,6 +176,7 @@ public class SpectrumCompareController {
         record.put("status", "已完成");
         record.put("createdAt", LocalDateTime.now().toString());
         spectrumMapper.insertMap(record);
+
 
         // Build response
         Map<String, Object> resp = new LinkedHashMap<>();
@@ -192,31 +196,155 @@ public class SpectrumCompareController {
     }
 
     /**
-     * List records marked as reference standards.
+     * List reference standards: public (REFERENCE) + current user's private (PRIVATE_REF).
      */
     @GetMapping("/references")
     public Map<String, Object> listReferences(
             @RequestHeader(value = "Authorization", required = false) String authorization) {
-        authService.requireActor(authorization);
-        // References are records that have data points and are either marked as standard or imported
+        PermissionService.Actor actor = authService.requireActor(authorization);
         List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
         List<Map<String, Object>> refs = new ArrayList<>();
         for (Map<String, Object> item : all) {
             String status = String.valueOf(item.getOrDefault("status", ""));
-            String sampleData = String.valueOf(item.getOrDefault("sampleDataJson", ""));
             String refData = String.valueOf(item.getOrDefault("referenceDataJson", ""));
-            if ("REFERENCE".equals(status) || (!"null".equals(sampleData) && !"[]".equals(sampleData)) || (!"null".equals(refData) && !"[]".equals(refData))) {
+            String sampleData = String.valueOf(item.getOrDefault("sampleDataJson", ""));
+            boolean hasData = (!"null".equals(refData) && !"[]".equals(refData) && refData.length() > 10)
+                           || (!"null".equals(sampleData) && !"[]".equals(sampleData) && sampleData.length() > 10);
+            if (!hasData) continue;
+            // Public references visible to all; private references only to owner
+            if ("REFERENCE".equals(status) || ("PRIVATE_REF".equals(status) && actor.name().equals(String.valueOf(item.getOrDefault("operatorName", ""))))) {
                 Map<String, Object> summary = new LinkedHashMap<>();
                 summary.put("id", item.get("id"));
-                summary.put("herbName", item.get("herbName"));
-                summary.put("referenceName", item.get("referenceName"));
-                summary.put("spectrumType", item.get("spectrumType"));
-                summary.put("sampleCode", item.get("sampleCode"));
+                summary.put("herbName", item.getOrDefault("herbName", ""));
+                summary.put("referenceName", item.getOrDefault("referenceName", ""));
+                summary.put("spectrumType", item.getOrDefault("spectrumType", "HPLC"));
                 summary.put("createdAt", item.get("createdAt"));
+                summary.put("status", status);
                 refs.add(summary);
             }
         }
         return Map.of("items", refs);
+    }
+
+    /** Current user's uploaded sample CSV history (last 20). */
+    @GetMapping("/my-samples")
+    public Map<String, Object> mySamples(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
+        List<Map<String, Object>> samples = new ArrayList<>();
+        for (Map<String, Object> item : all) {
+            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
+            String sd = String.valueOf(item.getOrDefault("sampleDataJson", ""));
+            if (!"null".equals(sd) && !"[]".equals(sd) && sd.length() > 10) {
+                Map<String, Object> s = new LinkedHashMap<>();
+                s.put("id", item.get("id"));
+                s.put("herbName", item.getOrDefault("herbName", ""));
+                s.put("sampleCode", item.getOrDefault("sampleCode", ""));
+                s.put("createdAt", item.get("createdAt"));
+                samples.add(s);
+            }
+        }
+        // Sort by time desc, limit 20
+        samples.sort((a, b) -> String.valueOf(b.getOrDefault("createdAt", ""))
+                .compareTo(String.valueOf(a.getOrDefault("createdAt", ""))));
+        if (samples.size() > 20) samples = samples.subList(0, 20);
+        return Map.of("items", samples);
+    }
+
+    /** Current user's private reference CSV history. */
+    @GetMapping("/my-references")
+    public Map<String, Object> myReferences(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
+        List<Map<String, Object>> refs = new ArrayList<>();
+        for (Map<String, Object> item : all) {
+            if (!"PRIVATE_REF".equals(String.valueOf(item.getOrDefault("status", "")))) continue;
+            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
+            Map<String, Object> r = new LinkedHashMap<>();
+            r.put("id", item.get("id"));
+            r.put("referenceName", item.getOrDefault("referenceName", ""));
+            r.put("herbName", item.getOrDefault("herbName", ""));
+            r.put("createdAt", item.get("createdAt"));
+            refs.add(r);
+        }
+        return Map.of("items", refs);
+    }
+
+    /** Admin: upload a public reference standard. */
+    @PostMapping("/reference")
+    public Map<String, Object> uploadReference(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("referenceName") String referenceName,
+            @RequestParam(value = "herbName", required = false, defaultValue = "") String herbName,
+            @RequestHeader(value = "Authorization", required = false) String authorization) throws IOException {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        if (!"admin".equals(actor.role())) throw new AuthorizationDeniedException("仅管理员可上传公共标准品");
+
+        String content = readFile(file);
+        List<SpectrumCompareService.DataPoint> points = compareService.parseCSV(content);
+        if (points.size() < 10) throw new IllegalArgumentException("数据点太少（" + points.size() + " 个）");
+
+        String id = UUID.randomUUID().toString();
+        Map<String, Object> record = new LinkedHashMap<>();
+        record.put("id", id);
+        record.put("referenceName", referenceName);
+        record.put("herbName", herbName.isBlank() ? referenceName : herbName);
+        record.put("spectrumType", "HPLC");
+        record.put("referenceDataJson", compareService.toJSON(points));
+        record.put("operatorName", actor.name());
+        record.put("status", "REFERENCE");
+        record.put("createdAt", LocalDateTime.now().toString());
+        spectrumMapper.insertMap(record);
+        return Map.of("id", id, "referenceName", referenceName, "herbName", herbName, "pointCount", points.size());
+    }
+
+    /** Clear current user's sample history. */
+    @DeleteMapping("/my-samples")
+    public Map<String, Object> clearMySamples(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
+        int count = 0;
+        for (Map<String, Object> item : all) {
+            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
+            String sd = String.valueOf(item.getOrDefault("sampleDataJson", ""));
+            if (!"null".equals(sd) && !"[]".equals(sd) && sd.length() > 10) {
+                spectrumMapper.deleteById(String.valueOf(item.get("id")));
+                count++;
+            }
+        }
+        return Map.of("message", "deleted " + count + " sample records");
+    }
+
+    /** Clear current user's private reference history. */
+    @DeleteMapping("/my-references")
+    public Map<String, Object> clearMyReferences(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
+        int count = 0;
+        for (Map<String, Object> item : all) {
+            if (!"PRIVATE_REF".equals(String.valueOf(item.getOrDefault("status", "")))) continue;
+            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
+            spectrumMapper.deleteById(String.valueOf(item.get("id")));
+            count++;
+        }
+        return Map.of("message", "deleted " + count + " reference records");
+    }
+
+    /** Delete a reference (admin: any; owner: own PRIVATE_REF only). */
+    @DeleteMapping("/reference/{id}")
+    public Map<String, Object> deleteReference(@PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor actor = authService.requireActor(authorization);
+        Map<String, Object> existing = spectrumMapper.findByIdAsMap(id);
+        if (existing == null) throw new IllegalArgumentException("标准品不存在");
+        String status = String.valueOf(existing.getOrDefault("status", ""));
+        String owner = String.valueOf(existing.getOrDefault("operatorName", ""));
+        if ("REFERENCE".equals(status) && !"admin".equals(actor.role()))
+            throw new AuthorizationDeniedException("仅管理员可删除公共标准品");
+        if ("PRIVATE_REF".equals(status) && !actor.name().equals(owner) && !"admin".equals(actor.role()))
+            throw new AuthorizationDeniedException("仅上传者本人可删除");
+        spectrumMapper.deleteById(id);
+        return Map.of("message", "deleted", "id", id);
     }
 
     /**

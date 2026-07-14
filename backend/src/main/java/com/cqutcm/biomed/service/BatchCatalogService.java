@@ -208,7 +208,7 @@ public class BatchCatalogService {
         sample.setBatchId(dto.batchId);
         sample.setSampleCode(dto.sampleCode.trim());
         sample.setSampleType(trim(dto.sampleType));
-        sample.setCollectedAt(dto.collectedAt);
+        sample.setCollectedAt(dto.getCollectedAt());
         sample.setSampleLocation(trim(dto.sampleLocation));
         sample.setStorageCondition(trim(dto.storageCondition));
     }

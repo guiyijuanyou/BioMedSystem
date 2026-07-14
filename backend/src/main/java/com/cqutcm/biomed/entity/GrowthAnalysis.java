@@ -15,6 +15,8 @@ public class GrowthAnalysis {
     private String id;
     @TableField("batch_id")
     private String batchId;
+    @TableField("batch_name")
+    private String batchName;
     @TableField("analysis_name")
     private String analysisName;
     @TableField("herb_name")
@@ -33,6 +35,16 @@ public class GrowthAnalysis {
     private String trend;
     @TableField("conclusion")
     private String conclusion;
+    @TableField("analysis_config_json")
+    private String analysisConfigJson;
+    @TableField("trend_data_json")
+    private String trendDataJson;
+    @TableField("suitability_json")
+    private String suitabilityJson;
+    @TableField("record_count")
+    private Integer recordCount;
+    @TableField("stage_count")
+    private Integer stageCount;
     @TableField("analyst_name")
     private String analystName;
     @TableField("analyzed_at")
@@ -57,6 +69,18 @@ public class GrowthAnalysis {
     public void setId(String id) { this.id = id; }
     public String getBatchId() { return batchId; }
     public void setBatchId(String batchId) { this.batchId = batchId; }
+    public String getBatchName() { return batchName; }
+    public void setBatchName(String batchName) { this.batchName = batchName; }
+    public String getAnalysisConfigJson() { return analysisConfigJson; }
+    public void setAnalysisConfigJson(String analysisConfigJson) { this.analysisConfigJson = analysisConfigJson; }
+    public String getTrendDataJson() { return trendDataJson; }
+    public void setTrendDataJson(String trendDataJson) { this.trendDataJson = trendDataJson; }
+    public String getSuitabilityJson() { return suitabilityJson; }
+    public void setSuitabilityJson(String suitabilityJson) { this.suitabilityJson = suitabilityJson; }
+    public Integer getRecordCount() { return recordCount; }
+    public void setRecordCount(Integer recordCount) { this.recordCount = recordCount; }
+    public Integer getStageCount() { return stageCount; }
+    public void setStageCount(Integer stageCount) { this.stageCount = stageCount; }
     public String getAnalysisName() { return analysisName; }
     public void setAnalysisName(String analysisName) { this.analysisName = analysisName; }
     public String getHerbName() { return herbName; }

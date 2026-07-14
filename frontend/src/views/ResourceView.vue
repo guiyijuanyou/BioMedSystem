@@ -9,6 +9,7 @@ import MapPicker from "@/components/MapPicker.vue";
 import AppSelect from "@/components/AppSelect.vue";
 import { api, authHeader } from "@/services/api";
 import { appDialog } from "@/services/dialog";
+import ReferenceManager from "@/components/ReferenceManager.vue";
 import { roles as roleOptions } from "@/config";
 
 const props = defineProps({
@@ -48,6 +49,7 @@ const page = ref(1);
 const pageSize = ref(8);
 const confirmState = reactive({ open: false, ids: [] });
 const form = reactive({});
+const showRefManager = ref(false);
 const batchLinkedModules = new Set([
   "lab-samples", "growth-records", "trace-events", "spectrum-comparisons", "growth-analysis", "evaluations"
 ]);
@@ -526,6 +528,20 @@ function applySelectedHerb(herbId) {
   if (!form.batchName) form.batchName = `${herb.name} / ${herb.district || "未填写地区"} 新批次`;
 }
 
+const herbAbbr = { "黄连": "HL", "金银花": "JYH", "天麻": "TM", "党参": "DS", "黄芪": "HQ", "当归": "DG", "丹参": "DS", "甘草": "GC", "大黄": "DH", "半夏": "BX", "柴胡": "CH", "桔梗": "JG" };
+const districtAbbr = { "石柱": "SZ", "城口": "CK", "巫山": "WS", "巫溪": "WX", "南川": "NC", "秀山": "XS", "酉阳": "YY", "彭水": "PS", "黔江": "QJ", "万州": "WZ", "涪陵": "FL", "开州": "KZ", "奉节": "FJ", "云阳": "YYA", "忠县": "ZX", "丰都": "FD", "垫江": "DJ", "梁平": "LP" };
+
+function sampleCodeFromBatch(batch) {
+  const herb = (batch.herbName || "").trim();
+  const distRaw = (batch.district || "").trim();
+  const dist = distRaw.replace(/[县区市]$/, "");
+  const herbAb = herbAbbr[herb] || [...herb].slice(0, 2).join("");
+  const distAb = districtAbbr[dist] || districtAbbr[distRaw] || [...dist].slice(0, 2).join("");
+  const d = new Date();
+  const dateStr = d.getFullYear() + ("0" + (d.getMonth() + 1)).slice(-2) + ("0" + d.getDate()).slice(-2);
+  return [herbAb, distAb, dateStr].filter(Boolean).join("-");
+}
+
 function applySelectedBatch(batchId) {
   const batch = findBatch(batchId);
   if (!batch) return;
@@ -533,6 +549,13 @@ function applySelectedBatch(batchId) {
   form.herbName = batch.herbName || "";
   form.district = batch.district || "";
   if (Object.hasOwn(form, "traceCode")) form.traceCode = batch.traceCode || "";
+  if (Object.hasOwn(form, "sampleCode") && !form.sampleCode) {
+    form.sampleCode = sampleCodeFromBatch(batch);
+  }
+  if (Object.hasOwn(form, "sampleLocation") && !form.sampleLocation) {
+    const parts = new Set([batch.plotName, batch.district].filter(Boolean));
+    form.sampleLocation = [...parts].join("，");
+  }
 }
 
 function applySelectedSample(sampleId) {
@@ -994,7 +1017,11 @@ function fillForm(item = null) {
 
 function openCreate() {
   if (props.config?.useDedicatedView) {
-    router.push("/spectrum-compare");
+    if (props.moduleKey === "growth-analysis") {
+      router.push("/growth-analysis");
+    } else {
+      router.push("/spectrum-compare");
+    }
     return;
   }
   fillForm();
@@ -1003,6 +1030,10 @@ function openCreate() {
 }
 
 function openView(item) {
+  if (props.moduleKey === "growth-analysis") {
+    router.push(`/growth-analysis/${item.id}`);
+    return;
+  }
   fillForm(item);
   panelMode.value = "view";
   panelOpen.value = true;
@@ -1013,6 +1044,10 @@ function openBatchDetail(item) {
 }
 
 function openEdit(item) {
+  if (props.moduleKey === "growth-analysis") {
+    router.push(`/growth-analysis/${item.id}`);
+    return;
+  }
   if (!canManageItem(item, "edit")) {
     emit("notify", "当前角色不能修改这条记录");
     return;
@@ -1302,7 +1337,10 @@ watch(() => props.editId, id => {
   <section class="panel resource-workbench">
     <div class="panel-head resource-head">
       <div><h2>{{ config.title }}</h2><span>{{ config.hint }}</span></div>
-      <button v-if="canCreate" type="button" @click="openCreate"><Plus :size="16" />{{ config.createLabel || '新增记录' }}</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button v-if="isSpectrumModule && role === 'admin'" type="button" class="button-secondary" @click="showRefManager = true">管理标准品库</button>
+        <button v-if="canCreate" type="button" @click="openCreate"><Plus :size="16" />{{ config.createLabel || '新增记录' }}</button>
+      </div>
     </div>
 
     <section v-if="insightVisible" class="insight-panel">
@@ -1899,4 +1937,5 @@ watch(() => props.editId, id => {
       </section>
     </div>
   </Teleport>
+  <ReferenceManager v-if="showRefManager" @close="showRefManager = false" @changed="load" />
 </template>

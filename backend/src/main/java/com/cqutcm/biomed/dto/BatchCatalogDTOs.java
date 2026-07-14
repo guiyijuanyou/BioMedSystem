@@ -5,8 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeParseException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class BatchCatalogDTOs {
     public static class BatchCreate {
@@ -36,11 +38,39 @@ public class BatchCatalogDTOs {
         @NotBlank public String batchId;
         @NotBlank @Size(max = 100) public String sampleCode;
         @Size(max = 100) public String sampleType;
-        public LocalDateTime collectedAt;
+        private LocalDateTime collectedAt;
         @Size(max = 100) public String collector;
         @Size(max = 200) public String sampleLocation;
         @Size(max = 300) public String storageCondition;
         @Size(max = 30) public String status;
+
+        public LocalDateTime getCollectedAt() { return collectedAt; }
+
+        public void setCollectedAt(Object value) {
+            this.collectedAt = parseCollectedAt(value);
+        }
+
+        private static LocalDateTime parseCollectedAt(Object value) {
+            if (value == null) return null;
+            if (value instanceof LocalDateTime) return (LocalDateTime) value;
+            String s = String.valueOf(value).trim();
+            if (s.isEmpty()) return null;
+            DateTimeFormatter[] formatters = new DateTimeFormatter[] {
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+                DateTimeFormatter.ofPattern("yyyy-MM-dd"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm"),
+                DateTimeFormatter.ofPattern("yyyy/MM/dd"),
+                DateTimeFormatter.ofPattern("yyyy-M-d H:m:s"),
+                DateTimeFormatter.ofPattern("yyyy-M-d H:m"),
+                DateTimeFormatter.ofPattern("yyyy-M-d")
+            };
+            for (DateTimeFormatter f : formatters) {
+                try { return LocalDateTime.parse(s, f); } catch (DateTimeParseException ignored) {}
+            }
+            throw new IllegalArgumentException("无法解析采样时间格式: " + s);
+        }
     }
 
     public static class SampleUpdate extends SampleCreate {

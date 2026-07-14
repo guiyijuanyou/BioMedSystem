@@ -85,6 +85,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: "/growth-analysis",
+    name: "growth-analysis",
+    component: () => import("@/views/GrowthAnalysisView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/growth-analysis/:id",
+    name: "growth-analysis-report",
+    component: () => import("@/views/GrowthAnalysisReportView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
     path: "/:pathMatch(.*)*",
     redirect: "/dashboard"
   }

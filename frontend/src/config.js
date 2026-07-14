@@ -117,17 +117,14 @@ export const modules = {
   "growth-analysis": {
     title: "数据对比分析",
     hint: "按批次、区县和生态指标对生长数据进行对比分析",
+    useDedicatedView: true,
+    createLabel: "开始分析",
     fields: [
       ["analysisName", "分析名称"],
-      ["batchId", "药材批次"],
+      ["batchName", "批次"],
       ["herbName", "药材名称"],
       ["district", "对比区县"],
-      ["indicator", "分析指标"],
-      ["baseline", "基准值"],
-      ["currentValue", "当前值"],
-      ["difference", "差异"],
-      ["trend", "趋势判断"],
-      ["conclusion", "分析结论"],
+      ["recordCount", "记录数"],
       ["analyst", "分析人"],
       ["analyzedAt", "分析时间"],
       ["status", "审核状态"]
