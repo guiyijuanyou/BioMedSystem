@@ -1,0 +1,36 @@
+{
+  "name": "biomed-mobile-collection-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:h5": "uni -p h5",
+    "build:h5": "uni build -p h5",
+    "build:app": "uni build -p app",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-4020920240930001",
+    "@dcloudio/uni-components": "3.0.0-4020920240930001",
+    "@dcloudio/uni-h5": "3.0.0-4020920240930001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-4020920240930001",
+    "vue": "3.5.39"
+  },
+  "overrides": {
+    "@vue/shared": "3.5.39",
+    "@vue/runtime-core": "3.5.39",
+    "@vue/runtime-dom": "3.5.39",
+    "@vue/reactivity": "3.5.39",
+    "@vue/compiler-core": "3.5.39",
+    "@vue/compiler-dom": "3.5.39",
+    "@vue/compiler-sfc": "3.5.39",
+    "@vue/compiler-ssr": "3.5.39",
+    "@vue/server-renderer": "3.5.39"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "3.4.14",
+    "@dcloudio/vite-plugin-uni": "3.0.0-4020920240930001",
+    "vite": "^5.4.11",
+    "vue-tsc": "^2.1.10"
+  }
+}

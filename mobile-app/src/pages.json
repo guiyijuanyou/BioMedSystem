@@ -1,0 +1,78 @@
+{
+  "pages": [
+    {
+      "path": "pages/dashboard/index",
+      "style": {
+        "navigationBarTitleText": "移动工作台",
+        "navigationBarBackgroundColor": "#0c6b4f",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/activation/index",
+      "style": {
+        "navigationBarTitleText": "设备激活",
+        "navigationBarBackgroundColor": "#0c6b4f",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/collect/index",
+      "style": {
+        "navigationBarTitleText": "生长采集",
+        "navigationBarBackgroundColor": "#0c6b4f",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/queue/index",
+      "style": {
+        "navigationBarTitleText": "离线队列",
+        "navigationBarBackgroundColor": "#0c6b4f",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/resources/index",
+      "style": {
+        "navigationBarTitleText": "业务数据",
+        "navigationBarBackgroundColor": "#0c6b4f",
+        "navigationBarTextStyle": "white"
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarBackgroundColor": "#0c6b4f",
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "采集 APP",
+    "backgroundColor": "#f4f7f3"
+  },
+  "tabBar": {
+    "color": "#6f8077",
+    "selectedColor": "#0c6b4f",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/dashboard/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/collect/index",
+        "text": "采集"
+      },
+      {
+        "pagePath": "pages/resources/index",
+        "text": "数据"
+      },
+      {
+        "pagePath": "pages/queue/index",
+        "text": "队列"
+      },
+      {
+        "pagePath": "pages/activation/index",
+        "text": "设备"
+      }
+    ]
+  }
+}
