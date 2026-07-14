@@ -19,6 +19,10 @@ public class AchievementRecord {
     private String ownerName;
     @TableField("source_module")
     private String sourceModule;
+    @TableField("course_id")
+    private String courseId;
+    @TableField("course_title")
+    private String courseTitle;
     @TableField("batch_id")
     private String batchId;
     @TableField("herb_name")
@@ -35,6 +39,8 @@ public class AchievementRecord {
     private String score;
     @TableField("evidence")
     private String evidence;
+    @TableField("evidence_file_ids")
+    private String evidenceFileIds;
     @TableField("status")
     private String status;
     @TableField("reviewer_name")
@@ -59,6 +65,10 @@ public class AchievementRecord {
     public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
     public String getSourceModule() { return sourceModule; }
     public void setSourceModule(String sourceModule) { this.sourceModule = sourceModule; }
+    public String getCourseId() { return courseId; }
+    public void setCourseId(String courseId) { this.courseId = courseId; }
+    public String getCourseTitle() { return courseTitle; }
+    public void setCourseTitle(String courseTitle) { this.courseTitle = courseTitle; }
     public String getBatchId() { return batchId; }
     public void setBatchId(String batchId) { this.batchId = batchId; }
     public String getHerbName() { return herbName; }
@@ -75,6 +85,8 @@ public class AchievementRecord {
     public void setScore(String score) { this.score = score; }
     public String getEvidence() { return evidence; }
     public void setEvidence(String evidence) { this.evidence = evidence; }
+    public String getEvidenceFileIds() { return evidenceFileIds; }
+    public void setEvidenceFileIds(String evidenceFileIds) { this.evidenceFileIds = evidenceFileIds; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getReviewerName() { return reviewerName; }

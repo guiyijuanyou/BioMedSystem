@@ -412,12 +412,15 @@ public class StructuredRecordService {
         AchievementRecord a = new AchievementRecord();
         a.setTitle(str(m, "title"));
         a.setSourceModule(str(m, "sourceModule"));
+        a.setCourseId(str(m, "courseId"));
+        a.setCourseTitle(str(m, "courseTitle"));
         a.setBatchId(str(m, "batchId"));
         a.setHerbName(str(m, "herbName"));
         a.setProjectTitle(str(m, "projectTitle"));
         a.setStandardId(str(m, "standardId"));
         a.setScore(str(m, "score"));
         a.setEvidence(str(m, "evidence"));
+        a.setEvidenceFileIds(str(m, "evidenceFileIds"));
         if (permissionService.isAdmin(actor)) {
             a.setOwnerName(str(m, "owner"));
             a.setCategory(str(m, "category"));
@@ -523,6 +526,8 @@ public class StructuredRecordService {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", a.getId()); m.put("title", a.getTitle()); m.put("owner", a.getOwnerName());
         m.put("sourceModule", a.getSourceModule());
+        m.put("courseId", a.getCourseId());
+        m.put("courseTitle", a.getCourseTitle());
         m.put("batchId", a.getBatchId());
         m.put("herbName", a.getHerbName());
         m.put("projectTitle", a.getProjectTitle());
@@ -530,6 +535,7 @@ public class StructuredRecordService {
         m.put("category", a.getCategory()); m.put("level", a.getLevelName());
         m.put("score", a.getScore());
         m.put("evidence", a.getEvidence());
+        m.put("evidenceFileIds", a.getEvidenceFileIds());
         m.put("status", a.getStatus());
         m.put("reviewerName", a.getReviewerName());
         m.put("reviewComment", a.getReviewComment());

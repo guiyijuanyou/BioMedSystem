@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS file_asset (
   category VARCHAR(100),
   size_bytes BIGINT NOT NULL DEFAULT 0,
   storage_path VARCHAR(500) NOT NULL,
+  sha256 CHAR(64),
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_file_category (category)
+  INDEX idx_file_category (category),
+  INDEX idx_file_hash_category (sha256, category)
 );
 
 CREATE TABLE IF NOT EXISTS sys_role (
@@ -333,6 +335,8 @@ CREATE TABLE IF NOT EXISTS achievement_record (
   title VARCHAR(200) NOT NULL,
   owner_name VARCHAR(100),
   source_module VARCHAR(80),
+  course_id VARCHAR(64),
+  course_title VARCHAR(200),
   batch_id VARCHAR(64),
   herb_name VARCHAR(100),
   project_title VARCHAR(200),
@@ -341,6 +345,7 @@ CREATE TABLE IF NOT EXISTS achievement_record (
   level_name VARCHAR(100),
   score VARCHAR(30),
   evidence TEXT,
+  evidence_file_ids TEXT,
   status VARCHAR(50) NOT NULL DEFAULT '草稿',
   reviewer_name VARCHAR(100),
   review_comment TEXT,

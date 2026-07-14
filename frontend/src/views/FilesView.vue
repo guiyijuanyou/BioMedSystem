@@ -2,6 +2,7 @@
 import { inject, onMounted, ref } from "vue";
 import { Download, Eye, Trash2, Upload } from "lucide-vue-next";
 import { api, authHeader } from "@/services/api";
+import { appDialog } from "@/services/dialog";
 import AppSelect from "@/components/AppSelect.vue";
 
 const permissions = inject("modulePermissions");
@@ -53,7 +54,13 @@ async function fetchFile(url, openPreview) {
 
 /** 删除文件 */
 async function deleteFile(fid) {
-  if (!confirm("确定要删除该文件吗？已发布到课程中的资源可能受影响。")) return;
+  const confirmed = await appDialog.confirm({
+    title: "删除文件",
+    message: "删除后将无法恢复，已发布到课程中的关联资源也可能受到影响。",
+    tone: "danger",
+    confirmText: "确认删除"
+  });
+  if (!confirmed) return;
   try {
     await api(`/api/files/${fid}`, { method: "DELETE" });
     notify("文件已删除");
@@ -74,11 +81,12 @@ async function upload() {
     const formData = new FormData();
     formData.append("category", category.value);
     formData.append("file", file.value);
-    await api("/api/files/upload", {
+    const uploaded = await api("/api/files/upload", {
       method: "POST",
       body: formData
     });
-    notify("文件上传完成，可在教学视频与资料中发布到课程");
+    const reused = items.value.some(item => item.id === uploaded.id);
+    notify(reused ? "该分类下已存在相同文件，未重复上传" : "文件上传完成，可在教学视频与资料中发布到课程");
     file.value = null;
     const input = document.querySelector("#vue-file-input");
     if (input) input.value = "";

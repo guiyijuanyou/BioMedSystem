@@ -1,5 +1,5 @@
 <script setup>
-import{computed,inject,onMounted,ref}from"vue";import{ClipboardCheck,ExternalLink,RefreshCw}from"lucide-vue-next";import{useRouter}from"vue-router";import{api}from"@/services/api";import AppSelect from"@/components/AppSelect.vue";
+import{computed,inject,onMounted,ref}from"vue";import{ClipboardCheck,ExternalLink,RefreshCw}from"lucide-vue-next";import{useRouter}from"vue-router";import{api}from"@/services/api";import{appDialog}from"@/services/dialog";import AppSelect from"@/components/AppSelect.vue";
 const notify=inject("notify"),role=inject("currentRole"),router=useRouter(),loading=ref(true),schemeId=ref(""),batchId=ref(""),data=ref({schemes:[],batches:[],evaluations:[]}),selected=ref(null),recommendations=ref([]);
 const currentScheme=computed(()=>data.value.schemes.find(x=>x.id===schemeId.value));
 const schemeOptions=computed(()=>data.value.schemes.map(s=>({value:s.id,label:`${s.schemeName} · V${s.versionNo}`})));
@@ -8,9 +8,9 @@ async function load(){loading.value=true;try{data.value=await api("/api/multi-ev
 async function evaluate(){try{selected.value=await api("/api/multi-evaluations/evaluate",{method:"POST",body:JSON.stringify({schemeId:schemeId.value,batchId:batchId.value})});await loadRecommendations(selected.value.evaluation.id);notify("自动评价已生成，并同步到评价体系");await load()}catch(e){notify(e.message)}}
 async function detail(id){try{selected.value=await api(`/api/multi-evaluations/${id}`);await loadRecommendations(id)}catch(e){notify(e.message)}}
 async function loadRecommendations(id){const r=await api(`/api/improvement-recommendations/evaluation/${id}`);recommendations.value=r.items||[]}
-async function acceptRecommendation(r){const assignee=window.prompt("请输入培训任务负责人（没有匹配素材时仅创建问题）","")||"";try{await api(`/api/improvement-recommendations/${r.id}/accept`,{method:"POST",body:JSON.stringify({assignee})});notify("整改问题和推荐培训任务已创建");await loadRecommendations(r.multiEvaluationId)}catch(e){notify(e.message)}}
+async function acceptRecommendation(r){const assignee=await appDialog.prompt({title:"采纳改进建议",label:"培训任务负责人（可选）",message:"填写负责人后将同步创建培训任务；没有匹配素材时仅创建整改问题。",placeholder:"请输入负责人姓名",confirmText:"采纳并创建"});if(assignee===null)return;try{await api(`/api/improvement-recommendations/${r.id}/accept`,{method:"POST",body:JSON.stringify({assignee})});notify("整改问题和推荐培训任务已创建");await loadRecommendations(r.multiEvaluationId)}catch(e){notify(e.message)}}
 async function ignoreRecommendation(r){try{await api(`/api/improvement-recommendations/${r.id}/ignore`,{method:"PUT"});notify("建议已忽略");await loadRecommendations(r.multiEvaluationId)}catch(e){notify(e.message)}}
-async function removeEvaluation(id){if(!window.confirm("确认删除这条自动评价及其评分明细？"))return;try{await api(`/api/multi-evaluations/${id}`,{method:"DELETE"});if(selected.value?.evaluation?.id===id)selected.value=null;notify("自动评价已删除");await load()}catch(e){notify(e.message)}}
+async function removeEvaluation(id){const confirmed=await appDialog.confirm({title:"删除自动评价",message:"评价记录及其全部评分明细将被永久删除，此操作无法撤销。",tone:"danger",confirmText:"确认删除"});if(!confirmed)return;try{await api(`/api/multi-evaluations/${id}`,{method:"DELETE"});if(selected.value?.evaluation?.id===id)selected.value=null;notify("自动评价已删除");await load()}catch(e){notify(e.message)}}
 function text(v){return({qualified:"合格",unqualified:"不合格",excellent:"优秀",good:"良好",below_standard:"低于标准",above_standard:"高于标准"})[v]||v}
 onMounted(load);
 </script>

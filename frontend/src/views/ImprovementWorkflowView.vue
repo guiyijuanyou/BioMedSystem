@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, reactive, ref } from "vue";
 import { CheckCircle2, ClipboardPlus, GraduationCap, Link2, RefreshCcw } from "lucide-vue-next";
 import { api } from "@/services/api";
+import { appDialog } from "@/services/dialog";
 import AppSelect from "@/components/AppSelect.vue";
 
 const currentRole = inject("currentRole");
@@ -76,9 +77,24 @@ async function addTask(issue) {
   catch (error) { notify(error.message); }
 }
 async function completeTask(task) {
-  const completionNote = window.prompt("请输入完成说明");
-  if (!completionNote) return;
-  const postScore = window.prompt("请输入培训后评分（可留空）") || "";
+  const completionNote = await appDialog.prompt({
+    title: "完成培训任务",
+    label: "完成说明",
+    message: `请记录“${task.title || "当前任务"}”的完成情况。`,
+    placeholder: "例如：已完成培训并通过现场考核",
+    required: true,
+    multiline: true,
+    confirmText: "下一步"
+  });
+  if (completionNote === null) return;
+  const postScore = await appDialog.prompt({
+    title: "填写培训后评分",
+    label: "培训后评分（可选）",
+    placeholder: "请输入数字评分",
+    inputType: "number",
+    confirmText: "完成任务"
+  });
+  if (postScore === null) return;
   try { await api(`/api/improvement/tasks/${task.id}/complete`, { method: "PUT", body: JSON.stringify({ completionNote, postScore }) }); notify("培训任务已完成"); await load(); }
   catch (error) { notify(error.message); }
 }
@@ -98,7 +114,7 @@ async function addEvidence(issue) {
   try { await api(`/api/improvement/achievements/${draft.achievementId}/evidence`, { method: "POST", body: JSON.stringify({ ...draft, issueId: issue.id }) }); notify("已挂接为业绩证据"); await load(); }
   catch (error) { notify(error.message); }
 }
-async function confirmPoints(evidence){const points=window.prompt("确认业绩分值",evidence.suggestedPoints??"");if(points===null)return;try{await api(`/api/improvement/evidence/${evidence.id}/confirm-points`,{method:"PUT",body:JSON.stringify({points})});notify("业绩分值已确认");await load()}catch(error){notify(error.message)}}
+async function confirmPoints(evidence){const points=await appDialog.prompt({title:"确认业绩分值",label:"认定分值",message:"请核对系统建议分值，确认后将计入关联业绩。",value:String(evidence.suggestedPoints??""),inputType:"number",required:true,confirmText:"确认分值"});if(points===null)return;try{await api(`/api/improvement/evidence/${evidence.id}/confirm-points`,{method:"PUT",body:JSON.stringify({points})});notify("业绩分值已确认");await load()}catch(error){notify(error.message)}}
 function issueTasks(id) { return data.value.tasks.filter(task => task.issueId === id); }
 function statusText(status) { return ({ open: "待整改", training: "培训中", rechecking: "待复评审核", closed: "已闭环", pending: "待完成", completed: "已完成" })[status] || status; }
 

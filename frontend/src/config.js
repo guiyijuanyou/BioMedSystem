@@ -249,6 +249,7 @@ Object.assign(modules.achievements, {
   fields: [
     ["title", "业绩名称"],
     ["sourceModule", "来源模块"],
+    ["courseId", "关联课程"],
     ["batchId", "关联药材批次"],
     ["herbName", "药材名称"],
     ["projectTitle", "关联课题/项目"],
