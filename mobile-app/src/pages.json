@@ -39,6 +39,22 @@
         "navigationBarBackgroundColor": "#0c6b4f",
         "navigationBarTextStyle": "white"
       }
+    },
+    {
+      "path": "pages/map/index",
+      "style": {
+        "navigationBarTitleText": "种植地图",
+        "navigationBarBackgroundColor": "#0c6b4f",
+        "navigationBarTextStyle": "white"
+      }
+    },
+    {
+      "path": "pages/trace/index",
+      "style": {
+        "navigationBarTitleText": "溯源事件",
+        "navigationBarBackgroundColor": "#0c6b4f",
+        "navigationBarTextStyle": "white"
+      }
     }
   ],
   "globalStyle": {

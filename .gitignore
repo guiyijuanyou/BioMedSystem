@@ -34,3 +34,11 @@ data/uploads/
 data/map-cache/
 data/backup/
 *.class
+.DS_Store
+android/.gradle/
+android/build/
+android/*/build/
+android/local.properties
+android/*/local.properties
+android/*/.gradle/
+android/*/src/main/assets/apps/*/www/

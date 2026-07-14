@@ -1,7 +1,7 @@
 const KEY = "biomed-mobile-settings";
 
 const defaults = {
-  apiBase: "",
+  apiBase: "http://120.26.46.218:8088",
   deviceToken: "",
   deviceCode: "",
   accountToken: "",

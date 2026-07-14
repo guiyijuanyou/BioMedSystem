@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from "vue";
-import { getBatches } from "../../services/api";
+import { getBatches, uploadGrowthRecords } from "../../services/api";
 import { getCurrentLocation } from "../../services/location";
 import { insertOfflineRecord, queueSummary } from "../../services/offline-db";
 import { loadSettings } from "../../services/settings";
@@ -20,7 +20,8 @@ const form = reactive({
   longitude: "",
   latitude: "",
   locationAccuracy: "",
-  remark: ""
+  remark: "",
+  photos: []
 });
 
 const selectedBatch = computed(() => batches.value[batchIndex.value] || null);
@@ -57,9 +58,33 @@ async function locate() {
   }
 }
 
+function takePhoto() {
+  uni.chooseImage({
+    count: 6,
+    sizeType: ["compressed"],
+    sourceType: ["camera", "album"],
+    success(result) {
+      const newPhotos = result.tempFilePaths.map((p, i) => ({
+        path: p,
+        name: `${Date.now()}_${i}.jpg`
+      }));
+      form.photos.push(...newPhotos);
+      uni.showToast({ title: `已选 ${newPhotos.length} 张`, icon: "success" });
+    }
+  });
+}
+
+function removePhoto(index) {
+  form.photos.splice(index, 1);
+}
+
 async function saveRecord() {
   if (!selectedBatch.value) {
     uni.showToast({ title: "请选择批次", icon: "none" });
+    return;
+  }
+  if (!settings.deviceToken) {
+    uni.showToast({ title: "请先配置设备令牌", icon: "none" });
     return;
   }
   const record = {
@@ -73,12 +98,25 @@ async function saveRecord() {
     longitude: numberOrNull(form.longitude),
     latitude: numberOrNull(form.latitude),
     locationAccuracy: numberOrNull(form.locationAccuracy),
-    remark: form.remark.trim()
+    remark: form.remark.trim(),
+    photos: form.photos.map(p => p.path)
   };
+  try {
+    const result = await uploadGrowthRecords([record]);
+    const item = (result.items || []).find(i => i.clientRecordId === record.clientRecordId);
+    if (item && item.status === "accepted") {
+      resetForm();
+      await refreshQueue();
+      uni.showToast({ title: "已上传", icon: "success" });
+      return;
+    }
+  } catch (_) {
+    // 网络不可用，保存到离线队列
+  }
   await insertOfflineRecord(record);
   resetForm();
   await refreshQueue();
-  uni.showToast({ title: "已保存到队列", icon: "success" });
+  uni.showToast({ title: "已保存到本地", icon: "success" });
 }
 
 async function syncNow() {
@@ -111,7 +149,8 @@ function resetForm() {
     longitude: "",
     latitude: "",
     locationAccuracy: "",
-    remark: ""
+    remark: "",
+    photos: []
   });
 }
 
@@ -133,7 +172,7 @@ function numberOrNull(value) {
     <view class="hero">
       <text class="eyebrow">离线优先</text>
       <text class="title">生长数据采集</text>
-      <text class="subtitle">先保存到本机队列，有网时再自动或手动补传到后端。</text>
+      <text class="subtitle">有网时自动上传，无网络时保存到本地，联网后自动补传。</text>
     </view>
 
     <view class="card">
@@ -198,6 +237,20 @@ function numberOrNull(value) {
     </view>
 
     <view class="card">
+      <text class="section-title">现场照片</text>
+      <view class="photo-grid">
+        <view v-for="(photo, idx) in form.photos" :key="idx" class="photo-item">
+          <image :src="photo.path" mode="aspectFill" class="photo-thumb" />
+          <text class="photo-remove" @tap="removePhoto(idx)">✕</text>
+        </view>
+        <view v-if="form.photos.length < 6" class="photo-add" @tap="takePhoto">
+          <text class="photo-add-icon">+</text>
+          <text class="photo-add-label">拍照</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
       <text class="section-title">队列</text>
       <view class="metric-grid">
         <view class="metric">
@@ -220,3 +273,58 @@ function numberOrNull(value) {
     </view>
   </view>
 </template>
+
+<style scoped>
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.photo-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #eef2ef;
+}
+.photo-thumb {
+  width: 100%;
+  height: 100%;
+}
+.photo-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  line-height: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+}
+.photo-add {
+  width: 80px;
+  height: 80px;
+  border: 2px dashed #c0ccc4;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8faf9;
+}
+.photo-add-icon {
+  font-size: 28px;
+  color: #9aa8a0;
+  line-height: 1;
+}
+.photo-add-label {
+  font-size: 12px;
+  color: #9aa8a0;
+  margin-top: 2px;
+}
+</style>
