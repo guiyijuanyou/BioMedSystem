@@ -376,3 +376,92 @@ html.immersive-scroll::-webkit-scrollbar {
 @media (prefers-reduced-motion: reduce) {
   .login-stepper__next i { animation-duration: .01ms!important; animation-iteration-count: 1!important; }
 }
+
+/* Official Vue Bits Stepper geometry with the portal's purple-orange accent. */
+.login-dialog { padding: 16px; color: #f7f7fa; }
+.login-dialog__backdrop,
+.login-dialog__backdrop:hover { background: rgba(7,7,10,.82); backdrop-filter: blur(12px) saturate(75%); }
+.login-dialog__panel {
+  width: min(448px,100%);
+  padding: 0;
+  border: 1px solid #27272a;
+  border-radius: 32px;
+  background: #111113;
+  box-shadow: 0 28px 80px rgba(0,0,0,.5);
+}
+.login-dialog__panel::before { display: none; }
+.login-stepper__track { padding: 32px; }
+.login-stepper__indicator {
+  flex-basis: 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px!important;
+  border: 0;
+  border-radius: 50%!important;
+  color: #a1a1aa;
+  background: #222225;
+  font-size: 14px;
+}
+.login-stepper__indicator:hover { border: 0; background: #222225; }
+.login-stepper__indicator[data-status="active"],
+.login-stepper__indicator[data-status="complete"],
+.login-stepper__indicator[data-status="active"]:hover,
+.login-stepper__indicator[data-status="complete"]:hover {
+  background: linear-gradient(135deg,#635bff 0%,#d95dce 58%,#ff7a59 100%);
+  box-shadow: 0 8px 22px rgba(122,92,255,.24);
+}
+.login-stepper__active-dot { width: 12px; height: 12px; background: #c4c4cc; box-shadow: none; }
+.login-stepper__connector { height: 2px; margin-inline: 8px; background: #52525b; }
+.login-stepper__connector-fill { background: linear-gradient(90deg,#635bff,#d95dce,#ff7a59); }
+.login-stepper__content { min-height: 112px; padding: 0 32px; }
+.login-step { min-height: 112px; padding: 0; }
+.login-step__title { margin: 0 0 24px; color: #fafafa; font-size: 20px; font-weight: 620; line-height: 1.3; }
+.login-step .login-field { display: block; margin: 0; }
+.login-step .login-field > input,
+.login-step .login-field__password {
+  height: 48px;
+  border: 1px solid #34343b;
+  border-radius: 999px;
+  color: #f4f4f5;
+  background: #0d0d0f;
+}
+.login-step .login-field > input { padding-inline: 22px; }
+.login-step .login-field__password input { padding-inline: 22px; }
+.login-step .login-field > input::placeholder,
+.login-step .login-field__password input::placeholder { color: #71717a; }
+.login-step .login-field > input:focus,
+.login-step .login-field__password:focus-within { border-color: #8b7cff; box-shadow: 0 0 0 3px rgba(99,91,255,.12); }
+.login-step .login-field__password button { color: #8b8b96; }
+.login-step .login-field__password button:hover { color: #c6bfff; }
+.login-step__validation { margin: 9px 0 0; color: #ff8b9a; }
+.login-dialog__demo-toggle { justify-content: flex-start; width: auto; margin: 14px 0 0 12px; color: #a1a1aa; font-size: 12px; }
+.login-dialog__demo-toggle:hover { color: #c6bfff; }
+.login-dialog__demo { justify-content: flex-start; margin-top: 10px; padding: 10px; background: #19191c; }
+.login-dialog__demo button { color: #c6bfff; background: rgba(99,91,255,.14); }
+.login-dialog__demo span { color: #8d8d97; }
+.login-confirmation { display: block; padding: 2px 0; }
+.login-confirmation p { margin: 0; color: #a1a1aa; font-size: 15px; line-height: 1.7; }
+.login-confirmation strong { color: #fafafa; }
+.login-confirmation + .login-dialog__error { margin-top: 14px; border-color: rgba(255,122,144,.24); color: #ff9aaa; background: rgba(155,33,55,.15); }
+.login-stepper__footer { margin-top: 40px; padding: 0 32px 32px; }
+.login-stepper__back,
+.login-stepper__next { min-height: 40px; font-size: 14px; font-weight: 520; }
+.login-stepper__back { padding: 0 12px; color: #a1a1aa; }
+.login-stepper__back:hover { color: #d4d4d8; }
+.login-stepper__next {
+  min-width: 86px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 999px!important;
+  color: #fff;
+  background: linear-gradient(110deg,#635bff,#b65fd5 60%,#ff7a59);
+  box-shadow: none;
+}
+.login-stepper__next:hover { background: linear-gradient(110deg,#746cff,#c56be0 60%,#ff896a); box-shadow: none; transform: none; }
+
+@media (max-width: 520px) {
+  .login-dialog { padding: 12px; }
+  .login-stepper__track { padding: 24px; }
+  .login-stepper__content { padding-inline: 24px; }
+  .login-stepper__footer { padding: 0 24px 24px; }
+}

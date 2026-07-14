@@ -1,6 +1,6 @@
 <script setup>
 import { AnimatePresence, Motion } from "motion-v";
-import { Check, ChevronLeft, ChevronRight } from "lucide-vue-next";
+import { Check } from "lucide-vue-next";
 import { Comment, Fragment, computed, ref, useSlots } from "vue";
 
 const props = defineProps({
@@ -80,12 +80,12 @@ defineExpose({ back, next, reset });
 
 const stepVariants = {
   enter: directionValue => ({
-    x: directionValue >= 0 ? "20%" : "-20%",
+    x: directionValue >= 0 ? "-100%" : "100%",
     opacity: 0
   }),
   center: { x: "0%", opacity: 1 },
   exit: directionValue => ({
-    x: directionValue >= 0 ? "-14%" : "14%",
+    x: directionValue >= 0 ? "50%" : "-50%",
     opacity: 0
   })
 };
@@ -140,7 +140,7 @@ const stepVariants = {
           initial="enter"
           animate="center"
           exit="exit"
-          :transition="{ duration: 0.28, ease: 'easeOut' }"
+          :transition="{ duration: 0.4, ease: 'easeOut' }"
         >
           <component :is="stepsArray[currentStep - 1]" />
         </Motion>
@@ -156,7 +156,6 @@ const stepVariants = {
         :disabled="disabled || navigating"
         @click="back"
       >
-        <ChevronLeft :size="16" />
         <span>{{ backButtonText }}</span>
       </button>
 
@@ -168,8 +167,7 @@ const stepVariants = {
         @click="next"
       >
         <span>{{ isLastStep ? completeButtonText : nextButtonText }}</span>
-        <ChevronRight v-if="!isLastStep" :size="16" />
-        <i v-else aria-hidden="true"></i>
+        <i aria-hidden="true"></i>
       </button>
     </div>
   </div>

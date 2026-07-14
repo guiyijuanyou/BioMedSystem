@@ -46,6 +46,14 @@ describe("Login Stepper", () => {
     expect(wrapper.get('[data-test="step-indicator-1"]').attributes("data-status")).toBe("active");
   });
 
+  it("uses compact text-only navigation controls", () => {
+    const wrapper = mountStepper();
+    const nextButton = wrapper.get('[data-test="stepper-next"]');
+
+    expect(nextButton.text()).toBe("下一步");
+    expect(nextButton.find("svg").exists()).toBe(false);
+  });
+
   it("emits completion on the last step and can reset", async () => {
     const wrapper = mountStepper();
 

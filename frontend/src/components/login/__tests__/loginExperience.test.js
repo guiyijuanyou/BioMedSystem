@@ -131,6 +131,14 @@ describe("immersive login components", () => {
     expect(wrapper.emitted("submit")?.[0]).toEqual([{ username: "admin", password: "123456" }]);
   });
 
+  it("renders the compact stepper without the legacy portal header", () => {
+    const wrapper = mountLogin({ username: "admin", password: "123456" });
+
+    expect(wrapper.text()).not.toContain("SECURE DATA PORTAL");
+    expect(wrapper.find(".login-dialog__orb").exists()).toBe(false);
+    expect(wrapper.find(".login-dialog__close").exists()).toBe(false);
+  });
+
   it("fills a demo account and resets to the first step when reopened", async () => {
     const wrapper = mountLogin({ username: "admin", password: "123456" });
 

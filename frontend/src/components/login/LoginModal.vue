@@ -1,5 +1,5 @@
 <script setup>
-import { ChevronDown, Eye, EyeOff, X } from "lucide-vue-next";
+import { ChevronDown, Eye, EyeOff } from "lucide-vue-next";
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import Stepper from "./Stepper.vue";
 
@@ -100,15 +100,7 @@ onBeforeUnmount(() => document.body.classList.remove("login-modal-open"));
     <Transition name="login-dialog">
       <div v-if="modelValue" class="login-dialog" role="presentation" @keydown="handleKeydown">
         <button class="login-dialog__backdrop" type="button" aria-label="关闭登录面板" @click="close"></button>
-        <section class="login-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="login-dialog-title">
-          <div class="login-dialog__orb" aria-hidden="true"><span></span><span></span><span></span></div>
-          <button class="login-dialog__close" type="button" aria-label="关闭" @click="close"><X :size="19" /></button>
-          <header>
-            <span class="login-dialog__eyebrow">SECURE DATA PORTAL</span>
-            <h2 id="login-dialog-title">进入生物医药数据空间</h2>
-            <p>连接采集、研究、教学与质量溯源的统一工作台。</p>
-          </header>
-
+        <section class="login-dialog__panel" role="dialog" aria-modal="true" aria-label="系统登录">
           <form @submit.prevent="handleFormSubmit">
             <Stepper
               ref="stepper"
@@ -121,14 +113,13 @@ onBeforeUnmount(() => document.body.classList.remove("login-modal-open"));
               @final-step-completed="submit"
             >
               <section class="login-step" aria-labelledby="login-step-account-title">
-                <h3 id="login-step-account-title" class="login-step__title">输入系统账号</h3>
-                <p class="login-step__copy">使用分配给你的数据门户账号继续。</p>
+                <h3 id="login-step-account-title" class="login-step__title">请输入系统账号</h3>
                 <label class="login-field">
-                  <span>账号</span>
                   <input
                     ref="usernameInput"
                     v-model="localCredentials.username"
                     data-test="username-input"
+                    aria-label="账号"
                     autocomplete="username"
                     placeholder="请输入系统账号"
                     @input="clearValidation"
@@ -138,15 +129,14 @@ onBeforeUnmount(() => document.body.classList.remove("login-modal-open"));
               </section>
 
               <section class="login-step" aria-labelledby="login-step-password-title">
-                <h3 id="login-step-password-title" class="login-step__title">验证访问密码</h3>
-                <p class="login-step__copy">密码仅用于本次身份验证，不会在页面中保存。</p>
+                <h3 id="login-step-password-title" class="login-step__title">请输入访问密码</h3>
                 <label class="login-field">
-                  <span>密码</span>
                   <span class="login-field__password">
                     <input
                       ref="passwordInput"
                       v-model="localCredentials.password"
                       data-test="password-input"
+                      aria-label="密码"
                       :type="showPassword ? 'text' : 'password'"
                       autocomplete="current-password"
                       placeholder="请输入登录密码"
@@ -178,17 +168,8 @@ onBeforeUnmount(() => document.body.classList.remove("login-modal-open"));
 
               <section class="login-step" aria-labelledby="login-step-confirm-title">
                 <h3 id="login-step-confirm-title" class="login-step__title">确认登录信息</h3>
-                <p class="login-step__copy">确认账号无误后进入生物医药数据空间。</p>
                 <div class="login-confirmation">
-                  <div class="login-confirmation__row">
-                    <span>登录账号</span>
-                    <strong>{{ localCredentials.username }}</strong>
-                  </div>
-                  <div class="login-confirmation__row">
-                    <span>访问凭据</span>
-                    <strong>密码已填写</strong>
-                  </div>
-                  <p class="login-confirmation__note">系统将按现有角色权限加载对应工作台与数据范围。</p>
+                  <p>将以账号 <strong>{{ localCredentials.username }}</strong> 进入数据空间。</p>
                 </div>
                 <p v-if="errorText" class="login-dialog__error" aria-live="polite">{{ errorText }}</p>
               </section>
