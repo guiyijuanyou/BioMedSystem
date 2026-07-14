@@ -1,11 +1,11 @@
 /** 生成包含 Bearer token 的 headers 对象，供 fetch+Blob 下载等场景使用 */
 export function authHeader() {
-  const session = JSON.parse(sessionStorage.getItem("biomed-session") || "null");
+  const session = JSON.parse(localStorage.getItem("biomed-session") || "null");
   return session?.token ? { Authorization: `Bearer ${session.token}` } : {};
 }
 
 export async function api(path, options = {}) {
-  const session = JSON.parse(sessionStorage.getItem("biomed-session") || "null");
+  const session = JSON.parse(localStorage.getItem("biomed-session") || "null");
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers = {
     ...authHeader(),
@@ -28,7 +28,7 @@ export async function api(path, options = {}) {
       || data.code === "AUTH_REQUIRED"
       || data.error === "login required";
     if (authenticationRequired) {
-      sessionStorage.removeItem("biomed-session");
+      localStorage.removeItem("biomed-session");
       window.dispatchEvent(new CustomEvent("biomed-login-required"));
     }
     throw new Error(data.message || data.error || `Request failed (${response.status})`);

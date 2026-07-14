@@ -25,7 +25,7 @@ const sections = [
   { id: "roles", label: "协同角色" }
 ];
 
-const loginForm = ref({ username: "admin", password: "123456" });
+const loginForm = ref({ username: "", password: "" });
 const loginLoading = ref(false);
 const errorText = ref("");
 const loginOpen = ref(false);

@@ -46,13 +46,13 @@ class AuthServiceTest {
     @Test
     void acceptsLoginTokenAndRevokesItOnLogout() {
         SysUser user = enabledUser();
-        when(userMapper.findByUsername("admin")).thenReturn(user);
+        when(userMapper.findByUsername("admin@cqutcm")).thenReturn(user);
         when(userMapper.findRolesByUserId("user-admin"))
                 .thenReturn(List.of(Map.of("code", "admin", "name", "管理员")));
         when(passwordEncoder.matches("secret", "stored-hash")).thenReturn(true);
 
         Map<String, Object> login = authService.login(Map.of(
-                "username", "admin",
+                "username", "admin@cqutcm",
                 "password", "secret"
         ));
         String token = String.valueOf(login.get("token"));
@@ -68,13 +68,13 @@ class AuthServiceTest {
     @Test
     void rejectsIncorrectPassword() {
         SysUser user = enabledUser();
-        when(userMapper.findByUsername("admin")).thenReturn(user);
+        when(userMapper.findByUsername("admin@cqutcm")).thenReturn(user);
         when(userMapper.findRolesByUserId("user-admin"))
                 .thenReturn(List.of(Map.of("code", "admin", "name", "管理员")));
         when(passwordEncoder.matches("wrong", "stored-hash")).thenReturn(false);
 
         assertThrows(AuthenticationRequiredException.class, () -> authService.login(Map.of(
-                "username", "admin",
+                "username", "admin@cqutcm",
                 "password", "wrong"
         )));
     }
@@ -82,7 +82,7 @@ class AuthServiceTest {
     private SysUser enabledUser() {
         SysUser user = new SysUser();
         user.setId("user-admin");
-        user.setUsername("admin");
+        user.setUsername("admin@cqutcm");
         user.setDisplayName("系统管理员");
         user.setPasswordHash("stored-hash");
         user.setStatus("enabled");

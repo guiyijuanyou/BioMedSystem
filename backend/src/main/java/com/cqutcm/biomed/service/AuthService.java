@@ -310,16 +310,23 @@ public class AuthService {
         if (newPassword.length() > 128) {
             throw new IllegalArgumentException("密码长度不能超过128位");
         }
-        if (!newPassword.matches(".*[A-Z].*")) {
+        validatePasswordComplexity(newPassword);
+        sysUserMapper.updatePasswordHash(sysUser.getId(), passwordEncoder.encode(newPassword));
+    }
+
+    /**
+     * 校验密码复杂度：必须包含大写字母、小写字母和数字
+     */
+    public static void validatePasswordComplexity(String password) {
+        if (!password.matches(".*[A-Z].*")) {
             throw new IllegalArgumentException("密码必须包含大写字母");
         }
-        if (!newPassword.matches(".*[a-z].*")) {
+        if (!password.matches(".*[a-z].*")) {
             throw new IllegalArgumentException("密码必须包含小写字母");
         }
-        if (!newPassword.matches(".*\\d.*")) {
+        if (!password.matches(".*\\d.*")) {
             throw new IllegalArgumentException("密码必须包含数字");
         }
-        sysUserMapper.updatePasswordHash(sysUser.getId(), passwordEncoder.encode(newPassword));
     }
 
     // ==================== USER LOOKUP ====================

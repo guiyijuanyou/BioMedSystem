@@ -93,11 +93,11 @@ describe("immersive login components", () => {
     expect(wrapper.emitted("open-login")).toHaveLength(1);
   });
 
-  it("reveals demo accounts and submits credentials", async () => {
+  it("submits login credentials", async () => {
     const wrapper = mount(LoginModal, {
       props: {
         modelValue: true,
-        credentials: { username: "admin", password: "123456" },
+        credentials: { username: "admin@cqutcm", password: "Admin@123456" },
         loading: false,
         errorText: ""
       },
@@ -106,10 +106,7 @@ describe("immersive login components", () => {
       }
     });
 
-    await wrapper.get('[data-test="demo-toggle"]').trigger("click");
-    expect(wrapper.text()).toContain("researcher");
-
     await wrapper.get("form").trigger("submit");
-    expect(wrapper.emitted("submit")?.[0]).toEqual([{ username: "admin", password: "123456" }]);
+    expect(wrapper.emitted("submit")?.[0]).toEqual([{ username: "admin@cqutcm", password: "Admin@123456" }]);
   });
 });
