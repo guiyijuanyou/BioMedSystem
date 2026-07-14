@@ -6,7 +6,9 @@
 
 **Architecture:** Add a reusable Vue `Stepper` component that owns navigation and `motion-v` transitions but knows nothing about authentication. Keep credentials, field validation, password visibility, demo accounts, and submit events inside `LoginModal`; keep the `/api/auth/login` request and routing unchanged in `LoginView`.
 
-**Tech Stack:** Vue 3 Composition API, Vite, Vitest, Vue Test Utils, `motion-v`, lucide-vue-next, plain CSS.
+**Tech Stack:** Vue 3 Composition API, Vite, Vitest, Vue Test Utils, `motion-v`, `@vueuse/core`, lucide-vue-next, plain CSS.
+
+**Current Baseline:** Remote `main` at `b94c0d4`. Commits `1388471` and `b94c0d4` add the DeepSeek assistant, resource/file workflows, and a globally mounted `AppDialog`, but do not change the login components, login tests, frontend dependencies, or `/api/auth/login` flow.
 
 ---
 
@@ -17,7 +19,7 @@
 - Modify `frontend/src/components/login/LoginModal.vue`: compose the three login steps and preserve the existing submit contract.
 - Modify `frontend/src/components/login/__tests__/loginExperience.test.js`: cover the complete login workflow and regression behavior.
 - Modify `frontend/src/styles/login-experience.css`: stepper layout, purple-orange state colors, responsive rules, and retained shine animation.
-- Modify `frontend/package.json` and `frontend/package-lock.json`: add `motion-v` as a direct dependency.
+- Modify `frontend/package.json` and `frontend/package-lock.json`: add `motion-v` and its required `@vueuse/core` peer dependency directly.
 
 ### Task 1: Add the animation dependency
 
@@ -25,27 +27,27 @@
 - Modify: `frontend/package.json`
 - Modify: `frontend/package-lock.json`
 
-- [ ] **Step 1: Install `motion-v` in the frontend workspace**
+- [ ] **Step 1: Install `motion-v` and its required peer dependency in the frontend workspace**
 
 Run:
 
 ```powershell
-npm install motion-v
+npm install motion-v @vueuse/core
 ```
 
 Working directory: `frontend`
 
-Expected: command exits with code 0 and adds `motion-v` to `dependencies`.
+Expected: command exits with code 0 and adds both `motion-v` and `@vueuse/core` to `dependencies`.
 
 - [ ] **Step 2: Verify the dependency is resolvable**
 
 Run:
 
 ```powershell
-npm ls motion-v --depth=0
+npm ls motion-v @vueuse/core --depth=0
 ```
 
-Expected: output contains `motion-v@` and exits with code 0.
+Expected: output contains both `motion-v@` and `@vueuse/core@` and exits with code 0.
 
 - [ ] **Step 3: Commit the dependency change**
 
@@ -163,6 +165,7 @@ Implementation requirements:
 - Emit `final-step-completed` without advancing past the last step so a failed login remains visible.
 - Expose `reset()`, `next()`, and `back()` with `defineExpose`.
 - Ignore navigation while `disabled` is true.
+- Keep every new selector under the `login-stepper__*` namespace. Do not use the latest global dialog names `.dialog-layer`, `.app-dialog`, `.dialog-*`, or `.dialog-button`.
 
 The navigation buttons must use these stable selectors:
 
@@ -383,6 +386,7 @@ Update only login dialog selectors:
 - Remove the old full-width `.login-dialog__submit` layout because the Stepper final button owns submission styling.
 - Keep the existing `@keyframes submit-shine` so the raster sweep remains unchanged.
 - Keep `.login-field` and password visibility styles, adding consistent heights for both steps.
+- Keep `.login-dialog` at its existing `z-index: 100`; do not alter the global `AppDialog` layer at `z-index: 10000` or its scoped styles.
 
 - [ ] **Step 3: Add responsive and reduced-motion rules**
 
@@ -454,10 +458,10 @@ Run from the repository root:
 
 ```powershell
 git status --short
-git diff --name-only HEAD~4..HEAD -- backend
+git diff --name-only b94c0d4..HEAD -- backend
 ```
 
-Expected: the backend diff command prints no files. Any generated `frontend/dist` output must remain uncommitted if ignored by the repository.
+Expected: the backend diff command prints no files, proving the login work made no backend changes relative to the updated baseline. Any generated `frontend/dist` output must remain uncommitted if ignored by the repository.
 
 - [ ] **Step 4: Record the user-owned visual QA boundary**
 

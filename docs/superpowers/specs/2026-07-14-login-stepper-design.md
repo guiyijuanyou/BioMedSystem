@@ -4,6 +4,14 @@
 
 将现有登录弹窗改造成三步式登录流程，布局和交互参考用户提供的 Vue Bits Stepper 示例，同时沿用项目现有的生物医药数据门户视觉体系。改动严格限制在前端，现有登录接口、认证数据结构、登录成功跳转和错误来源保持不变。
 
+## 当前代码基线
+
+- 设计基线更新为远端 `main` 的 `b94c0d4`。
+- 新增提交 `1388471` 和 `b94c0d4` 主要涉及 DeepSeek 助手、资源关联、成果佐证、文件交互和全局 `AppDialog`。
+- 新提交没有修改 `LoginView.vue`、`LoginModal.vue`、登录体验测试、`frontend/package.json` 或 `/api/auth/login` 数据流，因此三步登录的信息架构和认证边界无需调整。
+- `App.vue` 现在全局挂载 `AppDialog`。登录 Stepper 必须继续使用 `login-stepper__*` 命名空间，不复用 `.dialog-*`、`.app-dialog` 或 `.dialog-layer`，避免样式和层级相互影响。
+- `AppDialog` 只有在自身状态打开时才响应全局键盘事件；登录流程不调用 `appDialog` 服务，因此两个弹窗系统保持独立。
+
 ## 范围
 
 - 新增可复用的 Vue Stepper 组件。
@@ -12,6 +20,7 @@
 - 更新登录相关前端测试和依赖。
 - 不修改 `backend/`、`/api/auth/login`、用户数据或权限逻辑。
 - 不改变登录页其余五段叙事页面、导航和三维背景。
+- 不修改或复用最新代码中的全局 `AppDialog`，登录弹窗仍由 `LoginModal.vue` 独立管理。
 
 ## 组件结构
 
@@ -58,6 +67,8 @@
 - “下一步”和最终“登录系统”使用同一渐变按钮体系。
 - 最终登录按钮保留现有光栅掠过动画，并支持 `prefers-reduced-motion`。
 - 桌面端保持居中弹窗；窄屏降低内边距、按钮稳定换行且不产生横向溢出。
+- 登录相关选择器统一使用 `.login-dialog__*`、`.login-stepper__*` 和 `.login-step__*`，不覆盖最新全局对话框的 scoped 样式。
+- 登录弹窗保持现有 `z-index: 100`；全局 `AppDialog` 的 `z-index: 10000` 仅在业务确认框主动打开时覆盖页面，不为 Stepper 提升全局层级。
 
 ## 状态与数据流
 
@@ -81,7 +92,7 @@
 
 ## 文件影响
 
-- `frontend/package.json` 和锁文件：增加 `motion-v`。
+- `frontend/package.json` 和锁文件：增加 `motion-v` 及其必需 peer dependency `@vueuse/core`。
 - `frontend/src/components/login/Stepper.vue`：新增通用步进组件。
 - `frontend/src/components/login/LoginModal.vue`：改造成三步登录流程。
 - `frontend/src/styles/login-experience.css`：增加或调整 Stepper 和登录弹窗样式。
