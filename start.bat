@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 
 set "APP_JAR=backend\target\biomed-digital-system-1.0.0.jar"
-set "MVNW_CMD=backend\mvnw.cmd"
+set "MVNW_CMD=%~dp0backend\mvnw.cmd"
 
 
 netstat -ano | findstr /R /C:":8088 .*LISTENING" >nul
@@ -41,7 +41,9 @@ if not exist "%MVNW_CMD%" (
   pause
   exit /b 1
 )
+pushd backend
 call "%MVNW_CMD%" -Pprod -DskipTests package
+popd
 if errorlevel 1 (
   echo.
   echo Backend build failed. Check the network and Maven configuration.
