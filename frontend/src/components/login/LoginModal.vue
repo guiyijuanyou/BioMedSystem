@@ -57,7 +57,7 @@ function validateStep(step) {
     return false;
   }
   if (step === 2 && !localCredentials.value.password) {
-    validationText.value = "请输入登录密码";
+    validationText.value = "密码不少于8位";
     return false;
   }
   return true;

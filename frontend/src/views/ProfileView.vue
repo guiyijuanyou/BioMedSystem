@@ -83,8 +83,8 @@ async function changePassword() {
     pwdError.value = "两次输入的新密码不一致";
     return;
   }
-  if (pwdForm.value.newPassword.length < 6) {
-    pwdError.value = "新密码长度不能少于6位";
+  if (pwdForm.value.newPassword.length < 8) {
+    pwdError.value = "新密码长度不能少于8位";
     return;
   }
   pwdSaving.value = true;
@@ -224,7 +224,7 @@ onMounted(async () => {
               <input v-model="pwdForm.oldPassword" type="password" placeholder="输入当前密码以验证身份" @input="clearPwdError" />
             </label>
             <label>新密码
-              <input v-model="pwdForm.newPassword" type="password" placeholder="至少6位" @input="clearPwdError" />
+              <input v-model="pwdForm.newPassword" type="password" placeholder="至少8位" @input="clearPwdError" />
             </label>
             <label>确认新密码
               <input v-model="pwdForm.confirmPassword" type="password" placeholder="再次输入新密码" @input="clearPwdError" />
