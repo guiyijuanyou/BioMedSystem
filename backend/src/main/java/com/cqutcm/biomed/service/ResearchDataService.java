@@ -4,6 +4,7 @@ import com.cqutcm.biomed.entity.GrowthAnalysis;
 import com.cqutcm.biomed.entity.SpectrumComparison;
 import com.cqutcm.biomed.mapper.GrowthAnalysisMapper;
 import com.cqutcm.biomed.mapper.SpectrumComparisonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -19,15 +20,18 @@ public class ResearchDataService {
     private final GrowthAnalysisMapper analysisMapper;
     private final PermissionService permissionService;
     private final BatchCatalogService batchCatalogService;
+    private final ObjectMapper objectMapper;
 
     public ResearchDataService(SpectrumComparisonMapper spectrumMapper,
                                GrowthAnalysisMapper analysisMapper,
                                PermissionService permissionService,
-                               BatchCatalogService batchCatalogService) {
+                               BatchCatalogService batchCatalogService,
+                               ObjectMapper objectMapper) {
         this.spectrumMapper = spectrumMapper;
         this.analysisMapper = analysisMapper;
         this.permissionService = permissionService;
         this.batchCatalogService = batchCatalogService;
+        this.objectMapper = objectMapper;
     }
 
     // ---- 列表 ----
@@ -292,6 +296,56 @@ public class ResearchDataService {
         if (analysisMapper.deleteById(id) == 0) {
             throw new IllegalArgumentException("growth analysis not found");
         }
+    }
+
+    // ---- 保存自动分析结果 ----
+
+    public Map<String, Object> saveAnalysisResult(Map<String, Object> payload, PermissionService.Actor actor) {
+        String id = UUID.randomUUID().toString();
+        Map<String, Object> cleaned = new LinkedHashMap<>(payload);
+        cleaned.remove("id");
+        cleaned.remove("createdAt");
+        cleaned.remove("updatedAt");
+        cleaned.remove("_actorName");
+        cleaned.remove("_actorRole");
+
+        // Ensure required fields
+        cleaned.putIfAbsent("analysisName",
+                cleaned.get("herbName") + "-" + cleaned.get("batchName") + "-生长分析");
+
+        if (!permissionService.isAdmin(actor)) {
+            cleaned.put("analystName", actor.name());
+            cleaned.put("status", StatusMachine.initialStatus(false));
+        } else {
+            cleaned.putIfAbsent("analystName", actor.name());
+            cleaned.putIfAbsent("status", StatusMachine.initialStatus(true));
+        }
+
+        // Serialize JSON fields if they're objects
+        try {
+            if (cleaned.get("analysisConfigJson") instanceof Map) {
+                cleaned.put("analysisConfigJson", objectMapper.writeValueAsString(cleaned.get("analysisConfigJson")));
+            }
+            if (cleaned.get("trendDataJson") instanceof List) {
+                cleaned.put("trendDataJson", objectMapper.writeValueAsString(cleaned.get("trendDataJson")));
+            }
+            if (cleaned.get("suitabilityJson") instanceof List) {
+                cleaned.put("suitabilityJson", objectMapper.writeValueAsString(cleaned.get("suitabilityJson")));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to serialize analysis JSON", e);
+        }
+
+        cleaned.put("id", id);
+        cleaned.put("createdAt", LocalDateTime.now().toString());
+        cleaned.put("analyzedAt", LocalDateTime.now().toString());
+        analysisMapper.insertMap(cleaned);
+        cleaned.put("id", id);
+        return cleaned;
+    }
+
+    public Map<String, Object> getAnalysisDetail(String id) {
+        return analysisMapper.findByIdAsMap(id);
     }
 
     // ---- 计数 ----

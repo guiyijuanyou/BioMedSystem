@@ -11,41 +11,56 @@ import java.util.Map;
 @Mapper
 public interface GrowthAnalysisMapper extends BiomedBaseMapper<GrowthAnalysis> {
 
-    @Select("SELECT id, batch_id AS batchId, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
+    @Select("SELECT id, batch_id AS batchId, batch_name AS batchName, analysis_name AS analysisName, " +
+            "herb_name AS herbName, district, indicator, " +
             "baseline, current_value AS currentValue, difference_desc AS differenceDesc, trend, conclusion, " +
+            "record_count AS recordCount, stage_count AS stageCount, " +
             "analyst_name AS analystName, analyzed_at AS analyzedAt, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
             "version, created_at AS createdAt, updated_at AS updatedAt " +
             "FROM growth_analysis ORDER BY analyzed_at DESC")
     List<Map<String, Object>> findAllAsMap();
 
-    @Select("SELECT id, batch_id AS batchId, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
+    @Select("SELECT id, batch_id AS batchId, batch_name AS batchName, analysis_name AS analysisName, " +
+            "herb_name AS herbName, district, indicator, " +
             "baseline, current_value AS currentValue, difference_desc AS differenceDesc, trend, conclusion, " +
-            "analyst_name AS analystName, analyzed_at AS analyzedAt, status, reviewer_name AS reviewerName, " +
-            "review_comment AS reviewComment, reviewed_at AS reviewedAt, version, created_at AS createdAt, updated_at AS updatedAt " +
+            "record_count AS recordCount, stage_count AS stageCount, " +
+            "analyst_name AS analystName, analyzed_at AS analyzedAt, " +
+            "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
+            "version, created_at AS createdAt, updated_at AS updatedAt " +
             "FROM growth_analysis WHERE batch_id = #{batchId} ORDER BY analyzed_at DESC")
     List<Map<String, Object>> findByBatchIdAsMap(String batchId);
 
-    @Select("SELECT id, batch_id AS batchId, analysis_name AS analysisName, herb_name AS herbName, district, indicator, " +
+    @Select("SELECT id, batch_id AS batchId, batch_name AS batchName, analysis_name AS analysisName, " +
+            "herb_name AS herbName, district, indicator, " +
             "baseline, current_value AS currentValue, difference_desc AS differenceDesc, trend, conclusion, " +
+            "analysis_config_json AS analysisConfigJson, " +
+            "trend_data_json AS trendDataJson, " +
+            "suitability_json AS suitabilityJson, " +
+            "record_count AS recordCount, stage_count AS stageCount, " +
             "analyst_name AS analystName, analyzed_at AS analyzedAt, " +
             "status, reviewer_name AS reviewerName, review_comment AS reviewComment, reviewed_at AS reviewedAt, " +
             "version, created_at AS createdAt, updated_at AS updatedAt " +
             "FROM growth_analysis WHERE id = #{id}")
     Map<String, Object> findByIdAsMap(String id);
 
-    @Insert("INSERT INTO growth_analysis (id, batch_id, analysis_name, herb_name, district, indicator, baseline, current_value, " +
-            "difference_desc, trend, conclusion, analyst_name, analyzed_at, status, created_at) " +
-            "VALUES (#{id}, #{batchId}, #{analysisName}, #{herbName}, #{district}, #{indicator}, #{baseline}, #{currentValue}, " +
-            "#{differenceDesc}, #{trend}, #{conclusion}, #{analystName}, #{analyzedAt}, #{status}, #{createdAt})")
+    @Insert("INSERT INTO growth_analysis (id, batch_id, batch_name, analysis_name, herb_name, district, indicator, " +
+            "baseline, current_value, difference_desc, trend, conclusion, " +
+            "analysis_config_json, trend_data_json, suitability_json, " +
+            "record_count, stage_count, analyst_name, analyzed_at, status, created_at) " +
+            "VALUES (#{id}, #{batchId}, #{batchName}, #{analysisName}, #{herbName}, #{district}, #{indicator}, " +
+            "#{baseline}, #{currentValue}, #{differenceDesc}, #{trend}, #{conclusion}, " +
+            "#{analysisConfigJson}, #{trendDataJson}, #{suitabilityJson}, " +
+            "#{recordCount}, #{stageCount}, #{analystName}, #{analyzedAt}, #{status}, #{createdAt})")
     int insertMap(Map<String, Object> record);
 
-    @Update("UPDATE growth_analysis SET batch_id = #{batchId}, analysis_name = #{analysisName}, herb_name = #{herbName}, district = #{district}, " +
-            "indicator = #{indicator}, baseline = #{baseline}, current_value = #{currentValue}, difference_desc = #{differenceDesc}, " +
-            "trend = #{trend}, conclusion = #{conclusion}, analyst_name = #{analystName}, analyzed_at = #{analyzedAt}, " +
+    @Update("UPDATE growth_analysis SET batch_id = #{batchId}, batch_name = #{batchName}, " +
+            "analysis_name = #{analysisName}, herb_name = #{herbName}, district = #{district}, " +
+            "indicator = #{indicator}, baseline = #{baseline}, current_value = #{currentValue}, " +
+            "difference_desc = #{differenceDesc}, trend = #{trend}, conclusion = #{conclusion}, " +
+            "analyst_name = #{analystName}, analyzed_at = #{analyzedAt}, " +
             "status = #{status}, reviewer_name = #{reviewerName}, review_comment = #{reviewComment}, " +
             "reviewed_at = #{reviewedAt}, version = version + 1, updated_at = NOW() " +
             "WHERE id = #{id} AND version = #{version}")
     int updateMap(Map<String, Object> record);
-
 }

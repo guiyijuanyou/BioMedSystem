@@ -30,6 +30,7 @@ public class ResourceController {
     private final PermissionService permissionService;
     private final ProjectRecordService projectService;
     private final ResearchDataService researchService;
+    private final GrowthAnalysisComputeService growthAnalysisComputeService;
     private final StructuredRecordService structuredService;
     private final TraceEventService traceService;
     private final ObjectMapper objectMapper;
@@ -41,7 +42,9 @@ public class ResourceController {
                               BackupService backupService, CacheService cacheService,
                               CourseRecordService courseService, GrowthRecordService growthService,
                               PermissionService permissionService, ProjectRecordService projectService,
-                              ResearchDataService researchService, StructuredRecordService structuredService,
+                              ResearchDataService researchService,
+                              GrowthAnalysisComputeService growthAnalysisComputeService,
+                              StructuredRecordService structuredService,
                               TraceEventService traceService, ObjectMapper objectMapper) {
         this.authService = authService;
         this.batchCatalogService = batchCatalogService;
@@ -52,6 +55,7 @@ public class ResourceController {
         this.permissionService = permissionService;
         this.projectService = projectService;
         this.researchService = researchService;
+        this.growthAnalysisComputeService = growthAnalysisComputeService;
         this.structuredService = structuredService;
         this.traceService = traceService;
         this.objectMapper = objectMapper;
@@ -221,6 +225,54 @@ public class ResourceController {
         Map<String, Object> result = researchService.createAnalysis(toMap(dto), a);
         evictAfterWrite("growth-analysis");
         return result;
+    }
+
+    @GetMapping("/herb-batches/{id}/growth-summary")
+    public Map<String, Object> getBatchGrowthSummary(@PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanRead("herb-batches", a);
+        return growthAnalysisComputeService.batchSummary(id);
+    }
+
+    @PostMapping("/growth-analysis/compute")
+    public Map<String, Object> computeAnalysis(@RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanCreate("growth-analysis", a);
+        String batchId = String.valueOf(body.getOrDefault("batchId", ""));
+        if (batchId.isBlank()) throw new IllegalArgumentException("batchId is required");
+        return growthAnalysisComputeService.compute(batchId, body, a.name());
+    }
+
+    @PostMapping("/growth-analysis/save")
+    public Map<String, Object> saveAnalysis(@RequestBody Map<String, Object> body,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanCreate("growth-analysis", a);
+        Map<String, Object> result = researchService.saveAnalysisResult(body, a);
+        evictAfterWrite("growth-analysis");
+        return result;
+    }
+
+    @GetMapping("/growth-analysis/{id}/detail")
+    public Map<String, Object> getAnalysisDetail(@PathVariable String id,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        PermissionService.Actor a = authService.requireActor(authorization);
+        permissionService.assertCanRead("growth-analysis", a);
+        // Use mapper directly to get JSON columns
+        Map<String, Object> raw = researchService.getAnalysisDetail(id);
+        if (raw == null) throw new IllegalArgumentException("analysis not found");
+        // Parse JSON columns back to objects for frontend
+        try {
+            if (raw.get("analysisConfigJson") instanceof String s && !s.isBlank())
+                raw.put("analysisConfig", objectMapper.readValue(s, Map.class));
+            if (raw.get("trendDataJson") instanceof String s && !s.isBlank())
+                raw.put("trendData", objectMapper.readValue(s, List.class));
+            if (raw.get("suitabilityJson") instanceof String s && !s.isBlank())
+                raw.put("suitability", objectMapper.readValue(s, List.class));
+        } catch (Exception e) { /* keep raw strings if parse fails */ }
+        return raw;
     }
 
     @PostMapping("/growth-records")

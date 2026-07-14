@@ -161,29 +161,57 @@ public class SpectrumCompareService {
 
     /**
      * Find regions where the normalized difference exceeds the threshold.
+     *
+     * Algorithm: scan left-to-right, mark diff-points, merge consecutive points
+     * into groups, keep only groups with >= 3 consecutive diff-points (isolated
+     * 1-2 point spikes are treated as noise, not systematic difference).
+     * Baseline points (signal < 0.5% of max) are skipped.
      */
     public List<double[]> findDiffRegions(double[] xAxis, double[] sY, double[] rY, double threshold) {
-        List<double[]> regions = new ArrayList<>();
-        boolean inRegion = false;
-        int start = 0;
-        double maxDiff = 0;
-
+        // Step 1: find global max signal for adaptive baseline threshold
+        double maxSignal = 0;
         for (int i = 0; i < sY.length; i++) {
-            double avg = (Math.abs(sY[i]) + Math.abs(rY[i])) / 2.0;
-            if (avg == 0) avg = 1.0;
-            double diff = Math.abs(sY[i] - rY[i]) / avg;
+            maxSignal = Math.max(maxSignal, Math.abs(sY[i]));
+            maxSignal = Math.max(maxSignal, Math.abs(rY[i]));
+        }
+        final double baselineFloor = maxSignal * 0.005;
+        final int minConsecutive = 3;
 
-            if (diff > threshold && !inRegion) {
-                inRegion = true; start = i; maxDiff = diff;
-            } else if (diff > threshold && inRegion) {
+        // Step 2: scan left-to-right, mark each point as diff or not
+        boolean[] isDiff = new boolean[sY.length];
+        for (int i = 0; i < sY.length; i++) {
+            double signal = Math.max(Math.abs(sY[i]), Math.abs(rY[i]));
+            if (signal < baselineFloor) continue; // skip baseline noise
+            double diff = Math.abs(sY[i] - rY[i]) / signal;
+            isDiff[i] = diff > threshold;
+        }
+
+        // Step 3: merge consecutive diff-points into groups, keep only >= minConsecutive
+        List<double[]> regions = new ArrayList<>();
+        int start = -1;
+        double maxDiff = 0;
+        for (int i = 0; i < isDiff.length; i++) {
+            if (isDiff[i]) {
+                if (start < 0) start = i;
+                double signal = Math.max(Math.abs(sY[i]), Math.abs(rY[i]));
+                double diff = Math.abs(sY[i] - rY[i]) / signal;
                 maxDiff = Math.max(maxDiff, diff);
-            } else if (diff <= threshold && inRegion) {
-                regions.add(new double[]{xAxis[start], xAxis[i - 1], maxDiff * 100});
-                inRegion = false;
+            } else {
+                if (start >= 0) {
+                    int count = i - start;
+                    if (count >= minConsecutive) {
+                        regions.add(new double[]{xAxis[start], xAxis[i - 1], Math.round(maxDiff * 1000.0) / 10.0});
+                    }
+                    start = -1; maxDiff = 0;
+                }
             }
         }
-        if (inRegion) {
-            regions.add(new double[]{xAxis[start], xAxis[sY.length - 1], maxDiff * 100});
+        // Trailing group
+        if (start >= 0) {
+            int count = isDiff.length - start;
+            if (count >= minConsecutive) {
+                regions.add(new double[]{xAxis[start], xAxis[isDiff.length - 1], Math.round(maxDiff * 1000.0) / 10.0});
+            }
         }
         return regions;
     }
@@ -200,12 +228,18 @@ public class SpectrumCompareService {
     /**
      * Full comparison pipeline.
      */
-    public CompareResult compare(List<DataPoint> sampleRaw, List<DataPoint> referenceRaw, int resolution) {
-        List<DataPoint> sampleNorm = normalizeByArea(sampleRaw);
-        List<DataPoint> refNorm = normalizeByArea(referenceRaw);
+    public CompareResult compare(List<DataPoint> sampleRaw, List<DataPoint> referenceRaw, int resolution, double diffThreshold) {
+        // Sort by retention time first so interpolation works regardless of CSV row order
+        List<DataPoint> sampleSorted = new ArrayList<>(sampleRaw);
+        List<DataPoint> refSorted = new ArrayList<>(referenceRaw);
+        sampleSorted.sort(Comparator.comparingDouble(DataPoint::x));
+        refSorted.sort(Comparator.comparingDouble(DataPoint::x));
+
+        List<DataPoint> sampleNorm = normalizeByArea(sampleSorted);
+        List<DataPoint> refNorm = normalizeByArea(refSorted);
         AlignedData aligned = alignAndInterpolate(sampleNorm, refNorm, resolution);
         double similarity = cosineSimilarity(aligned.sampleY(), aligned.referenceY());
-        List<double[]> diffs = findDiffRegions(aligned.xAxis(), aligned.sampleY(), aligned.referenceY(), 0.06);
+        List<double[]> diffs = findDiffRegions(aligned.xAxis(), aligned.sampleY(), aligned.referenceY(), diffThreshold);
 
         // Convert aligned arrays back to DataPoint lists for JSON serialization
         List<DataPoint> alignedSample = new ArrayList<>();
