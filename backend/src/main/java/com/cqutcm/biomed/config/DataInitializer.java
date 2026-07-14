@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -19,12 +20,22 @@ public class DataInitializer implements CommandLineRunner {
         this.passwordEncoder = passwordEncoder;
     }
 
-    private static final Map<String, String> DEFAULT_PASSWORDS = Map.of(
-        "admin@cqutcm", "Admin@123456",
-        "teacher@cqutcm", "Teacher@123456",
-        "researcher@cqutcm", "Res@123456",
-        "student@cqutcm", "Student@123"
-    );
+    private static final Map<String, String> DEFAULT_PASSWORDS = new java.util.LinkedHashMap<>();
+    static {
+        DEFAULT_PASSWORDS.put("admin@cqutcm", "Admin@123456");
+        DEFAULT_PASSWORDS.put("teacher@cqutcm", "Teacher@123456");
+        DEFAULT_PASSWORDS.put("researcher@cqutcm", "Res@123456");
+        DEFAULT_PASSWORDS.put("student@cqutcm", "Student@123");
+        // test-data-extra 补充用户
+        DEFAULT_PASSWORDS.put("zhang@cqutcm", "Teacher@123456");
+        DEFAULT_PASSWORDS.put("liu@cqutcm", "Teacher@123456");
+        DEFAULT_PASSWORDS.put("chen@cqutcm", "Res@123456");
+        DEFAULT_PASSWORDS.put("stu-a@cqutcm", "Student@123");
+        DEFAULT_PASSWORDS.put("stu-b@cqutcm", "Student@123");
+        DEFAULT_PASSWORDS.put("stu-c@cqutcm", "Student@123");
+        DEFAULT_PASSWORDS.put("stu-d@cqutcm", "Student@123");
+        DEFAULT_PASSWORDS.put("stu-e@cqutcm", "Student@123");
+    }
 
     @Override
     public void run(String... args) {
