@@ -35,6 +35,7 @@ watch(loginOpen, open => open ? pause() : resume());
 
 function openLogin() {
   errorText.value = "";
+  loginForm.value = { username: "", password: "" };
   loginOpen.value = true;
 }
 
