@@ -1,5 +1,5 @@
 <script setup>
-import { ChevronDown, Eye, EyeOff } from "lucide-vue-next";
+import { Eye, EyeOff } from "lucide-vue-next";
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import Stepper from "./Stepper.vue";
 
@@ -15,7 +15,6 @@ const stepper = ref(null);
 const usernameInput = ref(null);
 const passwordInput = ref(null);
 const showPassword = ref(false);
-const showDemo = ref(false);
 const currentStep = ref(1);
 const validationText = ref("");
 const localCredentials = ref({ ...props.credentials });
@@ -30,7 +29,6 @@ watch(() => props.modelValue, async open => {
     localCredentials.value = { ...props.credentials };
     currentStep.value = 1;
     validationText.value = "";
-    showDemo.value = false;
     showPassword.value = false;
     await nextTick();
     stepper.value?.reset();
@@ -71,11 +69,6 @@ async function handleStepChange(step) {
   await nextTick();
   if (step === 1) usernameInput.value?.focus({ preventScroll: true });
   if (step === 2) passwordInput.value?.focus({ preventScroll: true });
-}
-
-function chooseDemo(username) {
-  localCredentials.value = { username, password: "123456" };
-  validationText.value = "";
 }
 
 function submit() {
@@ -153,17 +146,6 @@ onBeforeUnmount(() => document.body.classList.remove("login-modal-open"));
                   </span>
                 </label>
                 <p v-if="validationText" class="login-step__validation" aria-live="polite">{{ validationText }}</p>
-
-                <button data-test="demo-toggle" class="login-dialog__demo-toggle" type="button" :aria-expanded="showDemo" @click="showDemo = !showDemo">
-                  查看演示账号 <ChevronDown :size="16" :class="{ 'is-open': showDemo }" />
-                </button>
-                <div v-if="showDemo" class="login-dialog__demo">
-                  <button data-test="demo-admin" type="button" @click="chooseDemo('admin')">admin</button>
-                  <button data-test="demo-teacher" type="button" @click="chooseDemo('teacher')">teacher</button>
-                  <button data-test="demo-researcher" type="button" @click="chooseDemo('researcher')">researcher</button>
-                  <button data-test="demo-student" type="button" @click="chooseDemo('student')">student</button>
-                  <span>统一密码：123456</span>
-                </div>
               </section>
 
               <section class="login-step" aria-labelledby="login-step-confirm-title">

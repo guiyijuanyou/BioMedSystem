@@ -139,14 +139,12 @@ describe("immersive login components", () => {
     expect(wrapper.find(".login-dialog__close").exists()).toBe(false);
   });
 
-  it("fills a demo account and resets to the first step when reopened", async () => {
+  it("omits demo accounts and resets to the first step when reopened", async () => {
     const wrapper = mountLogin({ username: "admin", password: "123456" });
 
     await wrapper.get('[data-test="stepper-next"]').trigger("click");
-    await wrapper.get('[data-test="demo-toggle"]').trigger("click");
-    await wrapper.get('[data-test="demo-researcher"]').trigger("click");
-
-    expect(wrapper.get('[data-test="password-input"]').element.value).toBe("123456");
+    expect(wrapper.find('[data-test="demo-toggle"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("统一密码");
 
     await wrapper.setProps({ modelValue: false });
     await wrapper.setProps({ modelValue: true });

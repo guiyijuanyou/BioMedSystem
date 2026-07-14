@@ -465,3 +465,40 @@ html.immersive-scroll::-webkit-scrollbar {
   .login-stepper__content { padding-inline: 24px; }
   .login-stepper__footer { padding: 0 24px 24px; }
 }
+
+/* Light portal theme; Vue Bits geometry and motion remain unchanged. */
+.login-dialog { color: #0a2540; }
+.login-dialog__backdrop,
+.login-dialog__backdrop:hover { background: rgba(49,56,75,.28); backdrop-filter: blur(18px) saturate(85%); }
+.login-dialog__panel {
+  border-color: rgba(10,37,64,.11);
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 34px 96px rgba(50,50,93,.2);
+}
+.login-stepper__indicator {
+  border: 1px solid rgba(99,91,255,.18);
+  color: #8793a5;
+  background: #f2f5fa;
+}
+.login-stepper__indicator:hover { border-color: rgba(99,91,255,.18); background: #f2f5fa; }
+.login-stepper__indicator[data-status="active"],
+.login-stepper__indicator[data-status="complete"],
+.login-stepper__indicator[data-status="active"]:hover,
+.login-stepper__indicator[data-status="complete"]:hover { border-color: transparent; }
+.login-stepper__active-dot { background: #fff; }
+.login-stepper__connector { background: rgba(99,91,255,.14); }
+.login-step__title { color: #0a2540; }
+.login-step .login-field > input,
+.login-step .login-field__password {
+  border-color: rgba(10,37,64,.13);
+  color: #0a2540;
+  background: #f6f9fc;
+}
+.login-step .login-field > input::placeholder,
+.login-step .login-field__password input::placeholder { color: #8793a5; }
+.login-step .login-field__password button { color: #7180a1; }
+.login-step .login-field__password button:hover { color: #635bff; }
+.login-confirmation p { color: #697386; }
+.login-confirmation strong { color: #0a2540; }
+.login-stepper__back { color: #697386; }
+.login-stepper__back:hover { color: #635bff; }
