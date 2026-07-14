@@ -402,6 +402,10 @@
   gap: 28px;
 }
 
+.batch-split-tables > div {
+  min-width: 0;
+}
+
 .batch-split-tables h4,
 .analysis-evaluation-grid h4 {
   margin-bottom: 10px;
@@ -410,15 +414,25 @@
 
 .batch-split-tables table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 11px;
 }
 
 .batch-split-tables th,
 .batch-split-tables td {
+  overflow: hidden;
   padding: 11px 9px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   text-align: left;
   border-bottom: 1px solid var(--line);
+}
+
+.batch-split-tables th:last-child,
+.batch-split-tables td:last-child {
+  width: 78px;
+  overflow: visible;
 }
 
 .batch-split-tables th {
