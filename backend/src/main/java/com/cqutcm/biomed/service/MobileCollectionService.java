@@ -111,6 +111,20 @@ public class MobileCollectionService {
         );
     }
 
+    public List<Map<String, Object>> activeBatches(String token) {
+        requireActiveDevice(token);
+        return jdbc.queryForList("""
+                SELECT b.id, b.batch_code AS batchCode, b.batch_name AS batchName,
+                       h.name AS herbName, b.district, b.plot_name AS plotName,
+                       b.current_stage AS currentStage, b.trace_code AS traceCode,
+                       b.longitude, b.latitude
+                  FROM herb_batch b
+                  JOIN herb h ON h.id = b.herb_id
+                 WHERE b.status = 'active'
+                 ORDER BY b.created_at DESC
+                """);
+    }
+
     public Map<String, Object> ingest(String token, List<Map<String, Object>> records) {
         Map<String, Object> device = requireActiveDevice(token);
         validateBatch(records);
