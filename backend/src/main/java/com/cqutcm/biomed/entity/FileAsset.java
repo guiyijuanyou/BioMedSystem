@@ -20,6 +20,8 @@ public class FileAsset {
     private long sizeBytes;
     @TableField("storage_path")
     private String storagePath;
+    @TableField("sha256")
+    private String sha256;
     @TableField(value = "created_at", fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 
@@ -33,6 +35,8 @@ public class FileAsset {
     public void setSizeBytes(long sizeBytes) { this.sizeBytes = sizeBytes; }
     public String getStoragePath() { return storagePath; }
     public void setStoragePath(String storagePath) { this.storagePath = storagePath; }
+    public String getSha256() { return sha256; }
+    public void setSha256(String sha256) { this.sha256 = sha256; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -7,7 +7,8 @@ import {
 } from "lucide-vue-next";
 import MapPicker from "@/components/MapPicker.vue";
 import AppSelect from "@/components/AppSelect.vue";
-import { api } from "@/services/api";
+import { api, authHeader } from "@/services/api";
+import { appDialog } from "@/services/dialog";
 import { roles as roleOptions } from "@/config";
 
 const props = defineProps({
@@ -41,6 +42,7 @@ const activeLearningResourceId = ref("");
 const panelOpen = ref(false);
 const panelMode = ref("edit");
 const saving = ref(false);
+const evidenceUploading = ref(false);
 const deleting = ref(false);
 const page = ref(1);
 const pageSize = ref(8);
@@ -49,8 +51,9 @@ const form = reactive({});
 const batchLinkedModules = new Set([
   "lab-samples", "growth-records", "trace-events", "spectrum-comparisons", "growth-analysis", "evaluations"
 ]);
+const batchCatalogModules = new Set([...batchLinkedModules, "trainings", "achievements"]);
 
-const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion", "eventContent", "reviewComment", "requirements", "applicantRequests", "approvedMembers", "rejectedApplicants"];
+const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion", "eventContent", "reviewComment", "requirements", "applicantRequests", "approvedMembers", "rejectedApplicants", "sourceIssue", "evidence"];
 const statuses = ["待审核", "已通过", "已发布", "已驳回", "数据采集中", "已归档"];
 const pageSizeOptions = [8, 15, 30].map(value => ({ value, label: String(value) }));
 const batchStatusOptions = [{ value: "active", label: "使用中" }, { value: "archived", label: "已归档" }];
@@ -103,14 +106,21 @@ const isProjectOwnerModule = computed(() => isProjectModule.value && ["teacher",
 const showProjectWorkflow = computed(() => isProjectModule.value && ["student", "teacher", "researcher"].includes(props.role));
 const isSpectrumModule = computed(() => props.moduleKey === "spectrum-comparisons");
 const isAnalysisModule = computed(() => props.moduleKey === "growth-analysis");
-const insightVisible = computed(() => isGrowthModule.value || isTraceModule.value || isSpectrumModule.value || isAnalysisModule.value);
+const isTrainingModule = computed(() => props.moduleKey === "trainings");
+const isAchievementModule = computed(() => props.moduleKey === "achievements");
+const isConnectedModule = computed(() => isTrainingModule.value || isAchievementModule.value);
+const insightVisible = computed(() => isGrowthModule.value || isTraceModule.value || isSpectrumModule.value || isAnalysisModule.value || isConnectedModule.value);
 const insightTitle = computed(() => {
+  if (isTrainingModule.value) return "培训闭环关联概览";
+  if (isAchievementModule.value) return "业绩成果关联概览";
   if (isGrowthModule.value) return "生长数据对比概览";
   if (isTraceModule.value) return "药材溯源链路概览";
   if (isSpectrumModule.value) return "图谱比对概览";
   return "分析结论概览";
 });
 const insightHint = computed(() => {
+  if (isTrainingModule.value) return "按课程、药材批次和评价问题串联培训素材，让培训不再是孤立记录";
+  if (isAchievementModule.value) return "把业绩与药材批次、课题项目、评价依据和佐证材料绑定，形成可审核成果档案";
   if (isGrowthModule.value) return "根据当前采集记录自动计算温湿度、PH 和采集来源分布";
   if (isTraceModule.value) return "按溯源码串联种植、采集、检测、加工、入库等关键事件";
   if (isSpectrumModule.value) return "汇总图谱相似度、通过情况和待复核样本";
@@ -156,6 +166,29 @@ const analysisStats = computed(() => ({
   stable: items.value.filter(item => String(item.trend || "").includes("稳定")).length,
   indicators: countBy(items.value, "indicator")
 }));
+const trainingStats = computed(() => {
+  const rows = items.value;
+  const rates = rows
+    .map(item => toNumber(String(item.completionRate || "").replace("%", "")))
+    .filter(value => value !== null);
+  return {
+    count: rows.length,
+    linkedCourses: rows.filter(item => item.courseId || item.courseTitle).length,
+    linkedBatches: rows.filter(item => item.batchId).length,
+    issueDriven: rows.filter(item => item.sourceIssue).length,
+    avgCompletion: rates.length ? `${Math.round(rates.reduce((sum, value) => sum + value, 0) / rates.length)}%` : "-"
+  };
+});
+const achievementStats = computed(() => {
+  const rows = items.value;
+  return {
+    count: rows.length,
+    linkedBatches: rows.filter(item => item.batchId).length,
+    linkedProjects: rows.filter(item => item.projectTitle).length,
+    evidenceCount: rows.filter(item => item.evidence || parseEvidenceFileIds(item.evidenceFileIds).length).length,
+    pending: rows.filter(item => isPendingReview(item)).length
+  };
+});
 const traceGroups = computed(() => {
   const groups = {};
   items.value.forEach(item => {
@@ -242,6 +275,98 @@ const fileSelectOptions = computed(() => [
   { value: "", label: "请选择资料文件" },
   ...uploadedFiles.value.map(file => ({ value: file.id, label: `${file.fileName} / ${file.category}` }))
 ]);
+const achievementEvidenceFiles = computed(() => parseEvidenceFileIds(form.evidenceFileIds)
+  .map(id => uploadedFiles.value.find(file => file.id === id))
+  .filter(Boolean));
+
+function evidenceFilesFor(record) {
+  return parseEvidenceFileIds(record?.evidenceFileIds)
+    .map(id => uploadedFiles.value.find(file => file.id === id))
+    .filter(Boolean);
+}
+
+function parseEvidenceFileIds(value) {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  const text = String(value || "").trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+  } catch {
+    // 兼容早期逗号分隔的数据。
+  }
+  return text.split(/[,;\n]/).map(item => item.trim()).filter(Boolean);
+}
+
+function isEvidencePreviewable(file) {
+  return /\.(pdf|png|jpe?g|gif|webp|txt|csv)$/i.test(file?.fileName || "");
+}
+
+async function openEvidenceFile(file, preview = false) {
+  try {
+    const url = preview ? file.previewUrl : file.downloadUrl;
+    const response = await fetch(url, { headers: authHeader() });
+    if (!response.ok) throw new Error("附件读取失败");
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    if (preview) {
+      window.open(objectUrl, "_blank", "noopener");
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = file.fileName || "佐证附件";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  } catch (error) {
+    emit("notify", error.message || "附件读取失败");
+  }
+}
+
+async function uploadEvidenceFiles(event) {
+  const input = event.target;
+  const files = Array.from(input.files || []);
+  if (!files.length || evidenceUploading.value) return;
+  evidenceUploading.value = true;
+  const ids = parseEvidenceFileIds(form.evidenceFileIds);
+  let uploadedCount = 0;
+  let reusedCount = 0;
+  try {
+    for (const file of files) {
+      const knownFile = uploadedFiles.value.find(item => item.category === "评价佐证"
+        && item.fileName === file.name && Number(item.sizeBytes || item.size) === file.size);
+      if (knownFile) {
+        ids.push(knownFile.id);
+        reusedCount++;
+        continue;
+      }
+      const body = new FormData();
+      body.append("category", "评价佐证");
+      body.append("file", file);
+      const uploaded = await api("/api/files/upload", { method: "POST", body });
+      if (!uploadedFiles.value.some(item => item.id === uploaded.id)) uploadedFiles.value.unshift(uploaded);
+      ids.push(uploaded.id);
+      uploadedCount++;
+    }
+    form.evidenceFileIds = JSON.stringify([...new Set(ids)]);
+    emit("notify", reusedCount
+      ? `已关联 ${reusedCount} 个已有附件，新上传 ${uploadedCount} 个附件`
+      : `已上传 ${uploadedCount} 个佐证附件`);
+  } catch (error) {
+    form.evidenceFileIds = JSON.stringify([...new Set(ids)]);
+    emit("notify", uploadedCount ? `已上传 ${uploadedCount} 个文件，其余文件失败：${error.message}` : error.message);
+  } finally {
+    evidenceUploading.value = false;
+    input.value = "";
+  }
+}
+
+function unlinkEvidenceFile(fileId) {
+  form.evidenceFileIds = JSON.stringify(parseEvidenceFileIds(form.evidenceFileIds).filter(id => id !== fileId));
+}
 const latestGrowthComparison = computed(() => {
   const rows = selectedGrowthRows.value;
   const latest = rows[rows.length - 1];
@@ -362,6 +487,10 @@ function defaultValue(name) {
     currentStage: "未开始",
     effectiveDate: new Date().toISOString().slice(0, 10)
   };
+  if (name === "trainingType") return "课程培训";
+  if (name === "completionRate") return "100%";
+  if (name === "sourceModule") return "成果管理";
+  if (name === "score") return "0";
   if (name === "status" && props.moduleKey === "herb-batches") return "active";
   if (name === "status" && props.moduleKey === "lab-samples") return "collected";
   return values[name] || "";
@@ -435,7 +564,7 @@ function relationDisplay(item, name) {
     return herb ? `${herb.name} / ${herb.district}` : (item.herbName || value);
   }
   if (name === "courseId" && value) {
-    return form.courseTitle || findCourseTitle(value);
+    return item.courseTitle || findCourseTitle(value);
   }
   return display(value);
 }
@@ -466,15 +595,24 @@ function isPendingReview(item) {
 async function quickAudit(item, action) {
   const targets = { approve: "已通过", reject: "已驳回", publish: "已发布", archive: "已归档" };
   const reviewComment = action === "reject"
-    ? window.prompt("请输入驳回原因", item.reviewComment || "")
+    ? await appDialog.prompt({
+        title: "驳回审核",
+        label: "驳回原因",
+        message: `请说明“${item.title || item.name || "当前记录"}”未通过审核的原因。`,
+        value: item.reviewComment || "",
+        required: true,
+        multiline: true,
+        confirmText: "确认驳回",
+        tone: "warning"
+      })
     : (item.reviewComment || "");
   if (action === "reject" && reviewComment === null) return;
   let category = item.category || "";
   let level = item.level || "";
   if (props.moduleKey === "achievements" && action === "approve") {
-    category = window.prompt("请确认业绩分类", category) ?? "";
+    category = await appDialog.prompt({ title: "认定业绩分类", label: "业绩分类", value: category, required: true, placeholder: "例如：教学建设", confirmText: "下一步" }) ?? "";
     if (!category) return;
-    level = window.prompt("请确认业绩级别", level) ?? "";
+    level = await appDialog.prompt({ title: "认定业绩级别", label: "业绩级别", value: level, required: true, placeholder: "例如：校级重点", confirmText: "确认并通过" }) ?? "";
     if (!level) return;
   }
   try {
@@ -913,9 +1051,9 @@ async function load() {
       api(`/api/${props.moduleKey}`),
       props.moduleKey === "courses" ? api("/api/teaching-resources") : Promise.resolve({ items: [] }),
       ["teaching-resources", "courses"].includes(props.moduleKey) ? api("/api/files") : Promise.resolve({ items: [] }),
-      props.moduleKey === "teaching-resources" ? api("/api/courses") : Promise.resolve({ items: [] }),
+      ["teaching-resources", "trainings"].includes(props.moduleKey) ? api("/api/courses") : Promise.resolve({ items: [] }),
       props.moduleKey === "herb-batches" ? api("/api/herbs") : Promise.resolve({ items: [] }),
-      batchLinkedModules.has(props.moduleKey) ? api("/api/herb-batches") : Promise.resolve({ items: [] }),
+      batchCatalogModules.has(props.moduleKey) ? api("/api/herb-batches") : Promise.resolve({ items: [] }),
       props.moduleKey === "spectrum-comparisons" ? api("/api/lab-samples") : Promise.resolve({ items: [] })
     ]);
     items.value = result.items || [];
@@ -942,6 +1080,10 @@ async function load() {
 }
 
 async function save() {
+  if (evidenceUploading.value) {
+    emit("notify", "请等待佐证附件上传完成后再保存");
+    return;
+  }
   saving.value = true;
   try {
     const source = editingId.value ? items.value.find(item => item.id === editingId.value) : null;
@@ -953,6 +1095,7 @@ async function save() {
     }
     const payload = {};
     editableFields.value.forEach(([name]) => payload[name] = form[name] ?? "");
+    if (props.moduleKey === "achievements") payload.evidenceFileIds = form.evidenceFileIds || "";
     if (batchLinkedModules.has(props.moduleKey) && !payload.batchId) {
       emit("notify", "请选择药材批次后再保存");
       return;
@@ -975,6 +1118,10 @@ async function save() {
       payload.resourceType = payload.resourceType || fileResourceType(file);
       payload.videoUrl = "";
       payload.fileUrl = "";
+    }
+    if (props.moduleKey === "achievements" && payload.courseId) {
+      const course = courseOptions.value.find(item => item.id === payload.courseId);
+      payload.courseTitle = course?.title || source?.courseTitle || "";
     }
     if (props.moduleKey === "teaching-resources" && payload.status === "已发布" && !payload.publishedAt) {
       payload.publishedAt = new Date().toISOString().slice(0, 19);
@@ -1084,6 +1231,7 @@ function isOwnerField(name) {
 
 function isLinkField(name) {
   if (name === "batchId") return true;
+  if (name === "courseId") return true;
   if (name === "herbId" && canEdit.value) return true;
   if (name === "sampleId" && canEdit.value) return true;
   if (props.moduleKey === "users" && name === "name") return true;
@@ -1093,6 +1241,7 @@ function isLinkField(name) {
 
 function fieldLink(item, name) {
   if (name === "batchId" && item.batchId) return `/batches/${item.batchId}`;
+  if (name === "courseId" && item.courseId) return `/module/courses?editId=${item.courseId}`;
   if (name === "herbId" && item.herbId && canEdit.value) return `/module/herbs?editId=${item.herbId}`;
   if (name === "sampleId" && item.sampleId && canEdit.value) return `/module/lab-samples?editId=${item.sampleId}`;
   if (name === "name" && props.moduleKey === "users" && item.id) return `/profile/${item.id}`;
@@ -1165,7 +1314,19 @@ watch(() => props.editId, id => {
         </div>
       </div>
 
-      <div v-if="isGrowthModule" class="insight-grid">
+      <div v-if="isTrainingModule" class="insight-grid">
+        <article><span>培训记录</span><strong>{{ trainingStats.count }}</strong><small>条培训素材</small></article>
+        <article><span>关联课程</span><strong>{{ trainingStats.linkedCourses }}</strong><small>可跳转课程资料</small></article>
+        <article><span>关联药材</span><strong>{{ trainingStats.linkedBatches }}</strong><small>绑定批次档案</small></article>
+        <article><span>平均完成率</span><strong>{{ trainingStats.avgCompletion }}</strong><small>{{ trainingStats.issueDriven }} 条来自评价问题</small></article>
+      </div>
+      <div v-else-if="isAchievementModule" class="insight-grid">
+        <article><span>业绩记录</span><strong>{{ achievementStats.count }}</strong><small>条成果档案</small></article>
+        <article><span>关联药材</span><strong>{{ achievementStats.linkedBatches }}</strong><small>绑定批次档案</small></article>
+        <article><span>关联项目</span><strong>{{ achievementStats.linkedProjects }}</strong><small>课题或转化来源</small></article>
+        <article><span>待审核</span><strong>{{ achievementStats.pending }}</strong><small>{{ achievementStats.evidenceCount }} 条含佐证材料</small></article>
+      </div>
+      <div v-else-if="isGrowthModule" class="insight-grid">
         <article><span>记录数量</span><strong>{{ growthStats.count }}</strong><small>条生长数据</small></article>
         <article><span>平均温度</span><strong>{{ growthStats.avgTemp }}</strong><small>最高 {{ growthStats.maxTemp }} / 最低 {{ growthStats.minTemp }}</small></article>
         <article><span>平均湿度</span><strong>{{ growthStats.avgHumidity }}</strong><small>相对湿度 %</small></article>
@@ -1486,7 +1647,15 @@ watch(() => props.editId, id => {
           <tr v-for="item in pagedItems" :key="item.id" :class="{ selected: selectedIds.includes(item.id) }">
             <td v-if="canBatchDelete" class="checkbox-cell"><input v-model="selectedIds" type="checkbox" :value="item.id" :aria-label="`选择${item.id}`"></td>
             <td v-for="[name] in config.fields" :key="name">
-              <span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(item, name) }}</span>
+              <span v-if="name === 'evidence' && isAchievementModule" class="evidence-table-value">
+                <span v-if="item.evidence" class="evidence-text">{{ item.evidence }}</span>
+                <span v-if="evidenceFilesFor(item).length" class="evidence-attachment-count">
+                  <FileText :size="14" />{{ evidenceFilesFor(item).length }} 个附件
+                  <small>{{ evidenceFilesFor(item).map(file => file.fileName).join('、') }}</small>
+                </span>
+                <span v-if="!item.evidence && !evidenceFilesFor(item).length">-</span>
+              </span>
+              <span v-else-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(item, name) }}</span>
               <a v-else-if="isLinkField(name) && fieldLink(item, name)" :href="fieldLink(item, name)" class="field-link" :title="fieldLinkTitle(item, name)" @click.prevent="router.push(fieldLink(item, name))">{{ relationDisplay(item, name) }}</a>
               <span v-else-if="isOwnerField(name)" class="field-link field-reference" title="该姓名尚未关联系统用户">{{ relationDisplay(item, name) }}</span>
               <template v-else>{{ relationDisplay(item, name) }}</template>
@@ -1589,6 +1758,46 @@ watch(() => props.editId, id => {
           <div class="form-section-heading">
             <div><strong>记录信息</strong><span>该记录当前保存的完整业务字段</span></div>
           </div>
+          <section v-if="isConnectedModule" class="relation-summary">
+            <div class="form-section-heading">
+              <div><strong>关联关系</strong><span>把当前记录放回系统主线中查看</span></div>
+            </div>
+            <div class="relation-card-grid">
+              <article v-if="form.courseId || form.courseTitle">
+                <span>关联课程</span>
+                <strong>{{ relationDisplay(form, "courseId") || display(form.courseTitle) }}</strong>
+                <button v-if="form.courseId" class="button-secondary" type="button" @click="router.push(`/module/courses?editId=${form.courseId}`)">查看课程</button>
+              </article>
+              <article v-if="form.batchId">
+                <span>关联药材批次</span>
+                <strong>{{ relationDisplay(form, "batchId") }}</strong>
+                <button class="button-secondary" type="button" @click="router.push(`/batches/${form.batchId}`)">打开批次档案</button>
+              </article>
+              <article v-if="form.projectTitle">
+                <span>关联课题/项目</span>
+                <strong>{{ display(form.projectTitle) }}</strong>
+              </article>
+              <article v-if="form.sourceIssue">
+                <span>来源问题</span>
+                <strong>{{ display(form.sourceIssue) }}</strong>
+              </article>
+              <article v-if="form.evidence">
+                <span>佐证材料</span>
+                <strong>{{ display(form.evidence) }}</strong>
+              </article>
+              <article v-if="achievementEvidenceFiles.length" class="evidence-detail-card">
+                <span>佐证附件</span>
+                <div v-for="file in achievementEvidenceFiles" :key="file.id" class="evidence-detail-file">
+                  <strong><FileText :size="15" />{{ file.fileName }}</strong>
+                  <div>
+                    <button v-if="isEvidencePreviewable(file)" class="button-secondary" type="button" @click="openEvidenceFile(file, true)"><Eye :size="14" />查看</button>
+                    <button type="button" @click="openEvidenceFile(file)"><Download :size="14" />下载</button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
           <dl class="detail-grid">
             <div v-for="[name, label] in config.fields" :key="name">
               <dt>{{ label }}</dt>
@@ -1620,6 +1829,7 @@ watch(() => props.editId, id => {
               <AppSelect v-else-if="name === 'collectSource'" v-model="form[name]" :options="collectionSourceOptions" aria-label="选择采集来源" />
               <AppSelect v-else-if="name === 'courseId' && moduleKey === 'teaching-resources'" v-model="form[name]" :options="courseSelectOptions" aria-label="选择试验课程" @change="onCourseSelect(form[name])" />
               <AppSelect v-else-if="name === 'fileId'" v-model="form[name]" :options="fileSelectOptions" aria-label="选择资料文件" @change="applySelectedFile(form[name])" />
+              <AppSelect v-else-if="name === 'courseId' && ['trainings', 'achievements'].includes(moduleKey)" v-model="form[name]" :options="courseSelectOptions" aria-label="选择关联课程" @change="onCourseSelect(form[name])" />
               <input v-else v-model="form[name]" :readonly="isLinkedReadonly(name)" :class="{ 'linked-readonly': isLinkedReadonly(name) }">
             </label>
             <MapPicker
@@ -1628,6 +1838,33 @@ watch(() => props.editId, id => {
               v-model:longitude="form.longitude"
             />
           </div>
+          <section v-if="isAchievementModule" class="evidence-upload-field">
+            <div class="evidence-upload-copy">
+              <span class="field-label">佐证附件</span>
+              <small>支持 PDF、Word、Excel、PPT、图片和 TXT，可一次选择多个文件</small>
+            </div>
+            <input
+              id="achievement-evidence-input"
+              class="evidence-file-input"
+              type="file"
+              multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv"
+              :disabled="evidenceUploading"
+              @change="uploadEvidenceFiles"
+            >
+            <label class="evidence-upload-button" for="achievement-evidence-input">
+              <Upload :size="16" />{{ evidenceUploading ? "上传中…" : "选择并上传附件" }}
+            </label>
+            <div v-if="achievementEvidenceFiles.length" class="evidence-file-list">
+              <article v-for="file in achievementEvidenceFiles" :key="file.id">
+                <FileText :size="17" />
+                <div><strong>{{ file.fileName }}</strong><small>{{ file.category }} · {{ Math.max(1, Math.round((file.sizeBytes || file.size || 0) / 1024)) }} KB</small></div>
+                <button v-if="isEvidencePreviewable(file)" class="icon-button" type="button" title="查看" @click="openEvidenceFile(file, true)"><Eye :size="15" /></button>
+                <button class="icon-button" type="button" title="下载" @click="openEvidenceFile(file)"><Download :size="15" /></button>
+                <button class="icon-button danger" type="button" title="解除关联" @click="unlinkEvidenceFile(file.id)"><X :size="15" /></button>
+              </article>
+            </div>
+          </section>
         </form>
 
         <footer class="drawer-footer">
@@ -1644,7 +1881,7 @@ watch(() => props.editId, id => {
           </template>
           <template v-else>
             <button class="button-secondary" type="button" @click="closePanel">取消</button>
-            <button type="button" :disabled="saving" @click="save">{{ saving ? "保存中..." : panelMode === "duplicate" ? "创建副本" : editingId ? "保存修改" : "创建记录" }}</button>
+            <button type="button" :disabled="saving || evidenceUploading" @click="save">{{ evidenceUploading ? "附件上传中..." : saving ? "保存中..." : panelMode === "duplicate" ? "创建副本" : editingId ? "保存修改" : "创建记录" }}</button>
           </template>
         </footer>
       </aside>

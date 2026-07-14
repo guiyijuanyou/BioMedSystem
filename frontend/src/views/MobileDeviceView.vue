@@ -1,10 +1,10 @@
 <script setup>
-import{inject,onMounted,reactive,ref}from"vue";import{KeyRound,Plus,RefreshCw,Smartphone}from"lucide-vue-next";import{api}from"@/services/api";import AppSelect from"@/components/AppSelect.vue";
+import{inject,onMounted,reactive,ref}from"vue";import{KeyRound,Plus,RefreshCw,Smartphone}from"lucide-vue-next";import{api}from"@/services/api";import{appDialog}from"@/services/dialog";import AppSelect from"@/components/AppSelect.vue";
 const notify=inject("notify"),loading=ref(true),devices=ref([]),tokenResult=ref(null),form=reactive({deviceCode:"",deviceName:"",owner:"",platform:"Android"});
 const platformOptions=["Android","iOS","Sensor"].map(value=>({value,label:value}));
 async function load(){loading.value=true;try{devices.value=(await api("/api/mobile/devices")).items||[]}catch(e){notify(e.message)}finally{loading.value=false}}
 async function register(){try{tokenResult.value=await api("/api/mobile/devices",{method:"POST",body:JSON.stringify(form)});notify("设备已登记，请立即保存令牌");Object.assign(form,{deviceCode:"",deviceName:"",owner:"",platform:"Android"});await load()}catch(e){notify(e.message)}}
-async function rotate(d){if(!window.confirm("轮换后旧令牌立即失效，确认继续？"))return;try{tokenResult.value=await api(`/api/mobile/devices/${d.id}/rotate-token`,{method:"POST"});notify("令牌已轮换") }catch(e){notify(e.message)}}
+async function rotate(d){const confirmed=await appDialog.confirm({title:"轮换设备令牌",message:`设备“${d.deviceName}”的旧令牌将立即失效，使用旧令牌的采集端会停止同步。`,tone:"warning",confirmText:"确认轮换"});if(!confirmed)return;try{tokenResult.value=await api(`/api/mobile/devices/${d.id}/rotate-token`,{method:"POST"});notify("令牌已轮换") }catch(e){notify(e.message)}}
 async function toggle(d){try{await api(`/api/mobile/devices/${d.id}/status`,{method:"PUT",body:JSON.stringify({status:d.status==='active'?'disabled':'active'})});await load()}catch(e){notify(e.message)}}
 onMounted(load);
 </script>

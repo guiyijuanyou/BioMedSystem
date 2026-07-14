@@ -10,7 +10,8 @@ import java.util.Map;
 
 @Mapper
 public interface TrainingMaterialMapper extends BiomedBaseMapper<TrainingMaterial> {
-    @Select("SELECT id, title, trainer_name, audience, tracking, " +
+    @Select("SELECT id, title, trainer_name, course_id, course_title, batch_id, herb_name, district, " +
+            "training_type, completion_rate, source_issue, audience, tracking, " +
             "status, reviewer_name, review_comment, reviewed_at, " +
             "version, created_at, updated_at FROM training_material ORDER BY created_at DESC")
     List<Map<String, Object>> findAllAsMap();

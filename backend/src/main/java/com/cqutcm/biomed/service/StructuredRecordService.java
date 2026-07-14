@@ -363,6 +363,14 @@ public class StructuredRecordService {
     private TrainingMaterial mapToTraining(Map<String, Object> m, PermissionService.Actor actor) {
         TrainingMaterial t = new TrainingMaterial();
         t.setTitle(str(m, "title"));
+        t.setCourseId(str(m, "courseId"));
+        t.setCourseTitle(str(m, "courseTitle"));
+        t.setBatchId(str(m, "batchId"));
+        t.setHerbName(str(m, "herbName"));
+        t.setDistrict(str(m, "district"));
+        t.setTrainingType(str(m, "trainingType"));
+        t.setCompletionRate(str(m, "completionRate"));
+        t.setSourceIssue(str(m, "sourceIssue"));
         t.setAudience(str(m, "audience"));
         t.setTracking(str(m, "tracking"));
         if (permissionService.isAdmin(actor)) {
@@ -403,6 +411,16 @@ public class StructuredRecordService {
     private AchievementRecord mapToAchievement(Map<String, Object> m, PermissionService.Actor actor) {
         AchievementRecord a = new AchievementRecord();
         a.setTitle(str(m, "title"));
+        a.setSourceModule(str(m, "sourceModule"));
+        a.setCourseId(str(m, "courseId"));
+        a.setCourseTitle(str(m, "courseTitle"));
+        a.setBatchId(str(m, "batchId"));
+        a.setHerbName(str(m, "herbName"));
+        a.setProjectTitle(str(m, "projectTitle"));
+        a.setStandardId(str(m, "standardId"));
+        a.setScore(str(m, "score"));
+        a.setEvidence(str(m, "evidence"));
+        a.setEvidenceFileIds(str(m, "evidenceFileIds"));
         if (permissionService.isAdmin(actor)) {
             a.setOwnerName(str(m, "owner"));
             a.setCategory(str(m, "category"));
@@ -466,6 +484,14 @@ public class StructuredRecordService {
     private Map<String, Object> trainingToMap(TrainingMaterial t) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", t.getId()); m.put("title", t.getTitle()); m.put("trainer", t.getTrainerName());
+        m.put("courseId", t.getCourseId());
+        m.put("courseTitle", t.getCourseTitle());
+        m.put("batchId", t.getBatchId());
+        m.put("herbName", t.getHerbName());
+        m.put("district", t.getDistrict());
+        m.put("trainingType", t.getTrainingType());
+        m.put("completionRate", t.getCompletionRate());
+        m.put("sourceIssue", t.getSourceIssue());
         m.put("audience", t.getAudience()); m.put("tracking", t.getTracking());
         m.put("status", t.getStatus());
         m.put("reviewerName", t.getReviewerName());
@@ -499,7 +525,17 @@ public class StructuredRecordService {
     private Map<String, Object> achievementToMap(AchievementRecord a) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", a.getId()); m.put("title", a.getTitle()); m.put("owner", a.getOwnerName());
+        m.put("sourceModule", a.getSourceModule());
+        m.put("courseId", a.getCourseId());
+        m.put("courseTitle", a.getCourseTitle());
+        m.put("batchId", a.getBatchId());
+        m.put("herbName", a.getHerbName());
+        m.put("projectTitle", a.getProjectTitle());
+        m.put("standardId", a.getStandardId());
         m.put("category", a.getCategory()); m.put("level", a.getLevelName());
+        m.put("score", a.getScore());
+        m.put("evidence", a.getEvidence());
+        m.put("evidenceFileIds", a.getEvidenceFileIds());
         m.put("status", a.getStatus());
         m.put("reviewerName", a.getReviewerName());
         m.put("reviewComment", a.getReviewComment());

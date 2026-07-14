@@ -65,7 +65,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login").permitAll()
                 .requestMatchers("/api/map/tiles/**").permitAll()
-                .requestMatchers("/api/mobile/growth-records/batch", "/api/mobile/sync/status").permitAll()
+                .requestMatchers("/api/mobile/batches", "/api/mobile/growth-records/batch", "/api/mobile/sync/status").permitAll()
                 .requestMatchers("/api/soap/**").permitAll()
                 .requestMatchers("/api/actuator/**").permitAll()
                 .requestMatchers("/api/**").authenticated()

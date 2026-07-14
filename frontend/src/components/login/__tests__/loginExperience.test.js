@@ -24,6 +24,25 @@ const sections = [
   { id: "roles", label: "协同角色" }
 ];
 
+const modalMotionStubs = {
+  teleport: true,
+  Motion: { template: "<div><slot /></div>" },
+  AnimatePresence: { template: "<div><slot /></div>" }
+};
+
+function mountLogin(credentials, extraProps = {}) {
+  return mount(LoginModal, {
+    props: {
+      modelValue: true,
+      credentials,
+      loading: false,
+      errorText: "",
+      ...extraProps
+    },
+    global: { stubs: modalMotionStubs }
+  });
+}
+
 describe("immersive login components", () => {
   it("resolves finite scene states across five narrative stages", () => {
     expect(sceneStages.map(stage => stage.id)).toEqual(["cloud", "collection", "distribution", "trace", "roles"]);
@@ -93,20 +112,67 @@ describe("immersive login components", () => {
     expect(wrapper.emitted("open-login")).toHaveLength(1);
   });
 
-  it("submits login credentials", async () => {
-    const wrapper = mount(LoginModal, {
-      props: {
-        modelValue: true,
-        credentials: { username: "admin@cqutcm", password: "Admin@123456" },
-        loading: false,
-        errorText: ""
-      },
-      global: {
-        stubs: { teleport: true }
-      }
-    });
+  it("validates each step and submits the unchanged credential payload", async () => {
+    const wrapper = mountLogin({ username: "", password: "" });
 
-    await wrapper.get("form").trigger("submit");
-    expect(wrapper.emitted("submit")?.[0]).toEqual([{ username: "admin@cqutcm", password: "Admin@123456" }]);
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    expect(wrapper.text()).toContain("请输入系统账号");
+
+    await wrapper.get('[data-test="username-input"]').setValue("admin");
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    expect(wrapper.text()).toContain("请输入登录密码");
+
+    await wrapper.get('[data-test="password-input"]').setValue("123456");
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    expect(wrapper.text()).toContain("admin");
+
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    expect(wrapper.emitted("submit")?.[0]).toEqual([{ username: "admin", password: "123456" }]);
+  });
+  });
+
+  it("renders the compact stepper without the legacy portal header", () => {
+    const wrapper = mountLogin({ username: "admin", password: "123456" });
+
+    expect(wrapper.text()).not.toContain("SECURE DATA PORTAL");
+    expect(wrapper.find(".login-dialog__orb").exists()).toBe(false);
+    expect(wrapper.find(".login-dialog__close").exists()).toBe(false);
+  });
+
+  it("omits demo accounts and resets to the first step when reopened", async () => {
+    const wrapper = mountLogin({ username: "admin", password: "123456" });
+
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    expect(wrapper.find('[data-test="demo-toggle"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("统一密码");
+
+    await wrapper.setProps({ modelValue: false });
+    await wrapper.setProps({ modelValue: true });
+
+    expect(wrapper.get('[data-test="step-indicator-1"]').attributes("data-status")).toBe("active");
+  });
+
+  it("toggles password visibility on the password step", async () => {
+    const wrapper = mountLogin({ username: "admin", password: "123456" });
+
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    expect(wrapper.get('[data-test="password-input"]').attributes("type")).toBe("password");
+
+    await wrapper.get('[data-test="password-visibility"]').trigger("click");
+
+    expect(wrapper.get('[data-test="password-input"]').attributes("type")).toBe("text");
+  });
+
+  it("shows the backend error on the confirmation step", async () => {
+    const wrapper = mountLogin(
+      { username: "admin", password: "123456" },
+      { errorText: "账号或密码错误" }
+    );
+
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+    await wrapper.get('[data-test="stepper-next"]').trigger("click");
+
+    expect(wrapper.text()).toContain("账号或密码错误");
   });
 });

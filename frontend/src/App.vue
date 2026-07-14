@@ -4,6 +4,7 @@ import { useRouter, useRoute } from "vue-router";
 import { ChevronDown, ClipboardList, Grid2X2, Home, LogOut, Menu, RefreshCw, Save, ShieldCheck, Sprout, User, KeyRound } from "lucide-vue-next";
 import SidebarNav from "@/components/SidebarNav.vue";
 import AiAssistant from "@/components/AiAssistant.vue";
+import AppDialog from "@/components/AppDialog.vue";
 import { modules, roleMenus, roleModulePermissions, roles } from "@/config";
 import { api } from "@/services/api";
 
@@ -340,4 +341,5 @@ onBeforeUnmount(() => {
     <AiAssistant />
   </template>
   <div id="toast" :class="{ show: toastText }">{{ toastText }}</div>
+  <AppDialog />
 </template>

@@ -10,8 +10,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.security.MessageDigest;
 import java.util.Base64;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -69,11 +72,18 @@ public class FileAssetService {
                     : upload.getOriginalFilename();
             String fileName = validateMetadata(originalName, upload.getSize(), upload.getContentType(), category);
             validateMagicBytes(fileName, upload.getInputStream().readNBytes(16));
+            String normalizedCategory = normalizeCategory(category);
+            String sha256 = sha256(upload.getInputStream());
+            FileAsset existing = reusableDuplicate(sha256, normalizedCategory);
+            if (existing != null) return existing;
+            FileAsset legacyDuplicate = reusableLegacyDuplicate(
+                    mapper.findByNameSizeAndCategory(fileName, upload.getSize(), normalizedCategory), sha256);
+            if (legacyDuplicate != null) return legacyDuplicate;
             Files.createDirectories(uploadDir);
             String id = UUID.randomUUID().toString();
             Path target = safeTarget(id, fileName);
             upload.transferTo(target);
-            return saveFile(id, fileName, normalizeCategory(category), upload.getSize(), target);
+            return saveFile(id, fileName, normalizedCategory, upload.getSize(), target, sha256);
         } catch (RuntimeException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -87,11 +97,18 @@ public class FileAssetService {
             String fileName = validateMetadata(request.getOrDefault("fileName", ""), content.length,
                     request.get("contentType"), request.get("category"));
             validateMagicBytes(fileName, java.util.Arrays.copyOf(content, Math.min(content.length, 16)));
+            String normalizedCategory = normalizeCategory(request.get("category"));
+            String sha256 = sha256(content);
+            FileAsset existing = reusableDuplicate(sha256, normalizedCategory);
+            if (existing != null) return existing;
+            FileAsset legacyDuplicate = reusableLegacyDuplicate(
+                    mapper.findByNameSizeAndCategory(fileName, content.length, normalizedCategory), sha256);
+            if (legacyDuplicate != null) return legacyDuplicate;
             Files.createDirectories(uploadDir);
             String id = UUID.randomUUID().toString();
             Path target = safeTarget(id, fileName);
             Files.write(target, content, StandardOpenOption.CREATE_NEW);
-            return saveFile(id, fileName, normalizeCategory(request.get("category")), content.length, target);
+            return saveFile(id, fileName, normalizedCategory, content.length, target, sha256);
         } catch (IllegalArgumentException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -121,13 +138,14 @@ public class FileAssetService {
         return stored;
     }
 
-    private FileAsset saveFile(String id, String fileName, String category, long size, Path target) {
+    private FileAsset saveFile(String id, String fileName, String category, long size, Path target, String sha256) {
         FileAsset file = new FileAsset();
         file.setId(id);
         file.setFileName(fileName);
         file.setCategory(category);
         file.setSizeBytes(size);
         file.setStoragePath(target.toString());
+        file.setSha256(sha256);
         file.setCreatedAt(LocalDateTime.now());
         try {
             mapper.insert(file);
@@ -135,6 +153,57 @@ public class FileAssetService {
         } catch (RuntimeException ex) {
             try { Files.deleteIfExists(target); } catch (Exception ignored) {}
             throw ex;
+        }
+    }
+
+    private FileAsset reusableDuplicate(String sha256, String category) {
+        return reusable(mapper.findBySha256AndCategory(sha256, category));
+    }
+
+    private FileAsset reusableLegacyDuplicate(FileAsset existing, String incomingSha256) {
+        FileAsset reusable = reusable(existing);
+        if (reusable == null) return null;
+        if (reusable.getSha256() != null && !reusable.getSha256().isBlank()) {
+            return incomingSha256.equalsIgnoreCase(reusable.getSha256()) ? reusable : null;
+        }
+        return incomingSha256.equals(sha256(requireStoredFile(reusable))) ? reusable : null;
+    }
+
+    private FileAsset reusable(FileAsset existing) {
+        if (existing == null) return null;
+        try {
+            requireStoredFile(existing);
+            return existing;
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private String sha256(byte[] content) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(content));
+        } catch (Exception ex) {
+            throw new IllegalStateException("无法计算文件摘要", ex);
+        }
+    }
+
+    private String sha256(InputStream input) {
+        try (InputStream stream = input) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = stream.read(buffer)) != -1) digest.update(buffer, 0, read);
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (Exception ex) {
+            throw new IllegalStateException("无法计算文件摘要", ex);
+        }
+    }
+
+    private String sha256(Path path) {
+        try {
+            return sha256(Files.newInputStream(path));
+        } catch (Exception ex) {
+            throw new IllegalStateException("无法计算已存文件摘要", ex);
         }
     }
 

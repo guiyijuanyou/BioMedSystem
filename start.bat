@@ -3,6 +3,7 @@ cd /d "%~dp0"
 
 set "APP_JAR=backend\target\biomed-digital-system-1.0.0.jar"
 set "MVNW_CMD=%~dp0backend\mvnw.cmd"
+set "MAVEN_CMD="
 
 
 netstat -ano | findstr /R /C:":8088 .*LISTENING" >nul
@@ -35,14 +36,30 @@ if errorlevel 1 (
 popd
 
 echo Building Spring Boot backend...
-if not exist "%MVNW_CMD%" (
+if exist "%MVNW_CMD%" (
+  set "MAVEN_CMD=%MVNW_CMD%"
+) else (
+  where mvn.cmd >nul 2>nul
+  if not errorlevel 1 set "MAVEN_CMD=mvn.cmd"
+)
+
+if "%MAVEN_CMD%"=="" (
   echo.
-  echo Maven Wrapper not found. Run: cd backend ^&^& mvn wrapper:wrapper -Dmaven=3.9.9
+  echo Maven was not found. Install Maven or run: cd backend ^&^& mvn wrapper:wrapper -Dmaven=3.9.9
   pause
   exit /b 1
 )
 pushd backend
-call "%MVNW_CMD%" -Pprod -DskipTests package
+call "%MAVEN_CMD%" -Pprod "-Dmaven.test.skip=true" package
+if errorlevel 1 (
+  if not "%MAVEN_CMD%"=="mvn.cmd" (
+    where mvn.cmd >nul 2>nul
+    if not errorlevel 1 (
+      echo Maven Wrapper failed, retrying with system Maven...
+      call mvn.cmd -Pprod "-Dmaven.test.skip=true" package
+    )
+  )
+)
 popd
 if errorlevel 1 (
   echo.
