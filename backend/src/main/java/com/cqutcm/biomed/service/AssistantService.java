@@ -2,105 +2,121 @@ package com.cqutcm.biomed.service;
 
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class AssistantService {
+    private static final int MAX_HISTORY_MESSAGES = 10;
+    private static final int MAX_HISTORY_CONTENT_LENGTH = 2_000;
+
+    private final DeepSeekClient deepSeekClient;
     private final StructuredRecordService structuredService;
     private final GrowthRecordService growthService;
     private final CourseRecordService courseService;
     private final ProjectRecordService projectService;
-    private final ResearchDataService researchService;
-    private final TraceEventService traceService;
 
-    public AssistantService(StructuredRecordService structuredService, GrowthRecordService growthService,
-                            CourseRecordService courseService, ProjectRecordService projectService,
-                            ResearchDataService researchService, TraceEventService traceService) {
+    public AssistantService(DeepSeekClient deepSeekClient,
+                            StructuredRecordService structuredService,
+                            GrowthRecordService growthService,
+                            CourseRecordService courseService,
+                            ProjectRecordService projectService) {
+        this.deepSeekClient = deepSeekClient;
         this.structuredService = structuredService;
         this.growthService = growthService;
         this.courseService = courseService;
         this.projectService = projectService;
-        this.researchService = researchService;
-        this.traceService = traceService;
     }
 
-    public Map<String, Object> chat(String question) {
+    public Map<String, Object> chat(String question, List<ChatMessage> history) {
         String text = question == null ? "" : question.trim();
         if (text.isBlank()) {
-            return Map.of("answer", "可以问我：有哪些中药材、怎么上传资料、怎么查看生长数据、怎么做备份、系统有哪些模块。");
+            throw new IllegalArgumentException("问题不能为空");
         }
 
-        String answer;
-        if (containsAny(text, "统计", "数量", "总览", "多少")) {
-            answer = buildSummaryAnswer();
-        } else if (containsAny(text, "药材", "品种", "分布", "地图", "区县")) {
-            answer = buildHerbAnswer(text);
-        } else if (containsAny(text, "采集", "生长", "温度", "湿度", "PH", "ph")) {
-            answer = buildGrowthAnswer();
-        } else if (containsAny(text, "上传", "资料", "文件", "下载", "查看")) {
-            answer = "资料文件在\u201C资料文件\u201D模块管理。选择资料分类和文件后点击上传；上传后可直接\u201C查看\u201D图片、PDF、视频、文本等浏览器支持的文件，也可以点击\u201C下载\u201D保存到本地。";
-        } else if (containsAny(text, "备份", "恢复")) {
-            answer = "点击页面右上角\u201C自动备份\u201D即可生成当前数据备份文件，备份会保存在项目的 data 目录中。正式部署时可扩展为定时备份和数据库备份。";
-        } else if (containsAny(text, "课程", "教学", "视频")) {
-            answer = "试验课程模块用于存储课程名称、教师、学时、资料类型和发布状态；线上视频或课件可以先上传到\u201C资料文件\u201D，再在课程中记录资料类型和说明。";
-        } else if (containsAny(text, "评价", "非遗", "申报")) {
-            answer = "评价体系模块用于记录药材名称、评价指标、评分、评价结果和申报素材，可为非遗申请、品牌申报、产地证明等工作沉淀材料。";
-        } else if (containsAny(text, "业绩", "审核", "认定", "标准")) {
-            answer = "业绩管理模块支持录入业绩名称、所属单位、分类、级别和审核状态；认定标准模块可以维护学校现有业绩分类分级规则。";
-        } else if (containsAny(text, "手机", "移动端", "app", "APP")) {
-            answer = "手机端可以通过同一局域网访问电脑 IP 加 8088 端口，例如 http://电脑IP:8088。手机端支持侧拉菜单、生长数据录入、资料查看和基础管理。";
-        } else {
-            answer = "我可以帮助你使用系统、解释模块、查询当前样本数据、说明上传下载、备份、评价、业绩审核等流程。你可以换个更具体的问题试试。";
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(new ChatMessage("system", buildSystemPrompt()));
+        messages.addAll(sanitizeHistory(history));
+        messages.add(new ChatMessage("user", text));
+
+        return Map.of(
+                "answer", deepSeekClient.chat(messages),
+                "model", deepSeekClient.model()
+        );
+    }
+
+    private List<ChatMessage> sanitizeHistory(List<ChatMessage> history) {
+        if (history == null || history.isEmpty()) {
+            return List.of();
         }
-
-        return Map.of("answer", answer);
-    }
-
-    private String buildSummaryAnswer() {
-        return "当前系统样本数据概况：药材品种 " + structuredService.count("herbs")
-                + " 个，生长采集记录 " + growthService.count()
-                + " 条，试验课程 " + courseService.courseCount()
-                + " 门，研究课题 " + projectService.count()
-                + " 个，评价记录 " + structuredService.count("evaluations")
-                + " 条，业绩记录 " + structuredService.count("achievements") + " 条。";
-    }
-
-    private String buildHerbAnswer(String question) {
-        List<Map<String, Object>> herbs = structuredService.list("herbs");
-        List<Map<String, Object>> matched = herbs.stream()
-                .filter(item -> question.contains(String.valueOf(item.getOrDefault("name", "")))
-                        || question.contains(String.valueOf(item.getOrDefault("district", ""))))
+        int start = Math.max(0, history.size() - MAX_HISTORY_MESSAGES);
+        return history.subList(start, history.size()).stream()
+                .filter(message -> message != null
+                        && ("user".equals(message.role()) || "assistant".equals(message.role()))
+                        && message.content() != null && !message.content().isBlank())
+                .map(message -> new ChatMessage(
+                        message.role(),
+                        message.content().substring(0, Math.min(message.content().length(), MAX_HISTORY_CONTENT_LENGTH))))
                 .toList();
-        List<Map<String, Object>> source = matched.isEmpty() ? herbs : matched;
-        String rows = source.stream()
+    }
+
+    private String buildSystemPrompt() {
+        return """
+                你是“中药材生物医药数字化信息系统”的 AI 助手。请使用简体中文，回答准确、简洁、可操作。
+                你可以解释系统功能，也可以根据下面提供的实时业务数据回答问题。
+                不要编造未提供的记录；无法从上下文确定时要明确说明。不要声称自己已经执行了修改、删除、审核等操作。
+                涉及医疗用途时只提供一般信息，并提醒用户咨询合格的医疗专业人员。
+
+                系统模块：中药材与批次、种植生长采集、资源文件、课程教学、研究项目、评价指标、改进建议、业绩成果、溯源与光谱对比。
+
+                当前业务数据摘要：
+                - 中药材品种：%d 个
+                - 生长采集记录：%d 条
+                - 试验课程：%d 门
+                - 研究项目：%d 个
+                - 评价记录：%d 条
+                - 业绩记录：%d 条
+
+                中药材样本（最多 12 条）：%s
+                最近生长采集样本（最多 8 条）：%s
+                """.formatted(
+                structuredService.count("herbs"),
+                growthService.count(),
+                courseService.courseCount(),
+                projectService.count(),
+                structuredService.count("evaluations"),
+                structuredService.count("achievements"),
+                herbContext(),
+                growthContext()
+        );
+    }
+
+    private String herbContext() {
+        String result = structuredService.list("herbs").stream()
+                .limit(12)
+                .map(item -> String.format("%s（地区：%s，规模：%s，溯源码：%s）",
+                        value(item, "name"), value(item, "district"),
+                        value(item, "scale"), value(item, "traceCode")))
+                .collect(Collectors.joining("；"));
+        return result.isBlank() ? "暂无" : result;
+    }
+
+    private String growthContext() {
+        String result = growthService.list().stream()
                 .limit(8)
-                .map(item -> item.getOrDefault("name", "") + "：" + item.getOrDefault("district", "")
-                        + "，规模 " + item.getOrDefault("scale", "-")
-                        + "，溯源码 " + item.getOrDefault("traceCode", "-"))
+                .map(item -> String.format("%s（地区：%s，温度：%s，湿度：%s，土壤 pH：%s）",
+                        value(item, "herbName"), value(item, "district"), value(item, "temperature"),
+                        value(item, "humidity"), value(item, "soilPh")))
                 .collect(Collectors.joining("；"));
-        return rows.isBlank() ? "当前还没有药材分布样本。" : "当前药材分布样本包括：" + rows + "。";
+        return result.isBlank() ? "暂无" : result;
     }
 
-    private String buildGrowthAnswer() {
-        List<Map<String, Object>> records = growthService.list();
-        String rows = records.stream()
-                .limit(5)
-                .map(item -> item.getOrDefault("herbName", "") + "（" + item.getOrDefault("district", "") + "）：温度 "
-                        + item.getOrDefault("temperature", "-") + "，湿度 "
-                        + item.getOrDefault("humidity", "-") + "，土壤PH "
-                        + item.getOrDefault("soilPh", "-"))
-                .collect(Collectors.joining("；"));
-        return rows.isBlank() ? "当前还没有生长采集记录。" : "最近的生长采集样本：" + rows + "。";
+    private String value(Map<String, Object> item, String key) {
+        return String.valueOf(item.getOrDefault(key, "-"));
     }
 
-    private boolean containsAny(String text, String... words) {
-        for (String word : words) {
-            if (text.contains(word)) {
-                return true;
-            }
-        }
-        return false;
+    public record ChatMessage(String role, String content) {
     }
 }

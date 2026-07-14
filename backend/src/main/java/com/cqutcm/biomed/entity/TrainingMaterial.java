@@ -17,6 +17,22 @@ public class TrainingMaterial {
     private String title;
     @TableField("trainer_name")
     private String trainerName;
+    @TableField("course_id")
+    private String courseId;
+    @TableField("course_title")
+    private String courseTitle;
+    @TableField("batch_id")
+    private String batchId;
+    @TableField("herb_name")
+    private String herbName;
+    @TableField("district")
+    private String district;
+    @TableField("training_type")
+    private String trainingType;
+    @TableField("completion_rate")
+    private String completionRate;
+    @TableField("source_issue")
+    private String sourceIssue;
     @TableField("audience")
     private String audience;
     @TableField("tracking")
@@ -43,6 +59,22 @@ public class TrainingMaterial {
     public void setTitle(String title) { this.title = title; }
     public String getTrainerName() { return trainerName; }
     public void setTrainerName(String trainerName) { this.trainerName = trainerName; }
+    public String getCourseId() { return courseId; }
+    public void setCourseId(String courseId) { this.courseId = courseId; }
+    public String getCourseTitle() { return courseTitle; }
+    public void setCourseTitle(String courseTitle) { this.courseTitle = courseTitle; }
+    public String getBatchId() { return batchId; }
+    public void setBatchId(String batchId) { this.batchId = batchId; }
+    public String getHerbName() { return herbName; }
+    public void setHerbName(String herbName) { this.herbName = herbName; }
+    public String getDistrict() { return district; }
+    public void setDistrict(String district) { this.district = district; }
+    public String getTrainingType() { return trainingType; }
+    public void setTrainingType(String trainingType) { this.trainingType = trainingType; }
+    public String getCompletionRate() { return completionRate; }
+    public void setCompletionRate(String completionRate) { this.completionRate = completionRate; }
+    public String getSourceIssue() { return sourceIssue; }
+    public void setSourceIssue(String sourceIssue) { this.sourceIssue = sourceIssue; }
     public String getAudience() { return audience; }
     public void setAudience(String audience) { this.audience = audience; }
     public String getTracking() { return tracking; }

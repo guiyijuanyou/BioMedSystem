@@ -49,8 +49,9 @@ const form = reactive({});
 const batchLinkedModules = new Set([
   "lab-samples", "growth-records", "trace-events", "spectrum-comparisons", "growth-analysis", "evaluations"
 ]);
+const batchCatalogModules = new Set([...batchLinkedModules, "trainings", "achievements"]);
 
-const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion", "eventContent", "reviewComment", "requirements", "applicantRequests", "approvedMembers", "rejectedApplicants"];
+const textareaFields = ["environment", "indicator", "applicationMaterial", "tracking", "transformation", "levelRule", "remark", "conclusion", "eventContent", "reviewComment", "requirements", "applicantRequests", "approvedMembers", "rejectedApplicants", "sourceIssue", "evidence"];
 const statuses = ["待审核", "已通过", "已发布", "已驳回", "数据采集中", "已归档"];
 const pageSizeOptions = [8, 15, 30].map(value => ({ value, label: String(value) }));
 const batchStatusOptions = [{ value: "active", label: "使用中" }, { value: "archived", label: "已归档" }];
@@ -103,14 +104,21 @@ const isProjectOwnerModule = computed(() => isProjectModule.value && ["teacher",
 const showProjectWorkflow = computed(() => isProjectModule.value && ["student", "teacher", "researcher"].includes(props.role));
 const isSpectrumModule = computed(() => props.moduleKey === "spectrum-comparisons");
 const isAnalysisModule = computed(() => props.moduleKey === "growth-analysis");
-const insightVisible = computed(() => isGrowthModule.value || isTraceModule.value || isSpectrumModule.value || isAnalysisModule.value);
+const isTrainingModule = computed(() => props.moduleKey === "trainings");
+const isAchievementModule = computed(() => props.moduleKey === "achievements");
+const isConnectedModule = computed(() => isTrainingModule.value || isAchievementModule.value);
+const insightVisible = computed(() => isGrowthModule.value || isTraceModule.value || isSpectrumModule.value || isAnalysisModule.value || isConnectedModule.value);
 const insightTitle = computed(() => {
+  if (isTrainingModule.value) return "培训闭环关联概览";
+  if (isAchievementModule.value) return "业绩成果关联概览";
   if (isGrowthModule.value) return "生长数据对比概览";
   if (isTraceModule.value) return "药材溯源链路概览";
   if (isSpectrumModule.value) return "图谱比对概览";
   return "分析结论概览";
 });
 const insightHint = computed(() => {
+  if (isTrainingModule.value) return "按课程、药材批次和评价问题串联培训素材，让培训不再是孤立记录";
+  if (isAchievementModule.value) return "把业绩与药材批次、课题项目、评价依据和佐证材料绑定，形成可审核成果档案";
   if (isGrowthModule.value) return "根据当前采集记录自动计算温湿度、PH 和采集来源分布";
   if (isTraceModule.value) return "按溯源码串联种植、采集、检测、加工、入库等关键事件";
   if (isSpectrumModule.value) return "汇总图谱相似度、通过情况和待复核样本";
@@ -156,6 +164,29 @@ const analysisStats = computed(() => ({
   stable: items.value.filter(item => String(item.trend || "").includes("稳定")).length,
   indicators: countBy(items.value, "indicator")
 }));
+const trainingStats = computed(() => {
+  const rows = items.value;
+  const rates = rows
+    .map(item => toNumber(String(item.completionRate || "").replace("%", "")))
+    .filter(value => value !== null);
+  return {
+    count: rows.length,
+    linkedCourses: rows.filter(item => item.courseId || item.courseTitle).length,
+    linkedBatches: rows.filter(item => item.batchId).length,
+    issueDriven: rows.filter(item => item.sourceIssue).length,
+    avgCompletion: rates.length ? `${Math.round(rates.reduce((sum, value) => sum + value, 0) / rates.length)}%` : "-"
+  };
+});
+const achievementStats = computed(() => {
+  const rows = items.value;
+  return {
+    count: rows.length,
+    linkedBatches: rows.filter(item => item.batchId).length,
+    linkedProjects: rows.filter(item => item.projectTitle).length,
+    evidenceCount: rows.filter(item => item.evidence).length,
+    pending: rows.filter(item => isPendingReview(item)).length
+  };
+});
 const traceGroups = computed(() => {
   const groups = {};
   items.value.forEach(item => {
@@ -362,6 +393,10 @@ function defaultValue(name) {
     currentStage: "未开始",
     effectiveDate: new Date().toISOString().slice(0, 10)
   };
+  if (name === "trainingType") return "课程培训";
+  if (name === "completionRate") return "100%";
+  if (name === "sourceModule") return "成果管理";
+  if (name === "score") return "0";
   if (name === "status" && props.moduleKey === "herb-batches") return "active";
   if (name === "status" && props.moduleKey === "lab-samples") return "collected";
   return values[name] || "";
@@ -435,7 +470,7 @@ function relationDisplay(item, name) {
     return herb ? `${herb.name} / ${herb.district}` : (item.herbName || value);
   }
   if (name === "courseId" && value) {
-    return form.courseTitle || findCourseTitle(value);
+    return item.courseTitle || findCourseTitle(value);
   }
   return display(value);
 }
@@ -913,9 +948,9 @@ async function load() {
       api(`/api/${props.moduleKey}`),
       props.moduleKey === "courses" ? api("/api/teaching-resources") : Promise.resolve({ items: [] }),
       ["teaching-resources", "courses"].includes(props.moduleKey) ? api("/api/files") : Promise.resolve({ items: [] }),
-      props.moduleKey === "teaching-resources" ? api("/api/courses") : Promise.resolve({ items: [] }),
+      ["teaching-resources", "trainings"].includes(props.moduleKey) ? api("/api/courses") : Promise.resolve({ items: [] }),
       props.moduleKey === "herb-batches" ? api("/api/herbs") : Promise.resolve({ items: [] }),
-      batchLinkedModules.has(props.moduleKey) ? api("/api/herb-batches") : Promise.resolve({ items: [] }),
+      batchCatalogModules.has(props.moduleKey) ? api("/api/herb-batches") : Promise.resolve({ items: [] }),
       props.moduleKey === "spectrum-comparisons" ? api("/api/lab-samples") : Promise.resolve({ items: [] })
     ]);
     items.value = result.items || [];
@@ -1084,6 +1119,7 @@ function isOwnerField(name) {
 
 function isLinkField(name) {
   if (name === "batchId") return true;
+  if (name === "courseId") return true;
   if (name === "herbId" && canEdit.value) return true;
   if (name === "sampleId" && canEdit.value) return true;
   if (props.moduleKey === "users" && name === "name") return true;
@@ -1093,6 +1129,7 @@ function isLinkField(name) {
 
 function fieldLink(item, name) {
   if (name === "batchId" && item.batchId) return `/batches/${item.batchId}`;
+  if (name === "courseId" && item.courseId) return `/module/courses?editId=${item.courseId}`;
   if (name === "herbId" && item.herbId && canEdit.value) return `/module/herbs?editId=${item.herbId}`;
   if (name === "sampleId" && item.sampleId && canEdit.value) return `/module/lab-samples?editId=${item.sampleId}`;
   if (name === "name" && props.moduleKey === "users" && item.id) return `/profile/${item.id}`;
@@ -1165,7 +1202,19 @@ watch(() => props.editId, id => {
         </div>
       </div>
 
-      <div v-if="isGrowthModule" class="insight-grid">
+      <div v-if="isTrainingModule" class="insight-grid">
+        <article><span>培训记录</span><strong>{{ trainingStats.count }}</strong><small>条培训素材</small></article>
+        <article><span>关联课程</span><strong>{{ trainingStats.linkedCourses }}</strong><small>可跳转课程资料</small></article>
+        <article><span>关联药材</span><strong>{{ trainingStats.linkedBatches }}</strong><small>绑定批次档案</small></article>
+        <article><span>平均完成率</span><strong>{{ trainingStats.avgCompletion }}</strong><small>{{ trainingStats.issueDriven }} 条来自评价问题</small></article>
+      </div>
+      <div v-else-if="isAchievementModule" class="insight-grid">
+        <article><span>业绩记录</span><strong>{{ achievementStats.count }}</strong><small>条成果档案</small></article>
+        <article><span>关联药材</span><strong>{{ achievementStats.linkedBatches }}</strong><small>绑定批次档案</small></article>
+        <article><span>关联项目</span><strong>{{ achievementStats.linkedProjects }}</strong><small>课题或转化来源</small></article>
+        <article><span>待审核</span><strong>{{ achievementStats.pending }}</strong><small>{{ achievementStats.evidenceCount }} 条含佐证材料</small></article>
+      </div>
+      <div v-else-if="isGrowthModule" class="insight-grid">
         <article><span>记录数量</span><strong>{{ growthStats.count }}</strong><small>条生长数据</small></article>
         <article><span>平均温度</span><strong>{{ growthStats.avgTemp }}</strong><small>最高 {{ growthStats.maxTemp }} / 最低 {{ growthStats.minTemp }}</small></article>
         <article><span>平均湿度</span><strong>{{ growthStats.avgHumidity }}</strong><small>相对湿度 %</small></article>
@@ -1589,6 +1638,36 @@ watch(() => props.editId, id => {
           <div class="form-section-heading">
             <div><strong>记录信息</strong><span>该记录当前保存的完整业务字段</span></div>
           </div>
+          <section v-if="isConnectedModule" class="relation-summary">
+            <div class="form-section-heading">
+              <div><strong>关联关系</strong><span>把当前记录放回系统主线中查看</span></div>
+            </div>
+            <div class="relation-card-grid">
+              <article v-if="form.courseId || form.courseTitle">
+                <span>关联课程</span>
+                <strong>{{ relationDisplay(form, "courseId") || display(form.courseTitle) }}</strong>
+                <button v-if="form.courseId" class="button-secondary" type="button" @click="router.push(`/module/courses?editId=${form.courseId}`)">查看课程</button>
+              </article>
+              <article v-if="form.batchId">
+                <span>关联药材批次</span>
+                <strong>{{ relationDisplay(form, "batchId") }}</strong>
+                <button class="button-secondary" type="button" @click="router.push(`/batches/${form.batchId}`)">打开批次档案</button>
+              </article>
+              <article v-if="form.projectTitle">
+                <span>关联课题/项目</span>
+                <strong>{{ display(form.projectTitle) }}</strong>
+              </article>
+              <article v-if="form.sourceIssue">
+                <span>来源问题</span>
+                <strong>{{ display(form.sourceIssue) }}</strong>
+              </article>
+              <article v-if="form.evidence">
+                <span>佐证材料</span>
+                <strong>{{ display(form.evidence) }}</strong>
+              </article>
+            </div>
+          </section>
+
           <dl class="detail-grid">
             <div v-for="[name, label] in config.fields" :key="name">
               <dt>{{ label }}</dt>
@@ -1620,6 +1699,7 @@ watch(() => props.editId, id => {
               <AppSelect v-else-if="name === 'collectSource'" v-model="form[name]" :options="collectionSourceOptions" aria-label="选择采集来源" />
               <AppSelect v-else-if="name === 'courseId' && moduleKey === 'teaching-resources'" v-model="form[name]" :options="courseSelectOptions" aria-label="选择试验课程" @change="onCourseSelect(form[name])" />
               <AppSelect v-else-if="name === 'fileId'" v-model="form[name]" :options="fileSelectOptions" aria-label="选择资料文件" @change="applySelectedFile(form[name])" />
+              <AppSelect v-else-if="name === 'courseId' && moduleKey === 'trainings'" v-model="form[name]" :options="courseSelectOptions" aria-label="选择关联课程" @change="onCourseSelect(form[name])" />
               <input v-else v-model="form[name]" :readonly="isLinkedReadonly(name)" :class="{ 'linked-readonly': isLinkedReadonly(name) }">
             </label>
             <MapPicker

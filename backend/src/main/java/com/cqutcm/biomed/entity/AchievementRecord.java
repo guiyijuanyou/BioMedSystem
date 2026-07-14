@@ -17,10 +17,24 @@ public class AchievementRecord {
     private String title;
     @TableField("owner_name")
     private String ownerName;
+    @TableField("source_module")
+    private String sourceModule;
+    @TableField("batch_id")
+    private String batchId;
+    @TableField("herb_name")
+    private String herbName;
+    @TableField("project_title")
+    private String projectTitle;
+    @TableField("standard_id")
+    private String standardId;
     @TableField("category")
     private String category;
     @TableField("level_name")
     private String levelName;
+    @TableField("score")
+    private String score;
+    @TableField("evidence")
+    private String evidence;
     @TableField("status")
     private String status;
     @TableField("reviewer_name")
@@ -43,10 +57,24 @@ public class AchievementRecord {
     public void setTitle(String title) { this.title = title; }
     public String getOwnerName() { return ownerName; }
     public void setOwnerName(String ownerName) { this.ownerName = ownerName; }
+    public String getSourceModule() { return sourceModule; }
+    public void setSourceModule(String sourceModule) { this.sourceModule = sourceModule; }
+    public String getBatchId() { return batchId; }
+    public void setBatchId(String batchId) { this.batchId = batchId; }
+    public String getHerbName() { return herbName; }
+    public void setHerbName(String herbName) { this.herbName = herbName; }
+    public String getProjectTitle() { return projectTitle; }
+    public void setProjectTitle(String projectTitle) { this.projectTitle = projectTitle; }
+    public String getStandardId() { return standardId; }
+    public void setStandardId(String standardId) { this.standardId = standardId; }
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
     public String getLevelName() { return levelName; }
     public void setLevelName(String levelName) { this.levelName = levelName; }
+    public String getScore() { return score; }
+    public void setScore(String score) { this.score = score; }
+    public String getEvidence() { return evidence; }
+    public void setEvidence(String evidence) { this.evidence = evidence; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
     public String getReviewerName() { return reviewerName; }

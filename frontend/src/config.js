@@ -225,6 +225,42 @@ export const modules = {
   }
 };
 
+Object.assign(modules.trainings, {
+  title: "培训素材与跟踪",
+  hint: "关联课程、药材批次、评价问题和培训完成情况，形成教学改进闭环",
+  fields: [
+    ["title", "培训主题"],
+    ["courseId", "关联课程"],
+    ["batchId", "关联药材批次"],
+    ["herbName", "药材名称"],
+    ["trainingType", "培训类型"],
+    ["trainer", "培训人"],
+    ["audience", "培训对象"],
+    ["completionRate", "完成率"],
+    ["sourceIssue", "来源问题"],
+    ["tracking", "过程记录"],
+    ["status", "审核状态"]
+  ]
+});
+
+Object.assign(modules.achievements, {
+  title: "工作业绩管理",
+  hint: "关联药材批次、课题成果、评价依据和佐证材料，沉淀可审核的成果档案",
+  fields: [
+    ["title", "业绩名称"],
+    ["sourceModule", "来源模块"],
+    ["batchId", "关联药材批次"],
+    ["herbName", "药材名称"],
+    ["projectTitle", "关联课题/项目"],
+    ["owner", "所属单位"],
+    ["category", "分类"],
+    ["level", "级别"],
+    ["score", "认定分值"],
+    ["evidence", "佐证材料"],
+    ["status", "审核状态"]
+  ]
+});
+
 export const navItems = [
   ["dashboard", "总览"],
   ["herb-batches", "药材批次"],

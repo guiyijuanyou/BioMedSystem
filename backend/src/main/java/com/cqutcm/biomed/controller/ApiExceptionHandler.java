@@ -1,6 +1,7 @@
 package com.cqutcm.biomed.controller;
 
 import com.cqutcm.biomed.service.AuthenticationRequiredException;
+import com.cqutcm.biomed.service.AiServiceUnavailableException;
 import com.cqutcm.biomed.service.AuthorizationDeniedException;
 import com.cqutcm.biomed.service.StateConflictException;
 import org.slf4j.Logger;
@@ -124,6 +125,13 @@ public class ApiExceptionHandler {
         Map<String, Object> body = errorBody(HttpStatus.INTERNAL_SERVER_ERROR,
                 "服务器内部错误", "INTERNAL_ERROR");
         return body;
+    }
+
+    @ExceptionHandler(AiServiceUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public Map<String, Object> handleAiServiceUnavailable(AiServiceUnavailableException ex) {
+        log.warn("AI service unavailable: {}", ex.getMessage());
+        return errorBody(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), "AI_SERVICE_UNAVAILABLE");
     }
 
     private Map<String, Object> errorBody(HttpStatus status, String message, String code) {

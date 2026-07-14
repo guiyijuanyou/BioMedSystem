@@ -3982,6 +3982,41 @@ thead .sticky-action {
   border-radius: 7px;
 }
 
+.relation-summary {
+  margin-bottom: 18px;
+}
+
+.relation-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.relation-card-grid article {
+  min-height: 96px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f8fbfa 0%, #ffffff 100%);
+  border: 1px solid #dfeae4;
+  border-radius: 7px;
+}
+
+.relation-card-grid span {
+  color: #68786f;
+  font-size: 11px;
+}
+
+.relation-card-grid strong {
+  color: #163526;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .record-detail-body dt {
   margin-bottom: 7px;
   color: #75827b;
