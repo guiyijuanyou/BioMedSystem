@@ -85,7 +85,7 @@ function logout() {
       <view v-else>
         <view class="field">
           <text class="label">账号</text>
-          <input v-model="account.username" class="input" placeholder="admin / teacher / student" />
+          <input v-model="account.username" class="input" placeholder="admin@cqutcm / teacher@cqutcm" />
         </view>
         <view class="field">
           <text class="label">密码</text>

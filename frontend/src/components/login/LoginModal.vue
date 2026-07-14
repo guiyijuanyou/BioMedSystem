@@ -1,5 +1,5 @@
 <script setup>
-import { ChevronDown, Eye, EyeOff, X } from "lucide-vue-next";
+import { Eye, EyeOff, X } from "lucide-vue-next";
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 
 const props = defineProps({
@@ -12,7 +12,6 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "submit", "closed"]);
 const usernameInput = ref(null);
 const showPassword = ref(false);
-const showDemo = ref(false);
 const localCredentials = ref({ ...props.credentials });
 
 watch(() => props.credentials, value => {
@@ -61,12 +60,12 @@ onBeforeUnmount(() => document.body.classList.remove("login-modal-open"));
           <form @submit.prevent="submit">
             <label class="login-field">
               <span>账号</span>
-              <input ref="usernameInput" v-model="localCredentials.username" autocomplete="username" placeholder="请输入系统账号">
+              <input ref="usernameInput" v-model="localCredentials.username" placeholder="请输入系统账号">
             </label>
             <label class="login-field">
               <span>密码</span>
               <span class="login-field__password">
-                <input v-model="localCredentials.password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" placeholder="请输入登录密码">
+                <input v-model="localCredentials.password" :type="showPassword ? 'text' : 'password'" placeholder="请输入登录密码">
                 <button type="button" :aria-label="showPassword ? '隐藏密码' : '显示密码'" @click="showPassword = !showPassword">
                   <EyeOff v-if="showPassword" :size="18" /><Eye v-else :size="18" />
                 </button>
@@ -79,13 +78,6 @@ onBeforeUnmount(() => document.body.classList.remove("login-modal-open"));
               <span>{{ loading ? "正在验证数据权限..." : "登录系统" }}</span><i aria-hidden="true"></i>
             </button>
 
-            <button data-test="demo-toggle" class="login-dialog__demo-toggle" type="button" :aria-expanded="showDemo" @click="showDemo = !showDemo">
-              查看演示账号 <ChevronDown :size="16" :class="{ 'is-open': showDemo }" />
-            </button>
-            <div v-if="showDemo" class="login-dialog__demo">
-              <code>admin</code><code>teacher</code><code>researcher</code><code>student</code>
-              <span>统一密码：123456</span>
-            </div>
           </form>
         </section>
       </div>

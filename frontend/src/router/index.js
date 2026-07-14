@@ -96,7 +96,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  const session = JSON.parse(sessionStorage.getItem("biomed-session") || "null");
+  const session = JSON.parse(localStorage.getItem("biomed-session") || "null");
   const isAuth = !!(session && session.token);
 
   if (to.meta.requiresAuth !== false && !isAuth) {

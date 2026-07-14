@@ -14,7 +14,7 @@ const AuthenticatedLeafBackground = defineAsyncComponent(
 const router = useRouter();
 const route = useRoute();
 
-const sessionUser = ref(JSON.parse(sessionStorage.getItem("biomed-session") || "null"));
+const sessionUser = ref(JSON.parse(localStorage.getItem("biomed-session") || "null"));
 const currentRole = computed(() => sessionUser.value?.role || "admin");
 const currentRoleLabel = computed(() => sessionUser.value?.roleLabel || roles[currentRole.value]?.label || "管理员");
 const currentUser = computed(() => ({
@@ -76,14 +76,14 @@ function notify(message) {
 }
 
 function appLogin(user) {
-  sessionStorage.setItem("biomed-session", JSON.stringify(user));
+  localStorage.setItem("biomed-session", JSON.stringify(user));
   sessionUser.value = user;
   loadDashboard();
 }
 
 function appLogout() {
   sessionUser.value = null;
-  sessionStorage.removeItem("biomed-session");
+  localStorage.removeItem("biomed-session");
   drawerOpen.value = false;
   userMenuOpen.value = false;
   router.push("/login");
@@ -169,7 +169,7 @@ async function submitGrowth(payload) {
 
 function handleLoginRequired() {
   sessionUser.value = null;
-  sessionStorage.removeItem("biomed-session");
+  localStorage.removeItem("biomed-session");
   router.push("/login");
 }
 

@@ -3,11 +3,11 @@ INSERT INTO sys_role (id, code, name, description, created_at) SELECT 'role-teac
 INSERT INTO sys_role (id, code, name, description, created_at) SELECT 'role-researcher', 'researcher', '科研人员', '科研数据与课题研究', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_role WHERE id = 'role-researcher');
 INSERT INTO sys_role (id, code, name, description, created_at) SELECT 'role-student', 'student', '学生', '课程学习与课题申请', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_role WHERE id = 'role-student');
 
--- BCrypt hash of "123456"
-INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-admin', 'admin', '系统管理员', NULL, '系统管理部', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-admin');
-INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-teacher', 'teacher', '李老师', NULL, '教学科研部', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-teacher');
-INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-researcher', 'researcher', '王老师', NULL, '中药材科研中心', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-researcher');
-INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-student', 'student', '当前学生', NULL, '生物医药学院', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-student');
+-- Passwords are initialized by DataInitializer (set to NULL here)
+INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-admin', 'admin@cqutcm', '系统管理员', NULL, '系统管理部', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-admin');
+INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-teacher', 'teacher@cqutcm', '李老师', NULL, '教学科研部', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-teacher');
+INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-researcher', 'researcher@cqutcm', '王老师', NULL, '中药材科研中心', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-researcher');
+INSERT INTO sys_user (id, username, display_name, password_hash, department, status, created_at) SELECT 'user-student', 'student@cqutcm', '当前学生', NULL, '生物医药学院', 'enabled', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user WHERE id = 'user-student');
 
 INSERT INTO sys_user_role (user_id, role_id, created_at) SELECT 'user-admin', 'role-admin', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user_role WHERE user_id = 'user-admin' AND role_id = 'role-admin');
 INSERT INTO sys_user_role (user_id, role_id, created_at) SELECT 'user-teacher', 'role-teacher', CURRENT_TIMESTAMP WHERE NOT EXISTS (SELECT 1 FROM sys_user_role WHERE user_id = 'user-teacher' AND role_id = 'role-teacher');
