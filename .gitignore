@@ -4,6 +4,7 @@ frontend/node_modules/
 frontend/dist/
 .idea/
 .claude/
+CLAUDE.md
 .playwright-mcp/
 .playwright-cli/
 .superpowers/
