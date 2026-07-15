@@ -16,7 +16,7 @@ const icon = computed(() => {
 });
 
 function accept() {
-  if (state.type === "prompt" && state.required && !state.value.trim()) {
+  if (state.type === "prompt" && state.required && !String(state.value ?? "").trim()) {
     validationError.value = "请填写此项后再继续";
     input.value?.focus();
     return;
