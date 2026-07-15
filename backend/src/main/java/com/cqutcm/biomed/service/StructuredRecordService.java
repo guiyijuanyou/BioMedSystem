@@ -65,7 +65,7 @@ public class StructuredRecordService {
             case "herbs" -> herbMapper.findAll().stream().map(this::herbToMap).toList();
             case "trainings" -> trainingMapper.findAll().stream().map(this::trainingToMap).toList();
             case "evaluations" -> evaluationMapper.findAll().stream().map(this::evaluationToMap).toList();
-            case "achievements" -> achievementMapper.findAll().stream().map(this::achievementToMap).toList();
+            case "achievements" -> achievementMapper.findAllAsMap();
             case "standards" -> standardMapper.findAll().stream().map(this::standardToMap).toList();
             case "users" -> userMapper.findAllAsMap().stream().map(this::sanitizeUserMap).toList();
             case "herb-encyclopedia" -> herbEncyclopediaMapper.findAllAsMap();

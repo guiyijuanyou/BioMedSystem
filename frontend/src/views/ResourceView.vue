@@ -187,7 +187,7 @@ const achievementStats = computed(() => {
     count: rows.length,
     linkedBatches: rows.filter(item => item.batchId).length,
     linkedProjects: rows.filter(item => item.projectTitle).length,
-    evidenceCount: rows.filter(item => item.evidence || parseEvidenceFileIds(item.evidenceFileIds).length).length,
+    evidenceCount: rows.filter(item => item.evidence || Number(item.linkedEvidenceCount) > 0 || parseEvidenceFileIds(item.evidenceFileIds).length).length,
     pending: rows.filter(item => isPendingReview(item)).length
   };
 });
@@ -1695,11 +1695,15 @@ watch(() => props.editId, id => {
             <td v-for="[name] in config.fields" :key="name">
               <span v-if="name === 'evidence' && isAchievementModule" class="evidence-table-value">
                 <span v-if="item.evidence" class="evidence-text">{{ item.evidence }}</span>
+                <span v-if="item.linkedEvidenceTitles" class="evidence-text">闭环证据：{{ item.linkedEvidenceTitles }}</span>
+                <span v-if="item.suggestedPoints != null" class="evidence-attachment-count">
+                  建议分值 {{ item.suggestedPoints }}<small v-if="item.confirmedPoints != null">已确认 {{ item.confirmedPoints }}</small>
+                </span>
                 <span v-if="evidenceFilesFor(item).length" class="evidence-attachment-count">
                   <FileText :size="14" />{{ evidenceFilesFor(item).length }} 个附件
                   <small>{{ evidenceFilesFor(item).map(file => file.fileName).join('、') }}</small>
                 </span>
-                <span v-if="!item.evidence && !evidenceFilesFor(item).length">-</span>
+                <span v-if="!item.evidence && !item.linkedEvidenceTitles && !evidenceFilesFor(item).length">-</span>
               </span>
               <span v-else-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(item, name) }}</span>
               <a v-else-if="isLinkField(name) && fieldLink(item, name)" :href="fieldLink(item, name)" class="field-link" :title="fieldLinkTitle(item, name)" @click.prevent="router.push(fieldLink(item, name))">{{ relationDisplay(item, name) }}</a>
@@ -1830,9 +1834,11 @@ watch(() => props.editId, id => {
                 <span>来源问题</span>
                 <strong>{{ display(form.sourceIssue) }}</strong>
               </article>
-              <article v-if="form.evidence">
+              <article v-if="form.evidence || form.linkedEvidenceTitles">
                 <span>佐证材料</span>
-                <strong>{{ display(form.evidence) }}</strong>
+                <strong v-if="form.evidence">{{ display(form.evidence) }}</strong>
+                <strong v-if="form.linkedEvidenceTitles">闭环证据：{{ form.linkedEvidenceTitles }}</strong>
+                <small v-if="form.suggestedPoints != null">建议分值 {{ form.suggestedPoints }}<template v-if="form.confirmedPoints != null"> · 已确认 {{ form.confirmedPoints }}</template></small>
               </article>
               <article v-if="achievementEvidenceFiles.length" class="evidence-detail-card">
                 <span>佐证附件</span>

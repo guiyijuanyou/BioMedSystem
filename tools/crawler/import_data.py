@@ -40,15 +40,13 @@ def ensure_tables(conn):
         cur.execute("""
             CREATE TABLE IF NOT EXISTS file_asset (
                 id VARCHAR(64) NOT NULL PRIMARY KEY,
-                file_name VARCHAR(255) DEFAULT NULL,
-                storage_path VARCHAR(500) DEFAULT NULL,
-                file_type VARCHAR(50) DEFAULT NULL,
-                file_size BIGINT DEFAULT NULL,
-                category VARCHAR(50) DEFAULT NULL,
-                uploaded_by VARCHAR(64) DEFAULT NULL,
-                version INT NOT NULL DEFAULT 0,
-                created_at DATETIME DEFAULT NULL,
-                updated_at DATETIME DEFAULT NULL
+                file_name VARCHAR(255) NOT NULL,
+                category VARCHAR(100) DEFAULT NULL,
+                size_bytes BIGINT NOT NULL DEFAULT 0,
+                storage_path VARCHAR(500) NOT NULL,
+                sha256 CHAR(64) DEFAULT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_file_category (category)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         """)
         cur.execute("""
@@ -93,7 +91,6 @@ def resolve_upload_dir():
 def copy_images(images_dir, upload_dir, data):
     """Copy image files to data/uploads/ and return mapping {filename: fileId}."""
     image_map = {}
-    now = datetime.now().isoformat()
 
     if not os.path.isdir(images_dir):
         print(f"图片目录不存在: {images_dir}")
@@ -116,26 +113,12 @@ def copy_images(images_dir, upload_dir, data):
         import shutil
         shutil.copy2(src, dest)
 
-        # Determine file type
-        file_type = ext.lstrip(".").lower()
-        if file_type in ("jpg", "jpeg"):
-            file_type = "image/jpeg"
-        elif file_type == "png":
-            file_type = "image/png"
-        elif file_type == "gif":
-            file_type = "image/gif"
-        else:
-            file_type = "image/jpeg"
-
         image_map[image_file] = {
             "id": file_id,
             "file_name": dest_name,
             "storage_path": dest,
-            "file_type": file_type,
-            "file_size": os.path.getsize(src),
             "category": "图片资料",
-            "version": 0,
-            "created_at": now,
+            "file_size": os.path.getsize(src),
         }
         print(f"  复制图片: {image_file} -> {dest_name}")
     return image_map
@@ -168,11 +151,11 @@ def import_data(conn, data, image_map):
                 img = image_map[image_file]
                 cur.execute(
                     """INSERT INTO file_asset
-                       (id, file_name, storage_path, file_type, file_size, category, version, created_at)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (img["id"], img["file_name"], img["storage_path"],
-                     img["file_type"], img["file_size"], img["category"],
-                     img["version"], img["created_at"]),
+                       (id, file_name, category, size_bytes, storage_path, created_at)
+                       VALUES (%s, %s, %s, %s, %s, NOW())""",
+                    (img["id"], img["file_name"],
+                     img["category"], img["file_size"],
+                     img["storage_path"]),
                 )
                 image_file_id = img["id"]
 

@@ -111,7 +111,11 @@ async function closeIssue(issue) {
 function evidenceDraft(id) { return evidenceDrafts[id] ||= { achievementId: "", evidenceTitle: "", evidenceSnapshot: "" }; }
 async function addEvidence(issue) {
   const draft = evidenceDraft(issue.id);
-  try { await api(`/api/improvement/achievements/${draft.achievementId}/evidence`, { method: "POST", body: JSON.stringify({ ...draft, issueId: issue.id }) }); notify("已挂接为业绩证据"); await load(); }
+  try {
+    const result = await api(`/api/improvement/achievements/${draft.achievementId}/evidence`, { method: "POST", body: JSON.stringify({ ...draft, issueId: issue.id }) });
+    notify(result.alreadyLinked ? "该闭环已挂接到这条工作业绩，无需重复添加" : "已挂接为业绩证据，可在工作业绩的佐证材料中查看");
+    await load();
+  }
   catch (error) { notify(error.message); }
 }
 async function confirmPoints(evidence){const points=await appDialog.prompt({title:"确认业绩分值",label:"认定分值",message:"请核对系统建议分值，确认后将计入关联业绩。",value:String(evidence.suggestedPoints??""),inputType:"number",required:true,confirmText:"确认分值"});if(points===null)return;try{await api(`/api/improvement/evidence/${evidence.id}/confirm-points`,{method:"PUT",body:JSON.stringify({points})});notify("业绩分值已确认");await load()}catch(error){notify(error.message)}}

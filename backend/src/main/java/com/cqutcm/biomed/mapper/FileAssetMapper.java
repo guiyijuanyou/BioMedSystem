@@ -9,6 +9,9 @@ import java.util.List;
 
 @Mapper
 public interface FileAssetMapper extends BiomedBaseMapper<FileAsset> {
+    @Select("SELECT f.* FROM file_asset f LEFT JOIN herb_encyclopedia h ON h.image_file_id = f.id WHERE h.id IS NULL ORDER BY f.created_at DESC")
+    List<FileAsset> findAllExcludingHerbImages();
+
     @Select("SELECT * FROM file_asset WHERE category = #{category} ORDER BY created_at DESC")
     List<FileAsset> findByCategory(String category);
 
