@@ -29,4 +29,9 @@ describe("authenticated Stripe-inspired theme", () => {
   it("defines the owner-field helper used by resource table rendering", () => {
     expect(resourceView).toMatch(/function\s+isOwnerField\s*\(name\)/);
   });
+
+  it("centers the resource search icon against its input", () => {
+    expect(styles).toMatch(/\.table-tools \.table-search input\s*\{[^}]*min-height:\s*52px/);
+    expect(styles).not.toMatch(/\.table-tools \.table-search,\s*\.table-tools \.record-count/);
+  });
 });
