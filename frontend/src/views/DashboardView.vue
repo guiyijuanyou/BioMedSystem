@@ -345,7 +345,10 @@ onBeforeUnmount(() => map?.remove());
           <aside class="map-detail">
             <div v-if="!selected" class="map-detail-empty"><strong>{{ mapDataSource === 'batches' ? '批次详情' : '资源点详情' }}</strong><p>点击地图标记查看{{ mapDataSource === 'batches' ? '药材批次' : '种植基地' }}信息</p></div>
             <template v-else>
-              <div class="map-detail-head"><strong>{{ selected.herbName || selected.name || "未命名药材" }}</strong><span>{{ selected.district || "未知地区" }}</span></div>
+              <div class="map-detail-head">
+                <strong>{{ selected.herbName || selected.name || "未命名药材" }}</strong>
+                <span>{{ selected.district || "未知地区" }}</span>
+              </div>
               <dl class="map-detail-list">
                 <template v-if="mapDataSource === 'batches'">
                   <div><dt>批次名称</dt><dd>{{ selected.batchName || "-" }}</dd></div>
@@ -364,6 +367,7 @@ onBeforeUnmount(() => map?.remove());
               </dl>
               <button v-if="canEditMap && mapDataSource === 'herbs'" type="button" @click="router.push({ path: '/module/herbs', query: { editId: selected.id } })">查看并编辑资源点</button>
               <button v-if="mapDataSource === 'batches'" type="button" @click="router.push(`/batches/${selected.id}`)">打开批次档案</button>
+              <button type="button" class="button-secondary" @click="router.push('/herb-encyclopedia/by-name/' + encodeURIComponent(selected.herbName || selected.name))">查看百科</button>
             </template>
           </aside>
         </div>

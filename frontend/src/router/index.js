@@ -97,6 +97,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: "/herb-encyclopedia",
+    name: "herb-encyclopedia",
+    component: () => import("@/views/HerbEncyclopediaView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: "/herb-encyclopedia/by-name/:name",
+    name: "herb-encyclopedia-detail",
+    component: () => import("@/views/HerbEncyclopediaDetailView.vue"),
+    meta: { requiresAuth: true }
+  },
+  {
     path: "/:pathMatch(.*)*",
     redirect: "/dashboard"
   }

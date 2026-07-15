@@ -26,11 +26,12 @@ const icons = {
   "teaching-resources": ShieldCheck, "spectrum-comparisons": FlaskConical,
   "growth-analysis": BarChart3, courses: BookOpen, projects: FolderKanban,
   trainings: GraduationCap, evaluations: ClipboardCheck, achievements: Award,
-  improvement: RefreshCcw, "quality-metrics": Target, "multi-evaluations": ClipboardCheck, "mobile-devices": Activity, standards: Target, users: UsersRound, files: FileArchive
+  improvement: RefreshCcw, "quality-metrics": Target, "multi-evaluations": ClipboardCheck, "mobile-devices": Activity, standards: Target, users: UsersRound, files: FileArchive,
+  "herb-encyclopedia": BookOpen
 };
 
 const groupDefinitions = [
-  { key: "resources", label: "药材资源", icon: Sprout, members: ["herbs", "herb-batches", "lab-samples", "trace-events"] },
+  { key: "resources", label: "药材资源", icon: Sprout, members: ["herbs", "herb-batches", "lab-samples", "trace-events", "herb-encyclopedia"] },
   { key: "research", label: "质量科研", icon: FlaskConical, members: ["growth-records", "spectrum-comparisons", "growth-analysis", "quality-metrics", "projects"] },
   { key: "teaching", label: "教学培训", icon: GraduationCap, members: ["courses", "teaching-resources", "trainings"] },
   { key: "evaluation", label: "评价改进", icon: ClipboardCheck, members: ["evaluations", "multi-evaluations", "improvement", "standards"] },
@@ -119,6 +120,7 @@ function navigate(key) {
   else if (key === "quality-metrics") router.push("/quality-metrics");
   else if (key === "multi-evaluations") router.push("/multi-evaluations");
   else if (key === "mobile-devices") router.push("/mobile-devices");
+  else if (key === "herb-encyclopedia") router.push("/herb-encyclopedia");
   else router.push(`/module/${key}`);
   closeDesktopGroup();
   emit("close");

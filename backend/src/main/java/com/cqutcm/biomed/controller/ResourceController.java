@@ -80,6 +80,7 @@ public class ResourceController {
             s.put("labSampleCount", batchCatalogService.listSamples().size());
             s.put("evaluationCount", structuredService.count("evaluations"));
             s.put("achievementCount", structuredService.count("achievements"));
+            s.put("encyclopediaCount", structuredService.count("herb-encyclopedia"));
             s.put("latestBackup", LocalDateTime.now().toString());
             return s;
         }, new TypeReference<Map<String, Object>>() {});
@@ -616,7 +617,7 @@ public class ResourceController {
     }
 
     private boolean isSlowChange(String resourceType) {
-        return "herbs".equals(resourceType) || "standards".equals(resourceType);
+        return "herbs".equals(resourceType) || "standards".equals(resourceType) || "herb-encyclopedia".equals(resourceType);
     }
 
     // ==================== UTILS ====================

@@ -15,7 +15,8 @@ import java.util.*;
 public class StructuredRecordService {
 
     private static final Set<String> SUPPORTED = Set.of(
-            "herbs", "trainings", "evaluations", "achievements", "standards", "users"
+            "herbs", "trainings", "evaluations", "achievements", "standards", "users",
+            "herb-encyclopedia"
     );
 
     private final HerbMapper herbMapper;
@@ -26,6 +27,7 @@ public class StructuredRecordService {
     private final SysUserMapper userMapper;
     private final SysRoleMapper roleMapper;
     private final SysUserRoleMapper userRoleMapper;
+    private final HerbEncyclopediaMapper herbEncyclopediaMapper;
     private final PasswordEncoder passwordEncoder;
     private final PermissionService permissionService;
     private final BatchCatalogService batchCatalogService;
@@ -36,6 +38,7 @@ public class StructuredRecordService {
                                    AchievementStandardMapper standardMapper,
                                    SysUserMapper userMapper, SysRoleMapper roleMapper,
                                    SysUserRoleMapper userRoleMapper,
+                                   HerbEncyclopediaMapper herbEncyclopediaMapper,
                                    PasswordEncoder passwordEncoder,
                                    PermissionService permissionService,
                                    BatchCatalogService batchCatalogService) {
@@ -47,6 +50,7 @@ public class StructuredRecordService {
         this.userMapper = userMapper;
         this.roleMapper = roleMapper;
         this.userRoleMapper = userRoleMapper;
+        this.herbEncyclopediaMapper = herbEncyclopediaMapper;
         this.passwordEncoder = passwordEncoder;
         this.permissionService = permissionService;
         this.batchCatalogService = batchCatalogService;
@@ -64,6 +68,7 @@ public class StructuredRecordService {
             case "achievements" -> achievementMapper.findAll().stream().map(this::achievementToMap).toList();
             case "standards" -> standardMapper.findAll().stream().map(this::standardToMap).toList();
             case "users" -> userMapper.findAllAsMap().stream().map(this::sanitizeUserMap).toList();
+            case "herb-encyclopedia" -> herbEncyclopediaMapper.findAllAsMap();
             default -> List.of();
         };
     }
@@ -121,6 +126,10 @@ public class StructuredRecordService {
                 userMapper.insert(u);
                 handleUserRoles(payload, id);
                 return userToMap(u);
+            }
+            case "herb-encyclopedia": {
+                HerbEncyclopedia h = mapToHerbEncyclopedia(payload); h.setId(id); h.setCreatedAt(now);
+                herbEncyclopediaMapper.insert(h); return herbEncyclopediaToMap(h);
             }
             default: throw new IllegalArgumentException("unsupported resource type: " + resourceType);
         }
@@ -197,6 +206,10 @@ public class StructuredRecordService {
                 handleUserRoles(payload, id);
                 return userToMap(u);
             }
+            case "herb-encyclopedia": {
+                HerbEncyclopedia h = mapToHerbEncyclopedia(payload); h.setId(id);
+                herbEncyclopediaMapper.update(h); return herbEncyclopediaToMap(h);
+            }
             default: throw new IllegalArgumentException("unsupported resource type: " + resourceType);
         }
     }
@@ -229,6 +242,7 @@ public class StructuredRecordService {
             }
             case "standards" -> standardMapper.deleteById(id);
             case "users" -> { userRoleMapper.deleteByUserId(id); userMapper.deleteById(id); }
+            case "herb-encyclopedia" -> herbEncyclopediaMapper.deleteById(id);
         }
     }
 
@@ -309,6 +323,7 @@ public class StructuredRecordService {
             case "evaluations" -> evaluationMapper.count();
             case "achievements" -> achievementMapper.count();
             case "standards" -> standardMapper.count();
+            case "herb-encyclopedia" -> herbEncyclopediaMapper.count();
             default -> 0;
         };
     }
@@ -569,6 +584,32 @@ public class StructuredRecordService {
         m.put("bio", u.getBio());
         if (u.getCreatedAt() != null) m.put("createdAt", u.getCreatedAt().toString());
         if (u.getUpdatedAt() != null) m.put("updatedAt", u.getUpdatedAt().toString());
+        return m;
+    }
+
+    private HerbEncyclopedia mapToHerbEncyclopedia(Map<String, Object> m) {
+        HerbEncyclopedia h = new HerbEncyclopedia();
+        h.setName(str(m, "name")); h.setPinyin(str(m, "pinyin"));
+        h.setEnglishName(str(m, "englishName")); h.setLatinName(str(m, "latinName"));
+        h.setCategory(str(m, "category")); h.setSourceDesc(str(m, "sourceDesc"));
+        h.setOriginDesc(str(m, "originDesc")); h.setMacroscopic(str(m, "macroscopic"));
+        h.setQualityDesc(str(m, "qualityDesc")); h.setNatureFlavor(str(m, "natureFlavor"));
+        h.setEfficacy(str(m, "efficacy"));
+        h.setImageFileId(str(m, "imageFileId")); h.setSourceUrl(str(m, "sourceUrl"));
+        return h;
+    }
+
+    private Map<String, Object> herbEncyclopediaToMap(HerbEncyclopedia h) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", h.getId()); m.put("name", h.getName()); m.put("pinyin", h.getPinyin());
+        m.put("englishName", h.getEnglishName()); m.put("latinName", h.getLatinName());
+        m.put("category", h.getCategory()); m.put("sourceDesc", h.getSourceDesc());
+        m.put("originDesc", h.getOriginDesc()); m.put("macroscopic", h.getMacroscopic());
+        m.put("qualityDesc", h.getQualityDesc()); m.put("natureFlavor", h.getNatureFlavor());
+        m.put("efficacy", h.getEfficacy());
+        m.put("imageFileId", h.getImageFileId()); m.put("sourceUrl", h.getSourceUrl());
+        if (h.getCreatedAt() != null) m.put("createdAt", h.getCreatedAt().toString());
+        if (h.getUpdatedAt() != null) m.put("updatedAt", h.getUpdatedAt().toString());
         return m;
     }
 
