@@ -180,6 +180,12 @@ public class ImprovementWorkflowService {
         String issueId = text(body, "issueId", true);
         Map<String, Object> issue = requiredRow("SELECT * FROM evaluation_issue WHERE id = ?", issueId);
         if (!"closed".equals(issue.get("status"))) throw new IllegalArgumentException("only closed improvements can become achievement evidence");
+        List<Map<String, Object>> existing = jdbc.queryForList(
+                "SELECT id FROM achievement_evidence WHERE achievement_id=? AND source_type='improvement_issue' AND source_id=?",
+                achievementId, issueId);
+        if (!existing.isEmpty()) {
+            return evidenceResult(String.valueOf(existing.get(0).get("id")), true);
+        }
         String id = UUID.randomUUID().toString();
         jdbc.update("INSERT INTO achievement_evidence (id,achievement_id,issue_id,source_type,source_id,evidence_title,evidence_snapshot,creator_name) VALUES (?,?,?,?,?,?,?,?)",
                 id, achievementId, issueId, "improvement_issue", issueId, text(body, "evidenceTitle", true), text(body, "evidenceSnapshot", false), actor.name());
@@ -187,7 +193,20 @@ public class ImprovementWorkflowService {
         Map<String,Object> rule=requiredRow("SELECT * FROM achievement_scoring_rule WHERE rule_code='QUALITY_IMPROVEMENT' AND status='active' ORDER BY version_no DESC LIMIT 1");
         BigDecimal initialScore=decimal(scores.get("initial_score")),recheckScore=decimal(scores.get("recheck_score")),delta=recheckScore.subtract(initialScore).max(BigDecimal.ZERO),base=decimal(rule.get("base_points")),suggested=base.add(delta.multiply(decimal(rule.get("improvement_factor")))).min(decimal(rule.get("max_points")));
         jdbc.update("INSERT INTO achievement_quantification(id,achievement_evidence_id,issue_id,rule_id,rule_version,initial_score,recheck_score,improvement_value,base_points,suggested_points) VALUES(?,?,?,?,?,?,?,?,?,?)",UUID.randomUUID().toString(),id,issueId,rule.get("id"),rule.get("version_no"),initialScore,recheckScore,delta,base,suggested);
-        return requiredRow("SELECT * FROM achievement_evidence WHERE id = ?", id);
+        return evidenceResult(id, false);
+    }
+
+    private Map<String, Object> evidenceResult(String evidenceId, boolean alreadyLinked) {
+        Map<String, Object> result = new LinkedHashMap<>(requiredRow("""
+                SELECT e.id, e.achievement_id AS achievementId, e.issue_id AS issueId,
+                       e.evidence_title AS evidenceTitle, e.evidence_snapshot AS evidenceSnapshot,
+                       q.suggested_points AS suggestedPoints, q.confirmed_points AS confirmedPoints
+                FROM achievement_evidence e
+                LEFT JOIN achievement_quantification q ON q.achievement_evidence_id=e.id
+                WHERE e.id=?
+                """, evidenceId));
+        result.put("alreadyLinked", alreadyLinked);
+        return result;
     }
 
     @Transactional public void confirmPoints(String evidenceId,BigDecimal points,PermissionService.Actor actor){if(!permissions.isAdmin(actor))throw new AuthorizationDeniedException("only admin can confirm achievement points");jdbc.update("UPDATE achievement_quantification SET confirmed_points=?,status='confirmed',confirmed_by=?,confirmed_at=NOW() WHERE achievement_evidence_id=?",points,actor.name(),evidenceId);}

@@ -25,6 +25,7 @@ docs/*
 .env.*
 !.env.example
 *.log
+logs/
 backend/src/main/resources/application.yml
 data/*.jsonl
 data/*.mv.db
