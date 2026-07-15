@@ -219,6 +219,24 @@ export const modules = {
       ["researchArea", "研究方向"],
       ["bio", "个人简介"]
     ]
+  },
+  "herb-encyclopedia": {
+    title: "中药材百科",
+    hint: "查询中药材基本信息、性味、功效等（数据从 HKBU 中药材图像数据库导入）",
+    fields: [
+      ["name", "药材名称"],
+      ["pinyin", "拼音"],
+      ["englishName", "英文名"],
+      ["latinName", "拉丁学名"],
+      ["category", "类别"],
+      ["sourceDesc", "来源"],
+      ["originDesc", "产地"],
+      ["macroscopic", "性状"],
+      ["qualityDesc", "品质"],
+      ["natureFlavor", "性味"],
+      ["efficacy", "功效"],
+      ["imageFileId", "药材图片", "image"]
+    ]
   }
 };
 
@@ -262,6 +280,7 @@ Object.assign(modules.achievements, {
 export const navItems = [
   ["dashboard", "总览"],
   ["herb-batches", "药材批次"],
+  ["herb-encyclopedia", "药材百科"],
   ["lab-samples", "检测样本"],
   ["growth-records", "生长采集"],
   ["trace-events", "溯源管理"],
@@ -290,6 +309,7 @@ export const roleMenus = {
     ["dashboard", "工作台"],
     ["herbs", "种植资源点"],
     ["herb-batches", "药材批次"],
+    ["herb-encyclopedia", "药材百科"],
     ["lab-samples", "检测样本"],
     ["teaching-resources", "资源审核"],
     ["users", "用户管理"],
@@ -313,6 +333,7 @@ export const roleMenus = {
     ["dashboard", "教学工作台"],
     ["herbs", "种植资源点"],
     ["herb-batches", "药材批次"],
+    ["herb-encyclopedia", "药材百科"],
     ["lab-samples", "检测样本"],
     ["growth-records", "生长采集"],
     ["trace-events", "溯源管理"],
@@ -333,6 +354,7 @@ export const roleMenus = {
     ["dashboard", "科研工作台"],
     ["herbs", "种植资源点"],
     ["herb-batches", "药材批次"],
+    ["herb-encyclopedia", "药材百科"],
     ["lab-samples", "检测样本"],
     ["growth-records", "生长数据"],
     ["trace-events", "溯源管理"],
@@ -351,6 +373,7 @@ export const roleMenus = {
     ["dashboard", "学习首页"],
     ["herbs", "资源点查询"],
     ["herb-batches", "药材批次"],
+    ["herb-encyclopedia", "药材百科"],
     ["courses", "课程学习"],
     ["teaching-resources", "教学视频"],
     ["growth-records", "生长采集"],
@@ -364,19 +387,22 @@ export const roleMenus = {
 export const roleModulePermissions = {
   admin: {
     default: { create: true, edit: true, duplicate: true, delete: true, export: true, batchDelete: true },
-    "teaching-resources": { create: false, edit: true, duplicate: false, delete: true, export: true, batchDelete: true }
+    "teaching-resources": { create: false, edit: true, duplicate: false, delete: true, export: true, batchDelete: true },
+    "herb-encyclopedia": { create: false, edit: true, duplicate: false, delete: true, export: true, batchDelete: false }
   },
   teacher: {
     default: { create: true, edit: true, duplicate: true, delete: true, export: true, batchDelete: true },
     users: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
-    standards: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false }
+    standards: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false },
+    "herb-encyclopedia": { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false }
   },
   researcher: {
     default: { create: true, edit: true, duplicate: true, delete: true, export: true, batchDelete: true },
     courses: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false },
     trainings: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false },
     users: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
-    standards: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false }
+    standards: { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false },
+    "herb-encyclopedia": { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false }
   },
   student: {
     default: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
@@ -385,6 +411,7 @@ export const roleModulePermissions = {
     "teaching-resources": { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
     "trace-events": { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
     projects: { create: false, edit: true, duplicate: false, delete: false, export: false, batchDelete: false },
-    files: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false }
+    files: { create: false, edit: false, duplicate: false, delete: false, export: false, batchDelete: false },
+    "herb-encyclopedia": { create: false, edit: false, duplicate: false, delete: false, export: true, batchDelete: false }
   }
 };

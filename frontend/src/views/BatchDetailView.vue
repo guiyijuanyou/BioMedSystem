@@ -143,7 +143,7 @@ onMounted(load);
         <div class="batch-profile">
           <div class="section-title"><div><span>基础档案</span><h3>批次与基地信息</h3></div><MapPin :size="20" /></div>
           <dl>
-            <div><dt>来源资源点</dt><dd>{{ batch.herbName }} / {{ batch.district }}</dd></div>
+            <div><dt>来源资源点</dt><dd><a class="herb-encyclopedia-link" href="javascript:" @click="router.push('/herb-encyclopedia/by-name/' + encodeURIComponent(batch.herbName))">{{ batch.herbName }}</a> / {{ batch.district }}</dd></div>
             <div><dt>地块或基地</dt><dd>{{ display(batch.plotName) }}</dd></div>
             <div><dt>当前阶段</dt><dd>{{ display(batch.currentStage) }}</dd></div>
             <div><dt>种植日期</dt><dd>{{ display(batch.plantingDate) }}</dd></div>
@@ -202,3 +202,14 @@ onMounted(load);
     </template>
   </section>
 </template>
+
+<style scoped>
+.herb-encyclopedia-link {
+  color: var(--brand);
+  text-decoration: none;
+  cursor: pointer;
+}
+.herb-encyclopedia-link:hover {
+  text-decoration: underline;
+}
+</style>

@@ -65,6 +65,8 @@ const pageTitle = computed(() => {
   if (route.name === "spectrum-compare") return "图谱比对";
   if (route.name === "growth-analysis") return "数据对比分析";
   if (route.name === "growth-analysis-report") return "数据对比分析";
+  if (route.name === "herb-encyclopedia") return "中药材百科";
+  if (route.name === "herb-encyclopedia-detail") return "中药材百科 · 详情";
   if (route.name === "module") {
     const key = route.params.moduleKey;
     return modules[key]?.title || "业务模块";
