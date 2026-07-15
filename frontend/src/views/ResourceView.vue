@@ -67,7 +67,7 @@ const sampleStatusOptions = [
 ];
 const collectionSourceOptions = ["电脑终端录入", "手机APP采集", "传感器网关"].map(value => ({ value, label: value }));
 const editableFields = computed(() =>
-  props.config.fields.filter(([name]) => !isRestrictedAuditField(name))
+  props.config.fields.filter(([name]) => !isRestrictedAuditField(name) && fieldType(name) !== "image")
 );
 
 const filtered = computed(() => {
@@ -1264,11 +1264,17 @@ function isOwnerField(name) {
   return ownerNameFields.includes(name);
 }
 
+function fieldType(name) {
+  const field = props.config?.fields?.find(f => f[0] === name);
+  return field?.[2] || "text";
+}
+
 function isLinkField(name) {
   if (name === "batchId") return true;
   if (name === "courseId") return true;
   if (name === "herbId" && canEdit.value) return true;
   if (name === "sampleId" && canEdit.value) return true;
+  if (props.moduleKey === "herbs" && name === "name") return true;
   if (props.moduleKey === "users" && name === "name") return true;
   if (ownerNameFields.includes(name)) return true;
   return false;
@@ -1279,7 +1285,8 @@ function fieldLink(item, name) {
   if (name === "courseId" && item.courseId) return `/module/courses?editId=${item.courseId}`;
   if (name === "herbId" && item.herbId && canEdit.value) return `/module/herbs?editId=${item.herbId}`;
   if (name === "sampleId" && item.sampleId && canEdit.value) return `/module/lab-samples?editId=${item.sampleId}`;
-  if (name === "name" && props.moduleKey === "users" && item.id) return `/profile/${item.id}`;
+  if (props.moduleKey === "herbs" && name === "name" && item.name) return `/herb-encyclopedia/by-name/${encodeURIComponent(item.name)}`;
+  if (props.moduleKey === "users" && name === "name" && item.id) return `/profile/${item.id}`;
   if (ownerNameFields.includes(name) && item[name]) return `/profile/by-name/${encodeURIComponent(item[name])}`;
   return null;
 }
@@ -1288,6 +1295,7 @@ function fieldLinkTitle(name) {
   if (name === "batchId") return "查看批次档案";
   if (name === "herbId") return "查看资源点详情";
   if (name === "sampleId") return "查看检测样本";
+  if (props.moduleKey === "herbs" && name === "name") return "查看药材百科";
   if (ownerNameFields.includes(name) || (name === "name" && props.moduleKey === "users")) return "查看用户资料";
   return "";
 }
@@ -1696,6 +1704,9 @@ watch(() => props.editId, id => {
               <span v-else-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(item, name) }}</span>
               <a v-else-if="isLinkField(name) && fieldLink(item, name)" :href="fieldLink(item, name)" class="field-link" :title="fieldLinkTitle(item, name)" @click.prevent="router.push(fieldLink(item, name))">{{ relationDisplay(item, name) }}</a>
               <span v-else-if="isOwnerField(name)" class="field-link field-reference" title="该姓名尚未关联系统用户">{{ relationDisplay(item, name) }}</span>
+              <template v-else-if="fieldType(name) === 'image' && item[name]">
+                <img :src="`/api/files/${item[name]}/preview`" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:4px;" loading="lazy">
+              </template>
               <template v-else>{{ relationDisplay(item, name) }}</template>
             </td>
             <td v-if="hasRowActions" class="sticky-action">
@@ -1839,7 +1850,7 @@ watch(() => props.editId, id => {
           <dl class="detail-grid">
             <div v-for="[name, label] in config.fields" :key="name">
               <dt>{{ label }}</dt>
-              <dd><span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(form, name) }}</span><template v-else>{{ relationDisplay(form, name) }}</template></dd>
+              <dd><span v-if="['status', 'result', 'level'].includes(name)" class="status">{{ relationDisplay(form, name) }}</span><template v-else-if="fieldType(name) === 'image' && form[name]"><img :src="`/api/files/${form[name]}/preview`" alt="" style="max-width:300px;max-height:300px;border-radius:4px;" loading="lazy"></template><template v-else>{{ relationDisplay(form, name) }}</template></dd>
             </div>
           </dl>
         </div>

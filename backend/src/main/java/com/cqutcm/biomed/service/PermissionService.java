@@ -11,12 +11,12 @@ public class PermissionService {
 
     private static final Set<String> STUDENT_CREATABLE = Set.of("growth-records");
     private static final Set<String> STUDENT_EDITABLE = Set.of("growth-records");
-    private static final Set<String> TEACHER_BLOCKED = Set.of("users", "standards");
-    private static final Set<String> RESEARCHER_BLOCKED = Set.of("trainings", "users", "standards", "courses");
+    private static final Set<String> TEACHER_BLOCKED = Set.of("users", "standards", "herb-encyclopedia");
+    private static final Set<String> RESEARCHER_BLOCKED = Set.of("trainings", "users", "standards", "courses", "herb-encyclopedia");
     private static final Set<String> REVIEW_ONLY_CREATE_BLOCKED = Set.of("teaching-resources");
     private static final Set<String> STUDENT_READABLE = Set.of(
             "herbs", "herb-batches", "lab-samples", "growth-records", "trace-events", "teaching-resources",
-            "courses", "projects", "trainings"
+            "courses", "projects", "trainings", "herb-encyclopedia"
     );
 
     // ---- 通用权限 ----

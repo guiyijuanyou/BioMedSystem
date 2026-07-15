@@ -424,6 +424,9 @@ html.immersive-scroll::-webkit-scrollbar {
 }
 .login-step .login-field > input { padding-inline: 22px; }
 .login-step .login-field__password input { padding-inline: 22px; }
+.login-step .login-field__password input:hover,
+.login-step .login-field__password input:focus,
+.login-step .login-field__password input:focus-visible { outline: none; box-shadow: none; }
 .login-step .login-field > input::placeholder,
 .login-step .login-field__password input::placeholder { color: #71717a; }
 .login-step .login-field > input:focus,

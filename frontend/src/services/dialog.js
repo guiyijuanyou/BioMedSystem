@@ -63,7 +63,7 @@ export const appDialog = {
     return show({ type: "alert", title: "提示", cancelText: "", ...normalized });
   },
   accept() {
-    finish(state.type === "prompt" ? state.value.trim() : true);
+    finish(state.type === "prompt" ? String(state.value ?? "").trim() : true);
   },
   cancel() {
     if (state.type === "alert") finish(true);

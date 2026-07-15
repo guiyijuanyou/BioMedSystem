@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { mount } from "@vue/test-utils";
 import { describe, expect, it } from "vitest";
 import LoginNavigation from "@/components/login/LoginNavigation.vue";
@@ -15,6 +17,8 @@ import {
   nearestSnapPoint,
   projectedSnapPoint,
 } from "@/composables/loginScrollSnap";
+
+const loginStyles = readFileSync(resolve(process.cwd(), "src/styles/login-experience.css"), "utf8");
 
 const sections = [
   { id: "cloud", label: "数据云" },
@@ -44,6 +48,15 @@ function mountLogin(credentials, extraProps = {}) {
 }
 
 describe("immersive login components", () => {
+  it("keeps the password input free of nested hover and focus rings", () => {
+    const focusRule = loginStyles.match(
+      /\.login-step \.login-field__password input:hover,\s*\.login-step \.login-field__password input:focus,\s*\.login-step \.login-field__password input:focus-visible\s*\{([^}]*)\}/
+    )?.[1] || "";
+
+    expect(focusRule).toMatch(/outline:\s*none/);
+    expect(focusRule).toMatch(/box-shadow:\s*none/);
+  });
+
   it("resolves finite scene states across five narrative stages", () => {
     expect(sceneStages.map(stage => stage.id)).toEqual(["cloud", "collection", "distribution", "trace", "roles"]);
     for (const progress of [0, 0.2, 0.5, 0.8, 1]) {

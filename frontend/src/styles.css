@@ -5267,9 +5267,12 @@ h1 {
   min-height: 72px;
 }
 
-.table-tools .table-search,
 .table-tools .record-count,
 .table-tools > button {
+  min-height: 52px;
+}
+
+.table-tools .table-search input {
   min-height: 52px;
 }
 

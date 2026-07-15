@@ -35,3 +35,5 @@ data/uploads/
 data/map-cache/
 data/backup/
 *.class
+backend/logs/
+tools/crawler/output/
