@@ -6,7 +6,6 @@ import { Search, X, BookOpen, ChevronLeft, ChevronRight, ImageOff } from "lucide
 
 const router = useRouter();
 const notify = inject("notify");
-const loading = ref(true);
 const allHerbs = shallowRef([]);
 const keyword = ref("");
 const debouncedKeyword = ref("");
@@ -41,14 +40,11 @@ function onImageError(id) {
 }
 
 async function load() {
-  loading.value = true;
   try {
     const res = await api("/api/herb-encyclopedia");
     allHerbs.value = res.items || [];
   } catch (e) {
     notify(e.message);
-  } finally {
-    loading.value = false;
   }
 }
 
@@ -115,14 +111,8 @@ onBeforeUnmount(() => clearTimeout(searchTimer));
       <span>共收录 <strong>{{ totalCount }}</strong> 种中药材，点击卡片查看详细信息</span>
     </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="encyclopedia-loading">
-      <div class="encyclopedia-loading__spinner"></div>
-      <p>正在加载药材数据...</p>
-    </div>
-
     <!-- Card Grid -->
-    <div v-else-if="pagedHerbs.length" class="encyclopedia-grid">
+    <div v-if="pagedHerbs.length" class="encyclopedia-grid">
       <article
         v-for="herb in pagedHerbs"
         :key="herb.id"
@@ -170,6 +160,7 @@ onBeforeUnmount(() => clearTimeout(searchTimer));
   display: grid;
   gap: 16px;
   padding: 0 4px 32px;
+  min-height: calc(100vh - 160px);
 }
 
 /* Search */
@@ -251,28 +242,6 @@ onBeforeUnmount(() => clearTimeout(searchTimer));
 
 .encyclopedia-summary strong {
   color: var(--brand);
-}
-
-/* Loading */
-.encyclopedia-loading {
-  display: grid;
-  place-items: center;
-  gap: 12px;
-  padding: 60px 0;
-  color: var(--muted);
-}
-
-.encyclopedia-loading__spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--line);
-  border-top-color: var(--brand);
-  border-radius: 50%;
-  animation: encyclopedia-spin .7s linear infinite;
-}
-
-@keyframes encyclopedia-spin {
-  to { transform: rotate(360deg); }
 }
 
 /* Card Grid */

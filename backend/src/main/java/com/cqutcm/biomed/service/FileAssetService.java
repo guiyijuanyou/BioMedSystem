@@ -55,7 +55,7 @@ public class FileAssetService {
     }
 
     public List<FileAsset> list() {
-        return mapper.findAll();
+        return mapper.findAllExcludingHerbImages();
     }
 
     public Optional<FileAsset> findById(String id) {

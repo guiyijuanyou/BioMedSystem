@@ -52,6 +52,8 @@ const activeKey = computed(() => {
   if (route.name === "multi-evaluations") return "multi-evaluations";
   if (route.name === "mobile-devices") return "mobile-devices";
   if (route.name === "batch-detail") return "herb-batches";
+  if (route.name === "herb-encyclopedia") return "herb-encyclopedia";
+  if (route.name === "herb-encyclopedia-detail") return "herb-encyclopedia";
   return String(route.params.moduleKey || "");
 });
 const activeGroup = computed(() => groups.value.find(group => group.members.includes(activeKey.value))?.key || "");
