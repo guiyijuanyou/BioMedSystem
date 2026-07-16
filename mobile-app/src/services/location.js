@@ -1,8 +1,12 @@
 export function getCurrentLocation() {
+  return tryGetLocation(true).catch(() => tryGetLocation(false));
+}
+
+function tryGetLocation(highAccuracy) {
   return new Promise((resolve, reject) => {
     uni.getLocation({
       type: "gcj02",
-      isHighAccuracy: true,
+      isHighAccuracy: highAccuracy,
       success(result) {
         resolve({
           longitude: normalizeNumber(result.longitude, 6),

@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { getBatches } from "../../services/api";
+import { setCache, getCache } from "../../services/offline-db";
 import { loadSettings } from "../../services/settings";
 
 const settings = loadSettings();
@@ -28,6 +29,7 @@ async function loadBatchLocations() {
     const result = await getBatches();
     const items = result.items || [];
     batches.value = items;
+    setCache("batches", items);
 
     const mk = items
       .filter(b => b.longitude && b.latitude)
@@ -52,7 +54,17 @@ async function loadBatchLocations() {
       centerLng.value = mk[0].longitude;
     }
   } catch (_) {
-    // offline — marker data already cached
+    const cached = getCache("batches");
+    if (cached) {
+      batches.value = cached;
+      const mk = cached.filter(b => b.longitude && b.latitude).map((b, i) => ({
+        id: i, latitude: Number(b.latitude), longitude: Number(b.longitude),
+        title: b.batchName || b.herbName || "",
+        label: { content: b.herbName || "", color: "#0c6b4f" },
+        callout: { content: `${b.batchName || ""}\n${b.district || ""}`, padding: "6,10", borderRadius: "4", bgColor: "#ffffff", display: "ALWAYS" }
+      }));
+      if (mk.length > 0) { markers.value = mk; centerLat.value = mk[0].latitude; centerLng.value = mk[0].longitude; }
+    }
   } finally {
     loading.value = false;
   }

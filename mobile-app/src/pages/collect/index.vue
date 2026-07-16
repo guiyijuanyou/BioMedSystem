@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { getBatches, uploadGrowthRecords } from "../../services/api";
 import { getCurrentLocation } from "../../services/location";
-import { insertOfflineRecord, queueSummary } from "../../services/offline-db";
+import { insertOfflineRecord, queueSummary, setCache, getCache } from "../../services/offline-db";
 import { loadSettings } from "../../services/settings";
 import { newClientRecordId, syncPendingRecords } from "../../services/sync";
 
@@ -39,8 +39,14 @@ async function loadBatches() {
   try {
     const result = await getBatches();
     batches.value = result.items || [];
+    setCache("batches", batches.value);
   } catch (error) {
-    uni.showToast({ title: error.message, icon: "none" });
+    const cached = getCache("batches");
+    if (cached) {
+      batches.value = cached;
+    } else {
+      uni.showToast({ title: error.message, icon: "none" });
+    }
   }
 }
 
@@ -102,21 +108,18 @@ async function saveRecord() {
     photos: form.photos.map(p => p.path)
   };
   try {
-    const result = await uploadGrowthRecords([record]);
-    const item = (result.items || []).find(i => i.clientRecordId === record.clientRecordId);
-    if (item && item.status === "accepted") {
-      resetForm();
-      await refreshQueue();
-      uni.showToast({ title: "已上传", icon: "success" });
-      return;
+    await insertOfflineRecord(record);
+    try {
+      await uploadGrowthRecords([record]);
+    } catch (_) {
+      // 上传失败不影响本地保存
     }
-  } catch (_) {
-    // 网络不可用，保存到离线队列
+    resetForm();
+    await refreshQueue();
+    uni.showToast({ title: "已保存", icon: "success" });
+  } catch (e) {
+    uni.showToast({ title: e.message || "保存失败", icon: "none" });
   }
-  await insertOfflineRecord(record);
-  resetForm();
-  await refreshQueue();
-  uni.showToast({ title: "已保存到本地", icon: "success" });
 }
 
 async function syncNow() {

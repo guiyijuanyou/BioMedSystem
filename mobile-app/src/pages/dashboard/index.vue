@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { getSummary, getSyncStatus } from "../../services/api";
-import { queueSummary } from "../../services/offline-db";
+import { queueSummary, setCache, getCache } from "../../services/offline-db";
 import { loadSettings } from "../../services/settings";
 
 const settings = reactive(loadSettings());
@@ -27,10 +27,20 @@ async function refresh() {
   try {
     queue.value = await queueSummary();
     if (settings.accountToken) {
-      summary.value = await getSummary();
+      try {
+        summary.value = await getSummary();
+        setCache("summary", summary.value);
+      } catch (_) {
+        summary.value = getCache("summary") || {};
+      }
     }
     if (settings.deviceToken) {
-      syncStatus.value = await getSyncStatus();
+      try {
+        syncStatus.value = await getSyncStatus();
+        setCache("syncStatus", syncStatus.value);
+      } catch (_) {
+        syncStatus.value = getCache("syncStatus") || {};
+      }
     }
   } catch (error) {
     uni.showToast({ title: error.message, icon: "none" });

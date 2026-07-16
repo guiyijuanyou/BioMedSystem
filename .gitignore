@@ -42,3 +42,4 @@ android/local.properties
 android/*/local.properties
 android/*/.gradle/
 android/*/src/main/assets/apps/*/www/
+tools/

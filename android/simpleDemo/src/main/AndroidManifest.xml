@@ -55,6 +55,9 @@
         <meta-data
             android:name="dcloud_appkey"
             android:value="${DCLOUD_APPKEY}" />
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="${AMAP_KEY}" />
     </application>
 
 </manifest>
