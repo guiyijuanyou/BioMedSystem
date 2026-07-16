@@ -82,7 +82,7 @@ onMounted(load);
     </header>
 
     <section class="metric-section" style="display:flex;gap:20px;padding:16px 22px">
-      <div style="width:200px;flex-shrink:0;border-right:1px solid var(--border);padding-right:16px">
+      <div style="width:200px;flex-shrink:0;border-right:1px solid var(--line);padding-right:16px">
         <h3 style="font-size:13px;margin:0 0 8px 0;color:var(--ink)">药材列表</h3>
         <div v-if="!data.herbs.length" style="color:var(--muted);font-size:12px">暂无药材数据</div>
         <div v-for="h in data.herbs" :key="h.id" @click="selectHerb(h.id)"
@@ -136,7 +136,7 @@ onMounted(load);
 .herb-item-active { background: rgba(0,0,0,0.06); font-weight: 600; }
 .herb-status { font-size: 10px; color: var(--muted); float: right; }
 .metric-card {
-  padding: 14px; border-radius: 8px; border: 1px solid var(--border); background: #f7f9f8;
+  padding: 14px; border-radius: 8px; border: 1px solid var(--line); background: #f7f9f8;
 }
 .metric-card-spectrum { background: #fafbfa; }
 .metric-card-title { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 8px; }
