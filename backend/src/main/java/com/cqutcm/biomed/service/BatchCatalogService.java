@@ -62,6 +62,12 @@ public class BatchCatalogService {
         return result;
     }
 
+    public Map<String, Object> findSampleByCode(String code) {
+        Map<String, Object> result = sampleMapper.findBySampleCodeAsMap(code.trim());
+        if (result == null) throw new IllegalArgumentException("未找到样本编号为 " + code.trim() + " 的检测样本");
+        return result;
+    }
+
     public Map<String, Object> getBatchOverview(String id, PermissionService.Actor actor) {
         Map<String, Object> overview = new LinkedHashMap<>();
         overview.put("batch", getBatch(id));

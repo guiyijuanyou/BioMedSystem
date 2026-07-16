@@ -37,6 +37,14 @@ public interface LabSampleMapper extends BiomedBaseMapper<LabSample> {
     @Select("SELECT * FROM lab_sample WHERE sample_code = #{sampleCode} LIMIT 1")
     LabSample findBySampleCode(String sampleCode);
 
+    @Select("SELECT s.id, s.batch_id AS batchId, b.batch_code AS batchCode, b.batch_name AS batchName, " +
+            "h.name AS herbName, b.district, s.sample_code AS sampleCode, s.sample_type AS sampleType, " +
+            "s.collected_at AS collectedAt, s.collector_name AS collector, s.sample_location AS sampleLocation, " +
+            "s.storage_condition AS storageCondition, s.status, s.version, s.created_at AS createdAt, s.updated_at AS updatedAt " +
+            "FROM lab_sample s JOIN herb_batch b ON b.id = s.batch_id JOIN herb h ON h.id = b.herb_id " +
+            "WHERE s.sample_code = #{sampleCode} LIMIT 1")
+    Map<String, Object> findBySampleCodeAsMap(String sampleCode);
+
     @Select("SELECT COUNT(*) FROM spectrum_comparison WHERE sample_id = #{id}")
     int countReferences(String id);
 }

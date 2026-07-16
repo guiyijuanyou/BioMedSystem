@@ -4863,7 +4863,7 @@ button.secondary:hover,
 .desktop-primary-nav {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(205px, 0.78fr) minmax(0, 2.3fr) minmax(138px, 0.58fr);
+  grid-template-columns: minmax(340px, 0.78fr) minmax(0, 2.3fr) minmax(138px, 0.58fr);
   align-items: center;
   width: min(1400px, 100%);
   min-height: 68px;

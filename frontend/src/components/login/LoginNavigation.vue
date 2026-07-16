@@ -21,7 +21,7 @@ function navigate(id) {
     <nav class="login-nav" aria-label="登录页章节导航">
       <button class="login-nav__brand" type="button" @click="navigate('cloud')">
         <span class="login-nav__mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span><strong>BioMed Cloud</strong><small>生物医药数字信息系统</small></span>
+        <span style="display:flex;align-items:baseline;gap:8px;min-width:0"><strong style="font-size:22px;white-space:nowrap">生物医药数字信息系统</strong><small style="flex-shrink:0">BioMed Cloud</small></span>
       </button>
 
       <button class="login-nav__menu" type="button" :aria-expanded="menuOpen" aria-label="切换导航菜单" @click="menuOpen = !menuOpen">
