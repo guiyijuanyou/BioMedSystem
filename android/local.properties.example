@@ -1,0 +1,5 @@
+# 复制本文件为 local.properties，填写以下配置（local.properties 已被 gitignore）
+# DCloud app key（https://dev.dcloud.net.cn/）
+dcloud.appkey=YOUR_DCLOUD_APPKEY
+# 高德地图 API Key（https://lbs.amap.com/）
+amap.key=YOUR_AMAP_KEY_HERE

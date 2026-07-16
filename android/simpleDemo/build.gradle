@@ -1,5 +1,12 @@
 apply plugin: 'com.android.application'
 
+// Read API keys from local.properties (gitignored)
+def localProps = new Properties()
+def localFile = rootProject.file('local.properties')
+if (localFile.exists()) {
+    localProps.load(localFile.newInputStream())
+}
+
 android {
     compileSdkVersion 36
     buildToolsVersion '36.0.0'
@@ -11,6 +18,10 @@ android {
         versionCode 1
         versionName "1.0"
         multiDexEnabled true
+        manifestPlaceholders = [
+            DCLOUD_APPKEY: localProps.getProperty('dcloud.appkey', ''),
+            AMAP_KEY: localProps.getProperty('amap.key', '')
+        ]
         compileOptions {
             sourceCompatibility JavaVersion.VERSION_1_8
             targetCompatibility JavaVersion.VERSION_1_8
