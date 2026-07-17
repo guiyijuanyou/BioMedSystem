@@ -14,7 +14,14 @@ CLAUDE.md
 .superpowers/
 .worktrees/
 scripts/
-android/
+android/simpleDemo/libs/*.aar
+android/simpleDemo/test.jks
+android/.gradle/
+android/build/
+android/*/build/
+android/local.properties
+android/simpleDemo/src/main/assets/apps/
+*.DS_Store
 docs/*
 !docs/api/
 !docs/api/**

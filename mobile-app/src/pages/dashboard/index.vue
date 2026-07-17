@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { getSummary, getSyncStatus } from "../../services/api";
-import { queueSummary } from "../../services/offline-db";
+import { queueSummary, setCache, getCache } from "../../services/offline-db";
 import { loadSettings } from "../../services/settings";
 
 const settings = reactive(loadSettings());
@@ -27,10 +27,20 @@ async function refresh() {
   try {
     queue.value = await queueSummary();
     if (settings.accountToken) {
-      summary.value = await getSummary();
+      try {
+        summary.value = await getSummary();
+        setCache("summary", summary.value);
+      } catch (_) {
+        summary.value = getCache("summary") || {};
+      }
     }
     if (settings.deviceToken) {
-      syncStatus.value = await getSyncStatus();
+      try {
+        syncStatus.value = await getSyncStatus();
+        setCache("syncStatus", syncStatus.value);
+      } catch (_) {
+        syncStatus.value = getCache("syncStatus") || {};
+      }
     }
   } catch (error) {
     uni.showToast({ title: error.message, icon: "none" });
@@ -41,6 +51,22 @@ async function refresh() {
 
 function openActivation() {
   uni.switchTab({ url: "/pages/activation/index" });
+}
+
+function openMap() {
+  uni.navigateTo({ url: "/pages/map/index" });
+}
+
+function openTrace() {
+  uni.navigateTo({ url: "/pages/trace/index" });
+}
+
+function openResources() {
+  uni.switchTab({ url: "/pages/resources/index" });
+}
+
+function openQueue() {
+  uni.switchTab({ url: "/pages/queue/index" });
 }
 </script>
 
@@ -89,7 +115,12 @@ function openActivation() {
       </view>
       <view class="button-row">
         <button class="primary" :loading="loading" @tap="refresh">刷新</button>
-        <button class="secondary" @tap="uni.switchTab({ url: '/pages/resources/index' })">查看数据</button>
+        <button class="secondary" @tap="openResources">查看数据</button>
+      </view>
+      <view class="button-row">
+        <button class="ghost" @tap="openMap">种植地图</button>
+        <button class="ghost" @tap="openTrace">溯源事件</button>
+        <button class="ghost" @tap="openQueue">离线队列</button>
       </view>
     </view>
   </view>

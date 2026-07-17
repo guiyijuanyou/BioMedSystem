@@ -1,9 +1,23 @@
 <script setup>
 import { onLaunch, onShow } from "@dcloudio/uni-app";
 import { initOfflineStore } from "./services/offline-db";
+import { syncPendingRecords } from "./services/sync";
+import { loadSettings } from "./services/settings";
+
+let wasOffline = false;
 
 onLaunch(() => {
   initOfflineStore().catch(() => {});
+  uni.onNetworkStatusChange((res) => {
+    const isOnline = res.networkType !== "none";
+    if (isOnline && wasOffline) {
+      const settings = loadSettings();
+      if (settings.deviceToken) {
+        syncPendingRecords().catch(() => {});
+      }
+    }
+    wasOffline = !isOnline;
+  });
 });
 
 onShow(() => {

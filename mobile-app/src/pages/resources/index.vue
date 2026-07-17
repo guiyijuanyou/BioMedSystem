@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { getResource } from "../../services/api";
 import { resourceTabs, summarize, displayValue } from "../../services/resource-meta";
+import { setCache, getCache } from "../../services/offline-db";
 import { loadSettings } from "../../services/settings";
 
 const activeIndex = ref(0);
@@ -25,11 +26,18 @@ async function load() {
     return;
   }
   loading.value = true;
+  const cacheKey = "resources:" + activeTab.value.key;
   try {
     const result = await getResource(activeTab.value.key);
     items.value = result.items || [];
+    setCache(cacheKey, items.value);
   } catch (error) {
-    uni.showToast({ title: error.message, icon: "none" });
+    const cached = getCache(cacheKey);
+    if (cached) {
+      items.value = cached;
+    } else {
+      uni.showToast({ title: error.message, icon: "none" });
+    }
   } finally {
     loading.value = false;
   }
