@@ -63,6 +63,20 @@ watch(selectedBatchId, async (bid) => {
       stageCount: data.stageCount || 0
     };
     result.value = null;
+    // 从指标标准加载该药材的生长区间
+    if (data.herbId) {
+      try {
+        const m = await api(`/api/quality-metrics/herb-metrics/${data.herbId}`);
+        const metrics = m.metrics || [];
+        for (const ind of indicators.value) {
+          const cfg = metrics.find(x => x.metricCode === ({temperature:'GROWTH_TEMP_AVG',humidity:'GROWTH_HUMIDITY_AVG',soil_ph:'GROWTH_SOIL_PH_AVG'})[ind.field]);
+          if (cfg) {
+            if (cfg.minimumValue != null) ind.optMin = cfg.minimumValue;
+            if (cfg.maximumValue != null) ind.optMax = cfg.maximumValue;
+          }
+        }
+      } catch (e) {}
+    }
   } catch (e) {
     batchInfo.value = null;
     notify(e.message);
@@ -72,8 +86,8 @@ watch(selectedBatchId, async (bid) => {
 // ── Run analysis ──
 async function runAnalysis() {
   if (!selectedBatchId.value || !batchInfo.value) return;
-  if (batchInfo.value.recordCount === 0) {
-    notify("该批次暂无生长数据，无法分析"); return;
+  if (batchInfo.value.recordCount < 5) {
+    notify("该批次数据不足（至少需要5条记录），无法分析"); return;
   }
   computing.value = true;
   result.value = null;
@@ -381,7 +395,10 @@ const { animateButtonStart, animateButtonComplete } = useAnalysisAnimation({
         </div>
       </div>
 
-      <!-- No data warning -->
+      <!-- Insufficient data warning -->
+      <div v-if="batchInfo && batchInfo.recordCount > 0 && batchInfo.recordCount < 5" style="padding:12px;background:#fff3cd;border-radius:6px;font-size:13px;color:#856404;margin-bottom:12px">
+        该批次仅有 {{ batchInfo.recordCount }} 条生长数据，至少需要 5 条记录才能进行有效分析。请通过"生长采集"模块补充更多数据。
+      </div>
       <div v-if="batchInfo && batchInfo.recordCount === 0" style="padding:12px;background:#fff3cd;border-radius:6px;font-size:13px;color:#856404;margin-bottom:12px">
         该批次暂无生长数据记录，请先通过"生长采集"模块录入数据后再进行分析。
       </div>
@@ -403,7 +420,7 @@ const { animateButtonStart, animateButtonComplete } = useAnalysisAnimation({
 
       <button
         ref="analyzeButtonRef"
-        :disabled="!batchInfo || batchInfo.recordCount === 0 || computing"
+        :disabled="!batchInfo || batchInfo.recordCount < 5 || computing"
         @click="runAnalysis"
         style="min-width:140px"
         :class="{ 'analysis-computing': computing }"
@@ -453,6 +470,7 @@ const { animateButtonStart, animateButtonComplete } = useAnalysisAnimation({
           <div v-for="s in result.suitability.filter(x => x.indicator === t.indicator)" :key="'s'+s.indicator"
             style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:8px">
             <div style="font-size:11px;color:var(--muted);font-weight:600">适宜性分析</div>
+
 
             <!-- Stacked bar -->
             <div style="background:var(--surface-subtle,#f6f9fc);border-radius:8px;padding:12px 14px">

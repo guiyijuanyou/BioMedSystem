@@ -22,18 +22,37 @@ const errorMsg = ref("");
 const diffThreshold = ref(6);
 const loadingRefs = ref(false);
 const chartDom = ref(null);
-const referenceOptions = computed(() => [
-  { value: "", label: "从已有记录选择..." },
-  ...references.value.map(item => ({
+const labSampleOptions = computed(() => [
+  { value: "", label: "不关联样本" },
+  ...labSamples.value.map(s => ({ value: s.id, label: `${s.sampleCode} - ${s.herbName}` }))
+]);
+const mySampleOptions = computed(() => [
+  { value: "", label: "选择历史样本" },
+  ...mySamples.value.map(s => ({ value: s.id, label: s.fileName }))
+]);
+const myRefOptions = computed(() =>
+  myReferences.value.map(r => ({ value: r.id, label: r.fileName }))
+);
+const publicRefOptions = computed(() =>
+  references.value.filter(r => r.status === 'REFERENCE').map(item => ({
     value: item.id,
     label: `${item.herbName || item.referenceName || "标准品"}（${item.spectrumType || "HPLC"}）`
   }))
+);
+const allRefOptions = computed(() => [
+  { value: "", label: "选择标准品..." },
+  ...publicRefOptions.value,
+  ...myRefOptions.value
 ]);
 
 const herbName = ref("");
 const sampleCode = ref("");
 const district = ref("");
 const remark = ref("");
+
+const labSamples = ref([]);
+const selectedLabSampleId = ref("");
+const historySampleId = ref("");
 
 const mySamples = ref([]);
 const myReferences = ref([]);
@@ -81,8 +100,9 @@ function handleReferenceFile(e) {
 
 function selectReference() { referenceFile.value = null; referenceInfo.value = null; }
 
-async function onRefSelect() {
-  if (referenceId.value === "__clear__") {
+async function onRefSelect(val) {
+  const id = val !== undefined ? val : referenceId.value;
+  if (id === "__clear__") {
     try { await api("/api/spectrum/my-references", { method: "DELETE" }); loadMyReferences(); loadReferences(); referenceId.value = ""; }
     catch (e) { notify?.(e.message); }
     return;
@@ -92,18 +112,30 @@ async function onRefSelect() {
 
 async function selectMySample(id) {
   if (id === "__clear__") {
-    try { await api("/api/spectrum/my-samples", { method: "DELETE" }); loadMySamples(); }
+    try { await api("/api/spectrum/my-samples", { method: "DELETE" }); loadMySamples(); historySampleId.value = ""; }
     catch (e) { notify?.(e.message); }
     return;
   }
-  if (!id) { sampleInfo.value = null; return; }
+  if (!id) { sampleInfo.value = null; historySampleId.value = ""; return; }
   sampleFile.value = null;
-  sampleInfo.value = { name: "History #" + id.slice(0, 8), size: "-", _existingId: id };
   const s = mySamples.value.find(r => r.id === id);
+  sampleInfo.value = { name: s ? s.fileName : "", size: "-", _existingId: id };
   if (s) {
     if (s.herbName && !herbName.value) herbName.value = s.herbName;
     if (s.sampleCode && !sampleCode.value) sampleCode.value = s.sampleCode;
   }
+}
+
+async function loadLabSamples() {
+  try { labSamples.value = (await api("/api/lab-samples")).items || []; } catch (e) {}
+}
+
+function onLabSampleSelect() {
+  const s = labSamples.value.find(x => x.id === selectedLabSampleId.value);
+  if (!s) return;
+  if (s.herbName && !herbName.value.trim()) herbName.value = s.herbName;
+  if (s.district && !district.value.trim()) district.value = s.district;
+  sampleCode.value = s.sampleCode || "";
 }
 
 async function runComparison() {
@@ -117,6 +149,7 @@ async function runComparison() {
     const fd = new FormData();
     if (sampleFile.value) fd.append("sampleFile", sampleFile.value);
     if (sampleInfo.value?._existingId) fd.append("sampleId", sampleInfo.value._existingId);
+    if (selectedLabSampleId.value) fd.append("labSampleId", selectedLabSampleId.value);
     if (referenceFile.value) fd.append("referenceFile", referenceFile.value);
     if (referenceId.value) fd.append("referenceId", referenceId.value);
     fd.append("herbName", herbName.value.trim());
@@ -269,7 +302,7 @@ function verdictClass(s) { return s >= 90 ? "pass" : s >= 80 ? "warn" : "fail"; 
 
 onMounted(async () => {
   await loadECharts();
-  await Promise.all([loadReferences(), loadMySamples(), loadMyReferences()]);
+  await Promise.all([loadReferences(), loadMySamples(), loadMyReferences(), loadLabSamples()]);
 });
 onUnmounted(() => { chartInstance?.dispose(); chartInstance = null; });
 </script>
@@ -288,7 +321,7 @@ onUnmounted(() => { chartInstance?.dispose(); chartInstance = null; });
           <input v-model="herbName" placeholder="如：黄连" style="width:110px;min-height:32px" />
         </label>
         <label style="font-size:12px;color:var(--muted);display:grid;gap:3px">样本编号
-          <input v-model="sampleCode" placeholder="选填" style="width:130px;min-height:32px" />
+          <AppSelect v-model="selectedLabSampleId" :options="labSampleOptions" @change="onLabSampleSelect" style="min-width:200px" />
         </label>
         <label style="font-size:12px;color:var(--muted);display:grid;gap:3px">区县
           <input v-model="district" placeholder="选填" style="width:100px;min-height:32px" />
@@ -303,12 +336,8 @@ onUnmounted(() => { chartInstance?.dispose(); chartInstance = null; });
           <label style="font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer">
             <input type="file" accept=".csv,.txt" @change="handleSampleFile" style="width:180px" />
           </label>
-          <select style="width:auto;min-width:140px;font-size:11px" @change="selectMySample($event.target.value)">
-            <option value="" disabled selected>选择历史样本</option>
-            <option v-if="mySamples.length" value="__clear__">清空历史样本</option>
-            <option v-if="mySamples.length" disabled>──────────</option>
-            <option v-for="s in mySamples" :key="s.id" :value="s.id">{{ s.herbName || '样本' }}{{ s.sampleCode ? ' - ' + s.sampleCode : '' }}</option>
-          </select>
+          <AppSelect v-model="historySampleId" :options="mySampleOptions" @change="v => selectMySample(v?.target?.value || v)" style="min-width:140px;font-size:11px" />
+          <button v-if="mySamples.length" class="button-secondary" style="min-height:28px;padding:0 6px;font-size:10px" @click="selectMySample('__clear__')" title="清空历史样本">清空</button>
         </div>
         <div style="display:flex;align-items:center;gap:6px;min-width:0">
           <span style="font-size:12px;font-weight:700;white-space:nowrap;color:var(--ink)">标准品</span>
@@ -316,17 +345,8 @@ onUnmounted(() => { chartInstance?.dispose(); chartInstance = null; });
             <input type="file" accept=".csv,.txt" @change="handleReferenceFile" style="width:180px" />
           </label>
           <span style="color:var(--muted);font-size:11px">或</span>
-          <select v-model="referenceId" @change="onRefSelect" style="width:auto;min-width:180px">
-            <option value="" disabled selected>选择标准品</option>
-            <optgroup v-if="references.filter(r => r.status === 'REFERENCE').length" label="公共标准品">
-              <option v-for="r in references.filter(r => r.status === 'REFERENCE')" :key="r.id" :value="r.id">{{ r.referenceName || r.herbName || '标准品' }}</option>
-            </optgroup>
-            <optgroup v-if="myReferences.length" label="我的标准品">
-              <option value="__clear__">清空我的标准品</option>
-              <option disabled>──────────</option>
-              <option v-for="r in myReferences" :key="r.id" :value="r.id">{{ r.referenceName || r.herbName || '标准品' }}</option>
-            </optgroup>
-          </select>
+          <AppSelect v-model="referenceId" :options="allRefOptions" @change="v => onRefSelect(v?.target?.value || v)" style="min-width:180px" />
+          <button v-if="myReferences.length" class="button-secondary" style="min-height:28px;padding:0 6px;font-size:10px" @click="onRefSelect('__clear__')" title="清空我的标准品">清空</button>
           <button v-if="currentRole === 'admin'" class="button-secondary" style="min-height:28px;padding:0 8px;font-size:11px;white-space:nowrap" @click="showRefManager = true">管理标准品库</button>
         </div>
         <button :disabled="comparing || !herbName.trim()" @click="runComparison" style="flex-shrink:0">

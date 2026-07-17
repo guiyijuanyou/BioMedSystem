@@ -137,7 +137,7 @@ onBeforeUnmount(() => clearTimeout(desktopCloseTimer));
     <div class="desktop-primary-nav">
       <button class="desktop-brand" type="button" data-nav-key="dashboard" @click="navigate('dashboard')">
         <span class="desktop-brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span><strong>BioMed Cloud</strong><small>生物医药数字信息系统</small></span>
+        <span style="display:flex;align-items:baseline;gap:8px;min-width:0"><strong style="font-size:22px;white-space:nowrap">生物医药数字信息系统</strong><small style="flex-shrink:0">BioMed Cloud</small></span>
       </button>
 
       <nav class="desktop-nav-links" aria-label="桌面主导航">

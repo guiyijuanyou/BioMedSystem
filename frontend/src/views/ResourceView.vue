@@ -1520,10 +1520,6 @@ watch(() => props.editId, id => {
           <strong>事件类型</strong>
           <span v-for="(count, name) in traceStats.eventTypes" :key="name">{{ name }}：{{ count }}</span>
         </div>
-        <div v-if="isAnalysisModule">
-          <strong>分析指标</strong>
-          <span v-for="(count, name) in analysisStats.indicators" :key="name">{{ name }}：{{ count }}</span>
-        </div>
       </div>
     </section>
 

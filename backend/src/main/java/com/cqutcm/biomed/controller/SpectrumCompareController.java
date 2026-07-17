@@ -2,12 +2,15 @@ package com.cqutcm.biomed.controller;
 
 import com.cqutcm.biomed.mapper.SpectrumComparisonMapper;
 import com.cqutcm.biomed.service.*;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -20,15 +23,18 @@ public class SpectrumCompareController {
     private final SpectrumComparisonMapper spectrumMapper;
     private final PermissionService permissionService;
     private final BatchCatalogService batchCatalogService;
+    private final JdbcTemplate jdbc;
 
     public SpectrumCompareController(AuthService authService, SpectrumCompareService compareService,
                                       SpectrumComparisonMapper spectrumMapper,
-                                      PermissionService permissionService, BatchCatalogService batchCatalogService) {
+                                      PermissionService permissionService, BatchCatalogService batchCatalogService,
+                                      JdbcTemplate jdbc) {
         this.authService = authService;
         this.compareService = compareService;
         this.spectrumMapper = spectrumMapper;
         this.permissionService = permissionService;
         this.batchCatalogService = batchCatalogService;
+        this.jdbc = jdbc;
     }
 
     /**
@@ -80,6 +86,8 @@ public class SpectrumCompareController {
             @RequestParam(value = "sampleCode", required = false, defaultValue = "") String sampleCode,
             @RequestParam(value = "district", required = false, defaultValue = "") String district,
             @RequestParam(value = "remark", required = false, defaultValue = "") String remark,
+            @RequestParam(value = "batchId", required = false) String batchId,
+            @RequestParam(value = "labSampleId", required = false) String labSampleId,
             @RequestParam(value = "spectrumType", required = false, defaultValue = "HPLC") String spectrumType,
             @RequestParam(value = "algorithm", required = false, defaultValue = "COSINE") String algorithm,
             @RequestParam(value = "resolution", required = false, defaultValue = "500") int resolution,
@@ -156,13 +164,56 @@ public class SpectrumCompareController {
             diffList.add(dr);
         }
 
+        // Resolve lab sample linkage → populate batch_id and sample_id for auto-evaluation
+        String resolvedBatchId = (batchId != null && !batchId.isBlank()) ? batchId : null;
+        String resolvedSampleId = null;
+
+        // 直接传入 batchId: 从批次加载 herbName/district
+        if (resolvedBatchId != null) {
+            try {
+                Map<String, Object> bt = batchCatalogService.getBatch(resolvedBatchId);
+                String hId = String.valueOf(bt.getOrDefault("herbId", ""));
+                if (!hId.isBlank()) {
+                    try {
+                        Map<String, Object> herb = jdbc.queryForMap("SELECT name FROM herb WHERE id = ?", hId);
+                        if (herbName.isBlank()) herbName = String.valueOf(herb.getOrDefault("name", ""));
+                    } catch (Exception ignored) {}
+                }
+                if (district.isBlank()) district = String.valueOf(bt.getOrDefault("district", ""));
+            } catch (Exception ignored) {}
+        }
+
+        if (labSampleId != null && !labSampleId.isBlank()) {
+            Map<String, Object> labSample = batchCatalogService.getSample(labSampleId);
+            resolvedSampleId = String.valueOf(labSample.get("id"));
+            resolvedBatchId = String.valueOf(labSample.getOrDefault("batchId", ""));
+            if (herbName.isBlank()) herbName = String.valueOf(labSample.getOrDefault("herbName", ""));
+            if (sampleCode.isBlank()) sampleCode = String.valueOf(labSample.getOrDefault("sampleCode", ""));
+            if (district.isBlank()) district = String.valueOf(labSample.getOrDefault("district", ""));
+        } else if (sampleCode != null && !sampleCode.isBlank()) {
+            // Fallback: look up lab sample by sample_code when labSampleId not provided
+            try {
+                Map<String, Object> labSample = batchCatalogService.findSampleByCode(sampleCode);
+                resolvedSampleId = String.valueOf(labSample.get("id"));
+                resolvedBatchId = String.valueOf(labSample.getOrDefault("batchId", ""));
+                if (herbName.isBlank()) herbName = String.valueOf(labSample.getOrDefault("herbName", ""));
+                if (district.isBlank()) district = String.valueOf(labSample.getOrDefault("district", ""));
+            } catch (IllegalArgumentException ignored) {
+                // sample code not found in lab_samples — continue without linkage
+            }
+        }
+
         // Save comparison record
         String recordId = UUID.randomUUID().toString();
         Map<String, Object> record = new LinkedHashMap<>();
         record.put("id", recordId);
+        record.put("batchId", resolvedBatchId);
+        record.put("sampleId", resolvedSampleId);
         record.put("herbName", herbName.isBlank() ? "未知" : herbName);
         record.put("sampleCode", sampleCode);
         record.put("district", district);
+        record.put("fileName", sampleFile != null && !sampleFile.isEmpty() ? sampleFile.getOriginalFilename()
+                : (sampleId != null ? String.valueOf(spectrumMapper.findByIdAsMap(sampleId).getOrDefault("fileName", "")) : null));
         record.put("remark", remark);
         record.put("spectrumType", spectrumType);
         record.put("referenceName", referenceName);
@@ -174,9 +225,26 @@ public class SpectrumCompareController {
         record.put("referenceDataJson", compareService.toJSON(referencePoints));
         record.put("compareAlgorithm", algorithm);
         record.put("status", "已完成");
+        record.put("sha256", sampleFile != null && !sampleFile.isEmpty() ? sha256(sampleFile.getBytes()) : null);
         record.put("createdAt", LocalDateTime.now().toString());
         spectrumMapper.insertMap(record);
 
+        // 如果上传了参考文件，自动存为私有标准品（历史记录可复用）
+        if (referenceFile != null && !referenceFile.isEmpty()) {
+            Map<String, Object> refRecord = new LinkedHashMap<>();
+            refRecord.put("id", UUID.randomUUID().toString());
+            refRecord.put("herbName", herbName.isBlank() ? "未知" : herbName);
+            refRecord.put("referenceName", referenceName);
+            refRecord.put("fileName", referenceFile.getOriginalFilename());
+            refRecord.put("spectrumType", spectrumType);
+            refRecord.put("referenceDataJson", compareService.toJSON(referencePoints));
+            refRecord.put("operatorName", actor.name());
+            refRecord.put("status", "PRIVATE_REF");
+            refRecord.put("sha256", sha256(referenceFile.getBytes()));
+            refRecord.put("comparedAt", LocalDateTime.now().toString());
+            refRecord.put("createdAt", LocalDateTime.now().toString());
+            spectrumMapper.insertMap(refRecord);
+        }
 
         // Build response
         Map<String, Object> resp = new LinkedHashMap<>();
@@ -230,44 +298,36 @@ public class SpectrumCompareController {
     @GetMapping("/my-samples")
     public Map<String, Object> mySamples(@RequestHeader(value = "Authorization", required = false) String authorization) {
         PermissionService.Actor actor = authService.requireActor(authorization);
-        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
-        List<Map<String, Object>> samples = new ArrayList<>();
-        for (Map<String, Object> item : all) {
-            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
-            String sd = String.valueOf(item.getOrDefault("sampleDataJson", ""));
-            if (!"null".equals(sd) && !"[]".equals(sd) && sd.length() > 10) {
-                Map<String, Object> s = new LinkedHashMap<>();
-                s.put("id", item.get("id"));
-                s.put("herbName", item.getOrDefault("herbName", ""));
-                s.put("sampleCode", item.getOrDefault("sampleCode", ""));
-                s.put("createdAt", item.get("createdAt"));
-                samples.add(s);
-            }
+        List<Map<String, Object>> rows = spectrumMapper.findMyHistory("sample", actor.name());
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("id", row.get("id"));
+            s.put("herbName", row.getOrDefault("herbName", ""));
+            s.put("sampleCode", row.getOrDefault("sampleCode", ""));
+            s.put("createdAt", row.get("createdAt"));
+            s.put("fileName", row.getOrDefault("fileName", ""));
+            items.add(s);
         }
-        // Sort by time desc, limit 20
-        samples.sort((a, b) -> String.valueOf(b.getOrDefault("createdAt", ""))
-                .compareTo(String.valueOf(a.getOrDefault("createdAt", ""))));
-        if (samples.size() > 20) samples = samples.subList(0, 20);
-        return Map.of("items", samples);
+        return Map.of("items", items);
     }
 
     /** Current user's private reference CSV history. */
     @GetMapping("/my-references")
     public Map<String, Object> myReferences(@RequestHeader(value = "Authorization", required = false) String authorization) {
         PermissionService.Actor actor = authService.requireActor(authorization);
-        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
-        List<Map<String, Object>> refs = new ArrayList<>();
-        for (Map<String, Object> item : all) {
-            if (!"PRIVATE_REF".equals(String.valueOf(item.getOrDefault("status", "")))) continue;
-            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
+        List<Map<String, Object>> rows = spectrumMapper.findMyHistory("reference", actor.name());
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
             Map<String, Object> r = new LinkedHashMap<>();
-            r.put("id", item.get("id"));
-            r.put("referenceName", item.getOrDefault("referenceName", ""));
-            r.put("herbName", item.getOrDefault("herbName", ""));
-            r.put("createdAt", item.get("createdAt"));
-            refs.add(r);
+            r.put("id", row.get("id"));
+            r.put("referenceName", row.getOrDefault("referenceName", ""));
+            r.put("herbName", row.getOrDefault("herbName", ""));
+            r.put("createdAt", row.get("createdAt"));
+            r.put("fileName", row.getOrDefault("fileName", ""));
+            items.add(r);
         }
-        return Map.of("items", refs);
+        return Map.of("items", items);
     }
 
     /** Admin: upload a public reference standard. */
@@ -302,16 +362,7 @@ public class SpectrumCompareController {
     @DeleteMapping("/my-samples")
     public Map<String, Object> clearMySamples(@RequestHeader(value = "Authorization", required = false) String authorization) {
         PermissionService.Actor actor = authService.requireActor(authorization);
-        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
-        int count = 0;
-        for (Map<String, Object> item : all) {
-            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
-            String sd = String.valueOf(item.getOrDefault("sampleDataJson", ""));
-            if (!"null".equals(sd) && !"[]".equals(sd) && sd.length() > 10) {
-                spectrumMapper.deleteById(String.valueOf(item.get("id")));
-                count++;
-            }
-        }
+        int count = spectrumMapper.deleteMyHistory("sample", actor.name());
         return Map.of("message", "deleted " + count + " sample records");
     }
 
@@ -319,14 +370,7 @@ public class SpectrumCompareController {
     @DeleteMapping("/my-references")
     public Map<String, Object> clearMyReferences(@RequestHeader(value = "Authorization", required = false) String authorization) {
         PermissionService.Actor actor = authService.requireActor(authorization);
-        List<Map<String, Object>> all = spectrumMapper.findAllAsMap();
-        int count = 0;
-        for (Map<String, Object> item : all) {
-            if (!"PRIVATE_REF".equals(String.valueOf(item.getOrDefault("status", "")))) continue;
-            if (!actor.name().equals(String.valueOf(item.getOrDefault("operatorName", "")))) continue;
-            spectrumMapper.deleteById(String.valueOf(item.get("id")));
-            count++;
-        }
+        int count = spectrumMapper.deleteMyHistory("reference", actor.name());
         return Map.of("message", "deleted " + count + " reference records");
     }
 
@@ -365,5 +409,17 @@ public class SpectrumCompareController {
             content = new String(file.getBytes(), java.nio.charset.Charset.forName("GBK"));
         }
         return content;
+    }
+
+    private String sha256(byte[] content) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(content);
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            return null;
+        }
     }
 }

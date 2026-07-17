@@ -15,17 +15,19 @@ public class GrowthAnalysisComputeService {
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
+    private final QualityMetricService metricService;
 
-    public GrowthAnalysisComputeService(JdbcTemplate jdbc, ObjectMapper objectMapper) {
+    public GrowthAnalysisComputeService(JdbcTemplate jdbc, ObjectMapper objectMapper, QualityMetricService metricService) {
         this.jdbc = jdbc;
         this.objectMapper = objectMapper;
+        this.metricService = metricService;
     }
 
     /** Lightweight batch summary for analysis page — avoids loading full growth records */
     public Map<String, Object> batchSummary(String batchId) {
         Map<String, Object> batch = requiredRow(
                 "SELECT b.id, b.batch_code AS batchCode, b.batch_name AS batchName, " +
-                "h.name AS herbName, b.district, b.responsible_person AS responsiblePerson " +
+                "h.name AS herbName, b.herb_id AS herbId, b.district, b.responsible_person AS responsiblePerson " +
                 "FROM herb_batch b JOIN herb h ON h.id = b.herb_id WHERE b.id = ?", batchId);
 
         // Only aggregate — don't fetch all rows
@@ -40,6 +42,7 @@ public class GrowthAnalysisComputeService {
         result.put("dateStart", a.get("dateMin") != null ? a.get("dateMin").toString().substring(0, 10) : "");
         result.put("dateEnd",   a.get("dateMax") != null ? a.get("dateMax").toString().substring(0, 10) : "");
         result.put("stageCount", ((Number) a.get("stageCnt")).intValue());
+        result.put("herbId", batch.get("herbId")); // 前端选批次后自动读取指标标准
         return result;
     }
 
@@ -54,19 +57,21 @@ public class GrowthAnalysisComputeService {
         // 1. Load batch info
         Map<String, Object> batch = requiredRow(
                 "SELECT b.id, b.batch_code AS batchCode, b.batch_name AS batchName, " +
-                "h.name AS herbName, b.district, b.responsible_person AS responsiblePerson " +
+                "h.name AS herbName, b.herb_id AS herbId, b.district, b.responsible_person AS responsiblePerson " +
                 "FROM herb_batch b JOIN herb h ON h.id = b.herb_id WHERE b.id = ?", batchId);
 
         // 2. Parse indicator configs and date range
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> indicators = (List<Map<String, Object>>) body.get("indicators");
+        boolean fromHerb = false;
         if (indicators == null || indicators.isEmpty()) {
-            // Default indicators
-            indicators = List.of(
-                    Map.of("field", "temperature", "label", "温度", "unit", "°C", "optMin", 15, "optMax", 25),
-                    Map.of("field", "humidity", "label", "湿度", "unit", "%", "optMin", 55, "optMax", 75),
-                    Map.of("field", "soil_ph", "label", "土壤pH", "unit", "", "optMin", 6.0, "optMax", 7.0)
-            );
+            indicators = loadHerbGrowthIndicators(String.valueOf(batch.get("id")));
+            fromHerb = true;
+        }
+        System.out.println("[数据分析] 批次=" + batchId + " 药材=" + batch.get("herbName") + " herb_id=" + batch.get("herbId"));
+        System.out.println("[数据分析] 指标来源=" + (fromHerb ? "quality_metric_definition" : "前端传入") + "，共" + indicators.size() + "项：");
+        for (Map<String, Object> ind : indicators) {
+            System.out.println("  " + ind.get("label") + ": " + ind.get("optMin") + "–" + ind.get("optMax") + " " + ind.get("unit"));
         }
 
         @SuppressWarnings("unchecked")
@@ -89,6 +94,9 @@ public class GrowthAnalysisComputeService {
 
         if (records.isEmpty()) {
             throw new IllegalArgumentException("该批次暂无生长数据记录，无法进行分析");
+        }
+        if (records.size() < 5) {
+            throw new IllegalArgumentException("该批次仅" + records.size() + "条生长数据，至少需要5条记录才能进行有效分析");
         }
 
         // Actual date range from data
@@ -140,12 +148,13 @@ public class GrowthAnalysisComputeService {
                 double y = values.get(i);
                 sx += x; sy += y; sxy += x * y; sx2 += x * x;
             }
-            double slope = (n * sxy - sx * sy) / (n * sx2 - sx * sx);
+            double denominator = n * sx2 - sx * sx;
+            double slope = denominator != 0 ? (n * sxy - sx * sy) / denominator : 0;
             double mean = sy / n;
             double variance = 0;
             for (double v : values) variance += Math.pow(v - mean, 2);
             variance /= n;
-            double stddev = Math.sqrt(variance);
+            double stddev = variance > 0 ? Math.sqrt(variance) : 0;
             double cv = mean != 0 ? (stddev / Math.abs(mean)) * 100 : 0;
             double firstVal = values.get(0);
             double lastVal = values.get(n - 1);
@@ -535,6 +544,65 @@ public class GrowthAnalysisComputeService {
 
     // ── helpers ──
 
+    /** 从指标标准加载该批次药材的生长区间作为分析默认值 */
+    private List<Map<String, Object>> loadHerbGrowthIndicators(String batchId) {
+        try {
+            Map<String, Object> batch = jdbc.queryForMap("SELECT herb_id FROM herb_batch WHERE id=?", batchId);
+            String herbId = String.valueOf(batch.get("herb_id"));
+            System.out.println("[数据分析] 批次=" + batchId + " → herb_id=" + herbId);
+            if (herbId == null || herbId.isBlank()) {
+                System.out.println("[数据分析] herb_id 为空，使用默认区间");
+                return hardcodedDefaults();
+            }
+            List<Map<String, Object>> metrics = metricService.getHerbMetrics(herbId);
+            System.out.println("[数据分析] 从 quality_metric_definition 查到 " + metrics.size() + " 条活跃指标");
+            Map<String, String> fieldMap = Map.of(
+                    "GROWTH_TEMP_AVG", "temperature",
+                    "GROWTH_HUMIDITY_AVG", "humidity",
+                    "GROWTH_SOIL_PH_AVG", "soil_ph"
+            );
+            Map<String, String> labelMap = Map.of(
+                    "temperature", "温度", "humidity", "湿度", "soil_ph", "土壤pH"
+            );
+            Map<String, String> unitMap = Map.of(
+                    "temperature", "°C", "humidity", "%", "soil_ph", ""
+            );
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Map<String, Object> m : metrics) {
+                String code = String.valueOf(m.get("metricCode"));
+                String field = fieldMap.get(code);
+                if (field == null) {
+                    System.out.println("[数据分析] 跳过非生长指标: " + code);
+                    continue;
+                }
+                Map<String, Object> ind = new LinkedHashMap<>();
+                ind.put("field", field);
+                ind.put("label", labelMap.getOrDefault(field, code));
+                ind.put("unit", unitMap.getOrDefault(field, ""));
+                ind.put("optMin", m.get("minimumValue") != null ? ((Number) m.get("minimumValue")).doubleValue() : null);
+                ind.put("optMax", m.get("maximumValue") != null ? ((Number) m.get("maximumValue")).doubleValue() : null);
+                result.add(ind);
+                System.out.println("[数据分析] 匹配: " + code + " → " + field + " 区间[" + ind.get("optMin") + ", " + ind.get("optMax") + "]");
+            }
+            if (!result.isEmpty()) {
+                System.out.println("[数据分析] 共匹配 " + result.size() + " 项生长指标");
+                return result;
+            }
+            System.out.println("[数据分析] 无生长指标匹配，使用默认区间");
+        } catch (Exception e) {
+            System.out.println("[数据分析] 加载异常: " + e.getMessage());
+        }
+        return hardcodedDefaults();
+    }
+
+    private List<Map<String, Object>> hardcodedDefaults() {
+        return List.of(
+                Map.of("field", "temperature", "label", "温度", "unit", "°C", "optMin", 15, "optMax", 25),
+                Map.of("field", "humidity", "label", "湿度", "unit", "%", "optMin", 55, "optMax", 75),
+                Map.of("field", "soil_ph", "label", "土壤pH", "unit", "", "optMin", 6.0, "optMax", 7.0)
+        );
+    }
+
     private Map<String, Object> requiredRow(String sql, Object... args) {
         List<Map<String, Object>> rows = jdbc.queryForList(sql, args);
         if (rows.isEmpty()) throw new IllegalArgumentException("record not found");
@@ -548,6 +616,7 @@ public class GrowthAnalysisComputeService {
         try { return Double.parseDouble(String.valueOf(v)); } catch (Exception e) { return 0; }
     }
     private double round(double v, int places) {
+        if (Double.isNaN(v) || Double.isInfinite(v)) return 0;
         return new BigDecimal(v).setScale(places, RoundingMode.HALF_UP).doubleValue();
     }
 }

@@ -38,3 +38,5 @@ data/backup/
 *.class
 backend/logs/
 tools/crawler/output/
+tools/crawler/images/
+tools/crawler/data.json
